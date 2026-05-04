@@ -5,15 +5,3 @@ dist/
 .env
 .DS_Store
 .worktrees/
-
-# Desktop app
-desktop/resources/php/
-desktop/resources/lua/
-desktop/resources/mediawiki/
-desktop/resources/ffmpeg/
-desktop/dist-electron/
-desktop/.build/
-desktop/renderer/
-
-# Mediawiki
-mediawiki/

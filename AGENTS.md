@@ -32,8 +32,7 @@ covering local conventions:
 | Package          | What it is                                                                       |
 | ---------------- | -------------------------------------------------------------------------------- |
 | `core/`          | Platform-agnostic logic. Page parsing, GEDCOM ingestion, family graph, search. Pure TypeScript, no React, no I/O above the function boundary. |
-| `frontend/`      | Next.js 16 (App Router) renderer for the wiki — slug pages, search, family tree. The active path; serves the wiki UI from local data. |
-| `desktop/`       | Electron app bundling MediaWiki + PHP. The original wiki host; being phased out in favor of `frontend/`. |
+| `frontend/`      | Next.js 16 (App Router) renderer for the wiki — slug pages, search, family tree. Serves the wiki UI from local data. |
 | `cli/`           | The `wai` CLI — the surface agents use to interact with the wiki (snapshot, list pages, write pages, list sources). |
 | `plugins/whoami/`| The agent extension. Skills, agent definitions, editorial guides that load when an agent is doing wiki work. |
 | `web/`           | The whoami.wiki marketing site (docs, blog). Separate Next app from `frontend/`. |
@@ -132,13 +131,12 @@ Types: `feat`, `fix`, `chore`, `release`.
 ```
 feat: support inline audio/video players (#29)
 fix: harden write command and improve cli error reporting (#30)
-chore: improve desktop release flow (#14)
+chore: tighten cli error messages (#14)
 release: cli-v1.0.6
 ```
 
 Release commits use `release: <product>-v<semver>` — e.g.
-`release: cli-v1.1.0`, `release: desktop-v1.0.5`. Squash-merged PRs end
-with `(#N)`.
+`release: cli-v1.1.0`. Squash-merged PRs end with `(#N)`.
 
 ### Plans live in `docs/superpowers/plans/`
 
@@ -150,10 +148,11 @@ convention.
 
 ### What's in motion
 
-The MediaWiki-based desktop app (`desktop/`) is being phased out in favor
-of the Next.js frontend (`frontend/`). When in doubt, treat `frontend/` as
-the active path and `desktop/` as legacy. The CLI (`cli/`) bridges both
-during the transition.
+The MediaWiki-based desktop app (formerly `desktop/`) was removed in
+commit `b33b9fb` (`chore: remove deprecated desktop app`). The repo is
+now web (`frontend/`) + CLI (`cli/`) only. Historical mentions of
+`desktop/` in plan docs and release notes are time capsules and should
+be left alone.
 
 ## Most common pitfalls
 

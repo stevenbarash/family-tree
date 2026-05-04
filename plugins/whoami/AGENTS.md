@@ -1,7 +1,7 @@
 # plugins/whoami/
 
-The agent extension that ships alongside the desktop app + CLI. When a
-user installs whoami.wiki, this plugin loads into their agent harness
+The agent extension that ships alongside the wiki frontend + CLI. When
+a user installs whoami.wiki, this plugin loads into their agent harness
 (Claude Code, Codex, Gemini CLI) and gives the agent the skills and
 prompts it needs to do wiki work — read sources, write pages, cite
 provenance, follow editorial standards.

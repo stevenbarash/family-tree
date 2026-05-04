@@ -46,5 +46,5 @@ npm run lint                 # eslint
   user-facing claims about how the system works. When you change the
   system, check whether the docs still match.
 - **Breaking links to the live site** — paths under
-  `whoami.wiki/docs/<slug>` are referenced from the desktop app, the
-  CLI's help text, and external posts. Don't rename without redirects.
+  `whoami.wiki/docs/<slug>` are referenced from the CLI's help text and
+  external posts. Don't rename without redirects.

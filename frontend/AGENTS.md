@@ -9,10 +9,9 @@ notices.
 
 ## What this package is
 
-The Next.js (App Router) renderer for the wiki. This is the active path
-that's replacing `desktop/`'s Electron + MediaWiki host. It reads the
-markdown pages and GEDCOM-derived data directly from `$WHOAMI_ROOT` and
-serves a browseable wiki UI:
+The Next.js (App Router) renderer for the wiki. It reads the markdown
+pages and GEDCOM-derived data directly from `$WHOAMI_ROOT` and serves a
+browseable wiki UI:
 
 - `/` — index of all pages
 - `/[slug]` — render a wiki page from `pages/<slug>.md`

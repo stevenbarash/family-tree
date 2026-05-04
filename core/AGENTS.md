@@ -1,9 +1,8 @@
 # core/
 
-Platform-agnostic logic shared by every other package. No React, no Next,
-no Electron. The functions here describe the wiki's data model — pages,
-GEDCOM records, family graphs, search documents — and the operations on
-them.
+Platform-agnostic logic shared by every other package. No React, no Next.
+The functions here describe the wiki's data model — pages, GEDCOM
+records, family graphs, search documents — and the operations on them.
 
 Most of `core/` is purely functional: functions take data, return data.
 A handful of modules are explicitly **I/O-boundary modules** where the
@@ -121,8 +120,7 @@ keep your new module pure. Default answer: keep it pure.
   is high when you're hooking up a new feature; resist. If a new module
   truly needs to read files, justify why it's a boundary module before
   adding it to the table above.
-- **Don't import from `frontend/` or `desktop/`** — that's a layer
-  violation. If you find you need types from those packages, the type
-  probably belongs here.
+- **Don't import from `frontend/`** — that's a layer violation. If you
+  find you need types from `frontend/`, the type probably belongs here.
 - **Don't depend on Node-only globals** in pure modules — they should
   run in any TS environment (browser, edge, worker, Deno).

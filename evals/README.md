@@ -11,13 +11,12 @@ pnpm install
 
 ### Prerequisites
 
-The e2e runner spins up an isolated MediaWiki instance using the desktop app's bundled resources. Build them first:
+The e2e runner spins up an isolated wiki host using the `frontend/` API surface over a temp `$WHOAMI_ROOT`. Make sure `frontend/` builds:
 
 ```bash
-cd ../desktop
-./scripts/build-php.sh
-./scripts/bundle-mediawiki.sh
-./scripts/bundle-lua.sh
+cd ../frontend
+npm install
+npm run build
 ```
 
 You also need at least one fixture. Real fixtures are gitignored — create your own with `/create-fixture` in Claude Code or copy from `fixtures/examples/`.
@@ -185,16 +184,7 @@ The console output shows a score progression chart for incremental runs:
 
 ## Wiki isolation
 
-The e2e runner reuses the desktop app's bundled resources (`desktop/resources/`):
-
-- PHP 8.3 built-in server
-- MediaWiki 1.43 with SQLite
-- Extensions: Cite, CiteThisPage, ParserFunctions, Scribunto, TemplateData, TemplateStyles, TimedMediaHandler
-- Custom namespaces: Source (100), Task (102)
-- Templates: Gap, Dialogue, Infobox person
-- Vector skin
-
-Each run creates a temp directory with its own SQLite database, generates a `LocalSettings.php` matching the desktop config, imports templates, starts PHP's built-in server on a random port, and tears everything down in `finally`. No state leaks between runs.
+The e2e runner provisions a fresh `frontend/` host against a temp `$WHOAMI_ROOT`. Each run gets its own pages directory, search index, and HTTP port; everything is torn down in `finally`. No state leaks between runs.
 
 Use `--external-wiki` to skip isolation and run against your live whoami.wiki instance instead (uses your existing `wai` credentials).
 

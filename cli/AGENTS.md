@@ -23,9 +23,9 @@ drive it without specific bindings.
 | `healthz`        | Ping the API.                                                            |
 | `config server`  | Set the server URL in `~/.whoami/config.json`.                           |
 
-The CLI is an HTTP client — it talks to whatever wiki host is configured
-(the desktop app, the frontend's API routes, or a hosted instance). The
-host runs locally; the CLI is agent-callable.
+The CLI is an HTTP client — it talks to the frontend's API routes (or
+any other host that implements the same surface). The host runs locally;
+the CLI is agent-callable.
 
 ## Build and test
 
@@ -64,6 +64,6 @@ automated. Update `RELEASE_NOTES.md` ahead of the bump.
 - The CLI is the **agent contract**. Anything that's hard to discover,
   that prints inconsistent output across versions, or that has
   ambiguous error messages will degrade eval scores in `evals/`.
-- Don't let `wai` know about MediaWiki vs. Next-frontend specifics.
+- Don't let `wai` know about host-specific implementation details.
   The server's API surface should be the same shape across hosts;
   if it isn't, that's a server bug, not a CLI workaround.

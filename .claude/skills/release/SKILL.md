@@ -1,6 +1,6 @@
 ---
 name: release
-description: Release a new version of a package (cli, desktop)
+description: Release a new version of a package (cli)
 triggers: ["release", "publish", "ship"]
 user_invocable: true
 ---
@@ -22,7 +22,6 @@ Examples:
 | Package   | Tag format           | Script                        |
 |-----------|----------------------|-------------------------------|
 | cli       | `cli-v{version}`     | `cli/scripts/release.sh`      |
-| desktop   | `desktop-v{version}` | `desktop/scripts/release.sh`  |
 
 ## Steps
 

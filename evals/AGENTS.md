@@ -14,8 +14,8 @@ agents working on the eval framework itself.
 
 For each fixture × harness × model combination:
 
-1. Provision a fresh isolated MediaWiki instance using `desktop/`'s
-   bundled resources.
+1. Provision a fresh isolated wiki host (the `frontend/` API surface
+   over a temp `$WHOAMI_ROOT`).
 2. Hand the agent a task prompt, a vault directory, and the wiki API.
 3. Let it run through the editorial workflow checkpoints.
 4. Grade the output with rubrics (completeness, citation density,
@@ -60,13 +60,10 @@ npm run report -- <results-dir>                # render score tables
   `fixtures/examples/` directory has lightweight examples for testing
   the framework itself.
 - **Integration tests are serial** (`--test-concurrency=1`) because
-  they spin up MediaWiki processes and grab ports; parallel runs flake.
+  they spin up wiki host processes and grab ports; parallel runs flake.
 
 ## Pitfalls
 
-- **Bumping desktop bundles without re-running evals** — the eval
-  runner uses `desktop/`'s bundled MediaWiki/PHP. If you change those
-  bundles, prior eval runs aren't comparable.
 - **Grader weight changes silently invalidating reported scores** —
   the score tables in `web/content/docs/choosing-harness-and-model.mdx`
   reference specific runs. Bumping a grader weight changes everything.
