@@ -65,9 +65,8 @@ npm run report -- <results-dir>                # render score tables
 ## Pitfalls
 
 - **Grader weight changes silently invalidating reported scores** —
-  the score tables in `web/content/docs/choosing-harness-and-model.mdx`
-  reference specific runs. Bumping a grader weight changes everything.
-  Bump deliberately and re-run + update the docs.
+  bumping a grader weight changes every score. Bump deliberately and
+  re-run; if you keep score tables anywhere, refresh them.
 - **Trusting graders blindly** — graders are heuristics, not ground
   truth. Spot-check actual outputs when scores look odd.
 - **Forgetting that real fixtures are gitignored** — `npm run run`

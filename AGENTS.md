@@ -35,7 +35,6 @@ covering local conventions:
 | `frontend/`      | Next.js 16 (App Router) renderer for the wiki — slug pages, search, family tree. Serves the wiki UI from local data. |
 | `cli/`           | The `wai` CLI — the surface agents use to interact with the wiki (snapshot, list pages, write pages, list sources). |
 | `plugins/whoami/`| The agent extension. Skills, agent definitions, editorial guides that load when an agent is doing wiki work. |
-| `web/`           | The whoami.wiki marketing site (docs, blog). Separate Next app from `frontend/`. |
 | `evals/`         | Eval suite for benchmarking agent harness × model quality on wiki authoring tasks. |
 | `tools/`         | One-off migration helpers (wikitext-to-md, wiki-preview). |
 | `pages/`         | Sample/demo wiki pages checked into the repo. |
@@ -168,8 +167,6 @@ be left alone.
 
 ## Where to look for more
 
-- Design philosophy: `web/content/docs/design.mdx`
-- Setup walkthrough: `web/content/docs/installation.mdx`
-- Editorial standards (page conventions, citations): `web/content/docs/editorial-standards.mdx`
-- Eval suite protocol: `web/content/docs/evals-suite.mdx`
-- Live docs site: <https://whoami.wiki/docs>
+- Each package has its own `AGENTS.md` with conventions specific to that area.
+- Editorial standards for writing pages: the `editorial-guide` skill in `plugins/whoami/`.
+- Active design and implementation plans: `docs/superpowers/`.
