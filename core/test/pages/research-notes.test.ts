@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   appendResearchNote,
+  editResearchNote,
   extractResearchNotesSection,
   parseResearchNotes,
   type Note,
@@ -247,4 +248,67 @@ test('appendResearchNote: multi-line note with blank paragraph round-trips throu
   const out = appendResearchNote('', fixed({ text: 'para one\n\npara two' }), { date: '2026-05-05' });
   const [n] = parseResearchNotes(out);
   assert.equal(n!.text, 'para one\n\npara two');
+});
+
+test('editResearchNote: rewrites bullet text and adds editedAt/editedBy', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- old text\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const out = editResearchNote(body, 'n_a', 'new text', 'alice', '2026-05-06T16:00:00Z');
+  assert.equal(
+    out,
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- new text\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z editedAt=2026-05-06T16:00:00Z editedBy=alice -->\n',
+  );
+});
+
+test('editResearchNote: subsequent edit overwrites editedAt/editedBy (latest-only)', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- v1\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z editedAt=2026-05-06T15:00:00Z editedBy=alice -->\n';
+  const out = editResearchNote(body, 'n_a', 'v2', 'bob', '2026-05-06T17:00:00Z');
+  assert.match(out, /editedAt=2026-05-06T17:00:00Z editedBy=bob/);
+  assert.doesNotMatch(out, /editedAt=2026-05-06T15:00:00Z/);
+});
+
+test('editResearchNote: multi-line replacement preserves indent', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const out = editResearchNote(body, 'n_a', 'first\nsecond', 'alice', '2026-05-06T15:00:00Z');
+  assert.match(out, /- first\n  second\n  <!-- note /);
+});
+
+test('editResearchNote: throws NoteNotFoundError on unknown id', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  assert.throws(
+    () => editResearchNote(body, 'n_missing', 'x', 'alice', '2026-05-06T15:00:00Z'),
+    NoteNotFoundError,
+  );
+});
+
+test('editResearchNote: throws NoteDeletedError on a soft-deleted note', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T15:00:00Z deletedBy=steven -->\n';
+  assert.throws(
+    () => editResearchNote(body, 'n_a', 'x', 'alice', '2026-05-06T16:00:00Z'),
+    NoteDeletedError,
+  );
+});
+
+test('editResearchNote: legacy (no trailer) bullets are unaddressable', () => {
+  const body = '## Research notes\n\n### 2026-05-06\n- old\n';
+  assert.throws(
+    () => editResearchNote(body, 'n_legacy_2026-05-06_0', 'x', 'alice', '2026-05-06T16:00:00Z'),
+    NoteNotFoundError,
+  );
 });

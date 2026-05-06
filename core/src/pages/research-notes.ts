@@ -248,6 +248,127 @@ function formatTrailer(input: NewNoteInput): string {
 }
 
 /**
+ * Rewrite the prose of an existing note (matched by id), updating the
+ * trailer's `editedAt`/`editedBy` to the latest edit. Throws if the id
+ * is unknown or the note is soft-deleted (caller must restore first).
+ */
+export function editResearchNote(
+  body: string,
+  id: string,
+  newText: string,
+  editor: string,
+  editedAt: string,
+): string {
+  const span = findBulletSpan(body, id);
+  if (!span) throw new NoteNotFoundError(id);
+  if (span.attrs.deletedAt) throw new NoteDeletedError(id);
+  span.attrs.editedAt = editedAt;
+  span.attrs.editedBy = editor;
+  return spliceBulletBlock(body, span, newText, span.attrs);
+}
+
+interface BulletSpan {
+  startLine: number;        // index of "- ..." line
+  endLineExclusive: number; // first line after the bullet's block (incl trailer)
+  attrs: TrailerAttrs;
+  trailerLineIndex: number; // index of trailer line within the body
+}
+
+interface TrailerAttrs {
+  id: string;
+  by: string;
+  kind: NoteKind;
+  at: string;
+  editedAt?: string;
+  editedBy?: string;
+  deletedAt?: string;
+  deletedBy?: string;
+}
+
+function findBulletSpan(body: string, id: string): BulletSpan | null {
+  const lines = body.split('\n');
+  const sectionStart = lines.findIndex((l) => SECTION_RE.test(l));
+  if (sectionStart === -1) return null;
+  let sectionEnd = lines.length;
+  for (let i = sectionStart + 1; i < lines.length; i++) {
+    if (/^## /.test(lines[i]!)) { sectionEnd = i; break; }
+  }
+  for (let i = sectionStart + 1; i < sectionEnd; i++) {
+    if (!BULLET_START_RE.test(lines[i]!)) continue;
+    const start = i;
+    let trailerLine = -1;
+    let j = i + 1;
+    while (j < sectionEnd) {
+      const nl = lines[j]!;
+      if (BULLET_START_RE.test(nl)) break;
+      if (DAY_HEADING_RE.test(nl)) break;
+      if (/^## /.test(nl)) break;
+      if (nl === '') {
+        const k = j + 1;
+        if (k >= sectionEnd) break;
+        const peek = lines[k]!;
+        if (peek.startsWith('  ') || TRAILER_RE.test(peek)) { j++; continue; }
+        break;
+      }
+      if (TRAILER_RE.test(nl)) { trailerLine = j; j++; continue; }
+      j++;
+    }
+    if (trailerLine === -1) { i = j - 1; continue; }
+    const m = TRAILER_RE.exec(lines[trailerLine]!)!;
+    const attrs = parseTrailerAttrs(m[1]!) as Partial<TrailerAttrs>;
+    if (attrs.id !== id) { i = j - 1; continue; }
+    return {
+      startLine: start,
+      endLineExclusive: j,
+      attrs: {
+        id: attrs.id,
+        by: attrs.by ?? '(unknown)',
+        kind: (attrs.kind === 'agent' ? 'agent' : 'human'),
+        at: attrs.at ?? '',
+        editedAt: attrs.editedAt,
+        editedBy: attrs.editedBy,
+        deletedAt: attrs.deletedAt,
+        deletedBy: attrs.deletedBy,
+      },
+      trailerLineIndex: trailerLine,
+    };
+  }
+  return null;
+}
+
+function spliceBulletBlock(
+  body: string,
+  span: BulletSpan,
+  newText: string,
+  attrs: TrailerAttrs,
+): string {
+  const lines = body.split('\n');
+  const trimmed = newText.replace(/\s+$/, '').replace(/^\n+/, '');
+  const head = trimmed === '' ? '(empty)' : trimmed.split('\n')[0]!;
+  const tail = trimmed === ''
+    ? []
+    : trimmed.split('\n').slice(1).map((l) => (l.length === 0 ? '' : `  ${l}`));
+  const trailer = `  ${serializeTrailer(attrs)}`;
+  const next = [`- ${head}`, ...tail, trailer];
+  lines.splice(span.startLine, span.endLineExclusive - span.startLine, ...next);
+  return lines.join('\n');
+}
+
+function serializeTrailer(attrs: TrailerAttrs): string {
+  const parts = [
+    `id=${attrs.id}`,
+    `by=${attrs.by}`,
+    `kind=${attrs.kind}`,
+    `at=${attrs.at}`,
+  ];
+  if (attrs.editedAt) parts.push(`editedAt=${attrs.editedAt}`);
+  if (attrs.editedBy) parts.push(`editedBy=${attrs.editedBy}`);
+  if (attrs.deletedAt) parts.push(`deletedAt=${attrs.deletedAt}`);
+  if (attrs.deletedBy) parts.push(`deletedBy=${attrs.deletedBy}`);
+  return `<!-- note ${parts.join(' ')} -->`;
+}
+
+/**
  * Return the markdown body of the `## Research notes` section
  * (without the `## Research notes` heading itself), or an empty
  * string if no such section exists. Used by the renderer to surface
