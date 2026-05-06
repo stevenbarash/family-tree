@@ -5,6 +5,8 @@ import {
   editResearchNote,
   extractResearchNotesSection,
   parseResearchNotes,
+  softDeleteResearchNote,
+  restoreResearchNote,
   type Note,
   type NewNoteInput,
   NoteNotFoundError,
@@ -310,5 +312,71 @@ test('editResearchNote: legacy (no trailer) bullets are unaddressable', () => {
   assert.throws(
     () => editResearchNote(body, 'n_legacy_2026-05-06_0', 'x', 'alice', '2026-05-06T16:00:00Z'),
     NoteNotFoundError,
+  );
+});
+
+test('softDeleteResearchNote: adds deletedAt/deletedBy to trailer; bullet text untouched', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- aunt sally said x\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const out = softDeleteResearchNote(body, 'n_a', 'steven', '2026-05-06T17:00:00Z');
+  assert.equal(
+    out,
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- aunt sally said x\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T17:00:00Z deletedBy=steven -->\n',
+  );
+});
+
+test('softDeleteResearchNote: throws NoteAlreadyDeletedError if already deleted', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T15:00:00Z deletedBy=steven -->\n';
+  assert.throws(
+    () => softDeleteResearchNote(body, 'n_a', 'steven', '2026-05-06T16:00:00Z'),
+    NoteAlreadyDeletedError,
+  );
+});
+
+test('softDeleteResearchNote: NoteNotFoundError on missing id', () => {
+  assert.throws(
+    () => softDeleteResearchNote('## Research notes\n\n### 2026-05-06\n- x\n', 'n_missing', 's', 't'),
+    NoteNotFoundError,
+  );
+});
+
+test('restoreResearchNote: clears deletedAt/deletedBy', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T17:00:00Z deletedBy=steven -->\n';
+  const out = restoreResearchNote(body, 'n_a');
+  assert.equal(
+    out,
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n',
+  );
+});
+
+test('restoreResearchNote: throws NoteNotFoundError on missing id', () => {
+  assert.throws(
+    () => restoreResearchNote('## Research notes\n\n### 2026-05-06\n- x\n', 'n_missing'),
+    NoteNotFoundError,
+  );
+});
+
+test('restoreResearchNote: no-op error when note is not deleted', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  // Defining the v1 contract: restore on a live note throws (callers
+  // should check first). Keeps the API symmetrical with delete.
+  assert.throws(
+    () => restoreResearchNote(body, 'n_a'),
+    /not deleted/,
   );
 });

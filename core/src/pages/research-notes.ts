@@ -267,6 +267,47 @@ export function editResearchNote(
   return spliceBulletBlock(body, span, newText, span.attrs);
 }
 
+/**
+ * Soft-delete a note by setting `deletedAt`/`deletedBy` on its trailer.
+ * Bullet prose is preserved verbatim (the trailer is the canonical
+ * record; the UI strikes through visually based on the parsed flag).
+ * Throws if the id is unknown or already deleted.
+ */
+export function softDeleteResearchNote(
+  body: string,
+  id: string,
+  deleter: string,
+  deletedAt: string,
+): string {
+  const span = findBulletSpan(body, id);
+  if (!span) throw new NoteNotFoundError(id);
+  if (span.attrs.deletedAt) throw new NoteAlreadyDeletedError(id);
+  span.attrs.deletedAt = deletedAt;
+  span.attrs.deletedBy = deleter;
+  return rewriteTrailer(body, span);
+}
+
+/**
+ * Clear `deletedAt`/`deletedBy` from a soft-deleted note's trailer.
+ * Throws if the id is unknown or the note isn't currently deleted.
+ */
+export function restoreResearchNote(body: string, id: string): string {
+  const span = findBulletSpan(body, id);
+  if (!span) throw new NoteNotFoundError(id);
+  if (!span.attrs.deletedAt) {
+    throw new Error(`note ${id} is not deleted`);
+  }
+  delete span.attrs.deletedAt;
+  delete span.attrs.deletedBy;
+  return rewriteTrailer(body, span);
+}
+
+function rewriteTrailer(body: string, span: BulletSpan): string {
+  const lines = body.split('\n');
+  lines[span.trailerLineIndex] = `  ${serializeTrailer(span.attrs)}`;
+  return lines.join('\n');
+}
+
 interface BulletSpan {
   startLine: number;        // index of "- ..." line
   endLineExclusive: number; // first line after the bullet's block (incl trailer)
