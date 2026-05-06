@@ -35,6 +35,12 @@ Pages:
   note <slug> [text]          Append a dated research note to <slug>.talk
                                 body from positional, --file F, or --stdin;
                                 no body opens $EDITOR with an empty buffer
+  note <slug> --edit <id> "text"
+                              Edit an existing note's prose
+  note <slug> --delete <id>   Soft-delete (retract) a note; reversible
+  note <slug> --restore <id>  Restore a previously retracted note
+  note <slug> --list [--json] List notes (id, date, preview)
+  note <slug> --as-agent ...  Tag the write kind=agent (append/edit only)
   delete <slug> --yes         Soft-delete a page (moves to _archived)
   search <query> [--limit N]  Search pages, body, aliases, categories,
                                 and GEDCOM-derived fields
@@ -186,8 +192,41 @@ async function main(): Promise<number> {
       }
       case 'note': {
         const slug = toSlug(args.positional[0] ?? '');
-        const note = await resolveNoteBody(args);
-        await runNote({ slug, note, client, write });
+        // Decide mode by which flag is present (mutually exclusive).
+        let mode: 'append' | 'edit' | 'delete' | 'restore' | 'list' = 'append';
+        let id: string | undefined;
+        if (args.flags.list) {
+          mode = 'list';
+        } else if (typeof args.flags.edit === 'string') {
+          mode = 'edit';
+          id = args.flags.edit;
+        } else if (typeof args.flags.delete === 'string') {
+          mode = 'delete';
+          id = args.flags.delete;
+        } else if (typeof args.flags.restore === 'string') {
+          mode = 'restore';
+          id = args.flags.restore;
+        }
+        const by = typeof args.flags.by === 'string'
+          ? args.flags.by
+          : (process.env.WHOAMI_AUTHOR_NAME || process.env.USER);
+        const kind: 'human' | 'agent' = args.flags['as-agent'] || process.env.WHOAMI_NOTE_KIND === 'agent'
+          ? 'agent'
+          : 'human';
+        const note = mode === 'append' || mode === 'edit'
+          ? await resolveNoteBody(args)
+          : undefined;
+        await runNote({
+          slug,
+          mode,
+          id,
+          note,
+          by,
+          kind,
+          json: !!args.flags.json,
+          client,
+          write,
+        });
         break;
       }
       case 'sync-gedcom': {
