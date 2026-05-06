@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { randomBytes } from 'node:crypto';
 import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType } from '@core/pages/index.ts';
 import { buildSlugIndex, type SlugIndex } from './wikilinks';
 import {
@@ -14,6 +15,30 @@ import { WHOAMI_ROOT, PAGES_DIR, GENEALOGY_DIR, SEARCH_INDEX_FILE, DEFAULT_AUTHO
 import { isSearchIndexStale } from './search-staleness';
 import { getCachedDerivedRecords } from './family';
 import { renderMarkdown } from './render';
+
+const ID_ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz'; // Crockford base32 lowercase, no i/l/o/u
+
+/** Generate `n_` + 8 random base32 chars (40 bits, ~1e12 keyspace). */
+export function generateNoteId(): string {
+  const bytes = randomBytes(5);
+  // Treat 5 bytes as 8 base32 groups by extracting 5-bit chunks.
+  // We process bits from MSB to LSB across the 40-bit buffer.
+  // bits[i] = extract 5 bits starting at offset i*5 from the 40-bit value.
+  let out = '';
+  for (let i = 0; i < 8; i++) {
+    const bitOffset = i * 5;
+    const byteIndex = Math.floor(bitOffset / 8);
+    const bitShift = bitOffset % 8;
+    // Read up to 2 bytes to span the 5-bit window
+    const lo = bytes[byteIndex];
+    const hi = byteIndex + 1 < bytes.length ? bytes[byteIndex + 1] : 0;
+    const word = (lo << 8) | hi;
+    // Extract 5 bits at bitShift from the MSB side of the 16-bit word
+    const val = (word >> (11 - bitShift)) & 0x1f;
+    out += ID_ALPHABET[val];
+  }
+  return `n_${out}`;
+}
 
 let _pages: PageStore | null = null;
 
