@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { PageNotFoundError, StaleSchemaVersionError } from '@core/pages/store.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
+import {
+  NoteNotFoundError,
+  NoteDeletedError,
+  NoteAlreadyDeletedError,
+} from '@core/pages/research-notes.ts';
 
 type ErrorBody = { error: string; [k: string]: unknown };
 
@@ -40,6 +45,15 @@ export function routeError(
       onDisk: err.fromVersion,
       current: err.current,
     });
+  }
+  if (err instanceof NoteNotFoundError) {
+    return errorResponse('note-not-found', 404, { noteId: err.noteId });
+  }
+  if (err instanceof NoteDeletedError) {
+    return errorResponse('note-deleted', 409, { noteId: err.noteId });
+  }
+  if (err instanceof NoteAlreadyDeletedError) {
+    return errorResponse('note-already-deleted', 409, { noteId: err.noteId });
   }
   return errorResponse(fallbackCode, 500, { detail: (err as Error).message });
 }
