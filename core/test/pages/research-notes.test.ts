@@ -131,3 +131,96 @@ test('extractResearchNotesSection: preserves multiple day headings', () => {
     '### 2026-05-05\n- a\n\n### 2026-05-04\n- b',
   );
 });
+
+import {
+  parseResearchNotes,
+  type Note,
+  NoteNotFoundError,
+  NoteDeletedError,
+  NoteAlreadyDeletedError,
+} from '../../src/pages/research-notes.ts';
+
+test('parseResearchNotes: empty body → empty array', () => {
+  assert.deepEqual(parseResearchNotes(''), []);
+  assert.deepEqual(parseResearchNotes('# Talk\n\n## Open\n\n- q\n'), []);
+});
+
+test('parseResearchNotes: legacy bullet (no trailer) is read-only', () => {
+  const body = '## Research notes\n\n### 2026-05-04\n- aunt sally said x\n';
+  const notes = parseResearchNotes(body);
+  assert.equal(notes.length, 1);
+  const n = notes[0]!;
+  assert.equal(n.text, 'aunt sally said x');
+  assert.equal(n.date, '2026-05-04');
+  assert.equal(n.by, '(unknown)');
+  assert.equal(n.kind, 'human');
+  assert.equal(n.createdAt, null);
+  assert.equal(n.editedAt, null);
+  assert.equal(n.deletedAt, null);
+  assert.equal(n.isLegacy, true);
+  assert.match(n.id, /^n_legacy_2026-05-04_0$/);
+});
+
+test('parseResearchNotes: trailered bullet exposes all fields', () => {
+  const body =
+    '## Research notes\n\n' +
+    '### 2026-05-06\n' +
+    '- aunt sally said x\n' +
+    '  <!-- note id=n_5w3kp9aq by=steven kind=human at=2026-05-06T14:23:00Z -->\n';
+  const [n] = parseResearchNotes(body);
+  assert.equal(n!.id, 'n_5w3kp9aq');
+  assert.equal(n!.by, 'steven');
+  assert.equal(n!.kind, 'human');
+  assert.equal(n!.createdAt, '2026-05-06T14:23:00Z');
+  assert.equal(n!.editedAt, null);
+  assert.equal(n!.deletedAt, null);
+  assert.equal(n!.isLegacy, false);
+  assert.equal(n!.text, 'aunt sally said x');
+});
+
+test('parseResearchNotes: edited and deleted fields surface', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z editedAt=2026-05-06T16:00:00Z editedBy=alice -->\n' +
+    '- b\n' +
+    '  <!-- note id=n_b by=agent kind=agent at=2026-05-06T15:00:00Z deletedAt=2026-05-06T17:00:00Z deletedBy=steven -->\n';
+  const notes = parseResearchNotes(body);
+  assert.equal(notes[0]!.editedAt, '2026-05-06T16:00:00Z');
+  assert.equal(notes[0]!.editedBy, 'alice');
+  assert.equal(notes[1]!.kind, 'agent');
+  assert.equal(notes[1]!.deletedAt, '2026-05-06T17:00:00Z');
+  assert.equal(notes[1]!.deletedBy, 'steven');
+});
+
+test('parseResearchNotes: multi-line bullet keeps continuation lines, trailer detached', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- first line\n' +
+    '  second line\n' +
+    '  third line\n' +
+    '  <!-- note id=n_x by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const [n] = parseResearchNotes(body);
+  assert.equal(n!.text, 'first line\nsecond line\nthird line');
+  assert.equal(n!.id, 'n_x');
+});
+
+test('parseResearchNotes: newest day first, in-document order within day', () => {
+  const body =
+    '## Research notes\n\n' +
+    '### 2026-05-06\n- a\n- b\n\n' +
+    '### 2026-05-04\n- earlier\n';
+  const notes = parseResearchNotes(body);
+  assert.deepEqual(notes.map(n => n.text), ['a', 'b', 'earlier']);
+  assert.deepEqual(notes.map(n => n.date), ['2026-05-06', '2026-05-06', '2026-05-04']);
+});
+
+test('parseResearchNotes: legacy synthetic ids are unique per (date, position)', () => {
+  const body = '## Research notes\n\n### 2026-05-04\n- a\n- b\n- c\n';
+  const ids = parseResearchNotes(body).map(n => n.id);
+  assert.deepEqual(ids, [
+    'n_legacy_2026-05-04_0',
+    'n_legacy_2026-05-04_1',
+    'n_legacy_2026-05-04_2',
+  ]);
+});
