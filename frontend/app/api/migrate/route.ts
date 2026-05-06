@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runMigrateOnDisk } from '@/lib/server-services';
 import { DirtyRepoError } from '@core/pages/migrate-runner.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
+import { errorResponse } from '@/lib/api-errors';
 
 interface MigrateRequest {
   page?: string;
@@ -33,20 +34,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json(report);
   } catch (err) {
     if (err instanceof DirtyRepoError) {
-      return NextResponse.json(
-        { error: 'dirty-repo', detail: err.message },
-        { status: 409 },
-      );
+      return errorResponse('dirty-repo', 409, { detail: err.message });
     }
     if (err instanceof FutureSchemaVersionError) {
-      return NextResponse.json(
-        { error: 'future-schema-version', detail: err.message },
-        { status: 409 },
-      );
+      return errorResponse('future-schema-version', 409, { detail: err.message });
     }
-    return NextResponse.json(
-      { error: 'migrate-failed', detail: (err as Error).message },
-      { status: 500 },
-    );
+    return errorResponse('migrate-failed', 500, { detail: (err as Error).message });
   }
 }

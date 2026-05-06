@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { syncGedcom } from '@core/gedcom/index.ts';
 import { invalidateListCache, rebuildSearchIndexFromDisk } from '@/lib/server-services';
 import { WHOAMI_ROOT, DEFAULT_AUTHOR } from '@/lib/env';
+import { errorResponse } from '@/lib/api-errors';
 
 const Body = z.object({
   gedFile: z.string().regex(/^[a-z0-9._-]+\.ged$/i),
@@ -14,11 +15,11 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const json = await req.json().catch(() => null);
   const parsed = Body.safeParse(json);
-  if (!parsed.success) return NextResponse.json({ error: 'bad-request' }, { status: 400 });
+  if (!parsed.success) return errorResponse('bad-request', 400);
 
   const genealogyDir = join(WHOAMI_ROOT, 'genealogy');
   const gedPath = join(genealogyDir, parsed.data.gedFile);
-  if (!existsSync(gedPath)) return NextResponse.json({ error: 'ged-not-found' }, { status: 404 });
+  if (!existsSync(gedPath)) return errorResponse('ged-not-found', 404);
 
   try {
     const result = await syncGedcom({
@@ -32,6 +33,6 @@ export async function POST(req: NextRequest) {
     await rebuildSearchIndexFromDisk();
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json({ error: 'sync-failed', detail: (err as Error).message }, { status: 500 });
+    return errorResponse('sync-failed', 500, { detail: (err as Error).message });
   }
 }

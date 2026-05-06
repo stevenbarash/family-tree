@@ -1,0 +1,45 @@
+import { NextResponse } from 'next/server';
+import { PageNotFoundError, StaleSchemaVersionError } from '@core/pages/store.ts';
+import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
+
+type ErrorBody = { error: string; [k: string]: unknown };
+
+/** Construct a JSON error response with a stable `error` code field. */
+export function errorResponse(
+  code: string,
+  status: number,
+  extra?: Record<string, unknown>,
+): NextResponse<ErrorBody> {
+  return NextResponse.json(extra ? { error: code, ...extra } : { error: code }, { status });
+}
+
+/**
+ * Translate page-store errors into the canonical wire response.
+ * Handles `PageNotFoundError` (404), schema-version conflicts (409),
+ * and falls through to `errorResponse(fallbackCode, 500, …)` for
+ * anything else.
+ */
+export function routeError(
+  err: unknown,
+  slug: string,
+  fallbackCode: string,
+): NextResponse<ErrorBody> {
+  if (err instanceof PageNotFoundError) {
+    return errorResponse('not-found', 404);
+  }
+  if (err instanceof StaleSchemaVersionError) {
+    return errorResponse('stale-schema-version', 409, {
+      slug: err.slug,
+      onDisk: err.onDisk,
+      current: err.current,
+    });
+  }
+  if (err instanceof FutureSchemaVersionError) {
+    return errorResponse('future-schema-version', 409, {
+      slug,
+      onDisk: err.fromVersion,
+      current: err.current,
+    });
+  }
+  return errorResponse(fallbackCode, 500, { detail: (err as Error).message });
+}

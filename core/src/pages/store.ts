@@ -26,6 +26,17 @@ export class StaleSchemaVersionError extends Error {
   }
 }
 
+/**
+ * Thrown by store.read / store.softDelete when the requested slug
+ * has no file on disk. API routes catch this and return 404.
+ */
+export class PageNotFoundError extends Error {
+  constructor(public readonly slug: string) {
+    super(`page not found: ${slug}`);
+    this.name = 'PageNotFoundError';
+  }
+}
+
 function assertPeekSchemaCurrent(slug: string, path: string): void {
   if (!existsSync(path)) return;
   const onDisk = peekSchemaVersion(path);
@@ -59,7 +70,7 @@ export function createPageStore(cfg: PageStoreConfig): PageStore {
     async read(slug: string): Promise<Page> {
       assertValidSlug(slug);
       const path = pathFor(slug);
-      if (!existsSync(path)) throw new Error(`page not found: ${slug}`);
+      if (!existsSync(path)) throw new PageNotFoundError(slug);
       return parsePage(slug, readFileSync(path, 'utf-8'));
     },
 
@@ -125,7 +136,7 @@ export function createPageStore(cfg: PageStoreConfig): PageStore {
     async softDelete(slug, author) {
       assertValidSlug(slug);
       const src = pathFor(slug);
-      if (!existsSync(src)) throw new Error(`page not found: ${slug}`);
+      if (!existsSync(src)) throw new PageNotFoundError(slug);
       assertPeekSchemaCurrent(slug, src);
       const archivedDir = join(cfg.pagesDir, '_archived');
       const dst = join(archivedDir, `${slug}.md`);

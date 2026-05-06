@@ -9,16 +9,62 @@ import { InfoboxCompany } from './infobox-company';
 import { InfoboxPerson } from './infobox-person';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 
-export const directiveComponents: Record<string, ComponentType<{ children?: ReactNode; [k: string]: unknown }>> = {
-  open:              (p) => <Admonition kind="open">{p.children}</Admonition>,
-  closed:            (p) => <Admonition kind="closed">{p.children}</Admonition>,
-  superseded:        (p) => <Admonition kind="superseded">{p.children}</Admonition>,
-  gap:               (p) => <Admonition kind="gap">{p.children}</Admonition>,
-  blockquote:        (p) => <DirectiveBlockquote by={typeof p.by === 'string' ? p.by : undefined}>{p.children}</DirectiveBlockquote>,
-  'cite-vault':      (p) => <CiteVault type={p.type as string | undefined} snapshot={p.snapshot as string | undefined} note={p.note as string | undefined} />,
-  'cite-message':    (p) => <CiteMessage snapshot={p.snapshot as string | undefined} date={p.date as string | undefined} thread={p.thread as string | undefined} note={p.note as string | undefined} />,
-  dialogue:          (p) => <Dialogue speaker={p.speaker as string | undefined}>{p.children}</Dialogue>,
-  'columns-list':    (p) => <ColumnsList cols={p.cols as string | undefined}>{p.children}</ColumnsList>,
-  'infobox-company': (p) => <InfoboxCompany>{p.children}</InfoboxCompany>,
-  'infobox-person':  (p) => <InfoboxPerson derived={p.derived as DerivedRecord | null | undefined}>{p.children}</InfoboxPerson>,
+/**
+ * One markdown directive. `attrs` is the closed list of attribute keys
+ * the directive accepts; `render` maps a normalized `DirectiveProps`
+ * to JSX. `needsDerived` opts the directive into the per-render
+ * `context.derived` injection wired up by `lib/render.tsx`.
+ */
+export interface Directive {
+  attrs: readonly string[];
+  needsDerived?: true;
+  render: ComponentType<DirectiveProps>;
+}
+
+export interface DirectiveProps {
+  children?: ReactNode;
+  attrs?: Record<string, string | undefined>;
+  derived?: DerivedRecord | null;
+}
+
+function attr(props: DirectiveProps, key: string): string | undefined {
+  return props.attrs?.[key];
+}
+
+export const directives: Record<string, Directive> = {
+  open:       { attrs: [],       render: ({ children }) => <Admonition kind="open">{children}</Admonition> },
+  closed:     { attrs: [],       render: ({ children }) => <Admonition kind="closed">{children}</Admonition> },
+  superseded: { attrs: [],       render: ({ children }) => <Admonition kind="superseded">{children}</Admonition> },
+  gap:        { attrs: [],       render: ({ children }) => <Admonition kind="gap">{children}</Admonition> },
+  blockquote: { attrs: ['by'],   render: (p) => <DirectiveBlockquote by={attr(p, 'by')}>{p.children}</DirectiveBlockquote> },
+  'cite-vault': {
+    attrs: ['type', 'snapshot', 'note'],
+    render: (p) => <CiteVault type={attr(p, 'type')} snapshot={attr(p, 'snapshot')} note={attr(p, 'note')} />,
+  },
+  'cite-message': {
+    attrs: ['snapshot', 'date', 'thread', 'note'],
+    render: (p) => <CiteMessage snapshot={attr(p, 'snapshot')} date={attr(p, 'date')} thread={attr(p, 'thread')} note={attr(p, 'note')} />,
+  },
+  dialogue: {
+    attrs: ['speaker'],
+    render: (p) => <Dialogue speaker={attr(p, 'speaker')}>{p.children}</Dialogue>,
+  },
+  'columns-list': {
+    attrs: ['cols'],
+    render: (p) => <ColumnsList cols={attr(p, 'cols')}>{p.children}</ColumnsList>,
+  },
+  'infobox-company': {
+    attrs: [],
+    render: (p) => <InfoboxCompany>{p.children}</InfoboxCompany>,
+  },
+  'infobox-person': {
+    attrs: [],
+    needsDerived: true,
+    render: (p) => <InfoboxPerson derived={p.derived}>{p.children}</InfoboxPerson>,
+  },
 };
+
+/** Flat list of all attribute names accepted by any directive. */
+export const allDirectiveAttrs: readonly string[] = Array.from(
+  new Set(Object.values(directives).flatMap((d) => d.attrs)),
+);

@@ -10,8 +10,7 @@ const GedcomRefSchema = z.object({
   snapshot: z.string().min(1),
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const PageMetaSchema: z.ZodType<PageMeta, any, any> = z.object({
+const PageMetaSchema = z.object({
   schemaVersion: z.number().int().positive().default(CURRENT_SCHEMA_VERSION),
   title: z.string().min(1),
   owner: z.string().min(1),
@@ -30,6 +29,12 @@ const PageMetaSchema: z.ZodType<PageMeta, any, any> = z.object({
     z.date().transform(d => d.toISOString().slice(0, 10))
   ]).optional(),
 });
+
+// Compile-time guarantee that the schema's output matches PageMeta.
+// Drift on either side fails to typecheck.
+type _AssertEqual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const _schemaParity: _AssertEqual<z.infer<typeof PageMetaSchema>, PageMeta> = true;
+void _schemaParity;
 
 /**
  * Validate a raw frontmatter object against the current PageMeta

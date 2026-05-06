@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { reciteDrift, applyRecite } from '@core/gedcom/index.ts';
 import { invalidateListCache } from '@/lib/server-services';
 import { WHOAMI_ROOT, PAGES_DIR, DEFAULT_AUTHOR } from '@/lib/env';
+import { errorResponse } from '@/lib/api-errors';
 
 export async function GET() {
   const drift = await reciteDrift({
@@ -19,7 +20,7 @@ const ApplyBody = z.object({ apply: z.literal(true) });
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = ApplyBody.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: 'bad-request' }, { status: 400 });
+  if (!parsed.success) return errorResponse('bad-request', 400);
 
   const updated = await applyRecite({
     repoRoot: WHOAMI_ROOT,

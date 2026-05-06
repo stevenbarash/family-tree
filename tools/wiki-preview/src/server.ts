@@ -9,8 +9,9 @@ import remarkDirective from 'remark-directive';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import { visit } from 'unist-util-visit';
+import { defaultWhoamiRoot, whoamiPaths } from '@core/paths.ts';
 
-const PAGES_DIR = process.env.PAGES_DIR ?? `${process.env.HOME}/whoami/pages`;
+const PAGES_DIR = process.env.PAGES_DIR ?? whoamiPaths(defaultWhoamiRoot()).pagesDir;
 const PORT = Number(process.env.PORT ?? 3000);
 
 interface PageMeta {
