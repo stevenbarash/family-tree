@@ -5,6 +5,16 @@ import { buttonVariants } from '@/components/ui/button';
 import { CommandPalette } from '@/components/command-palette';
 import { SELF_RECORD } from '@/lib/env';
 import { getFamilyTree } from '@/lib/family';
+import {
+  getCachedList,
+  readTalkBody,
+  renderNotesSection,
+  resolveSlugForRecord,
+  UnknownRecordError,
+  NameEmptySlugError,
+  InvalidRecordIdError,
+} from '@/lib/server-services';
+import { toTalkSlug } from '@core/pages/slug.ts';
 import { CoverageSection } from '@/components/family/sections/coverage-section';
 import { DescendantsSection } from '@/components/family/sections/descendants-section';
 import { FamilySection } from '@/components/family/sections/family-section';
@@ -13,6 +23,7 @@ import { LineageSection } from '@/components/family/sections/lineage-section';
 import { PersonHeaderSection } from '@/components/family/sections/person-header-section';
 import { PlacesSection } from '@/components/family/sections/places-section';
 import { familyTreeHref } from '@/components/family/sections/shared';
+import { ResearchNotesPanel } from '@/components/research-notes/panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +54,23 @@ export default async function FamilyTreePage({ searchParams }: Props) {
   const isEmpty = familyCount === 0
     && ancestorCount === 0
     && view.descendants.total === 0;
+
+  let notesSlug: string | null = null;
+  try {
+    notesSlug = await resolveSlugForRecord(view.root.record);
+  } catch (err) {
+    if (
+      !(err instanceof UnknownRecordError)
+      && !(err instanceof NameEmptySlugError)
+      && !(err instanceof InvalidRecordIdError)
+    ) throw err;
+  }
+  const notesTree = notesSlug
+    ? await renderNotesSection(
+        await readTalkBody(toTalkSlug(notesSlug)),
+        (await getCachedList()).index,
+      )
+    : null;
 
   return (
     <main className="min-h-dvh bg-background">
@@ -86,6 +114,10 @@ export default async function FamilyTreePage({ searchParams }: Props) {
           <p className="font-display text-center text-sm text-muted-foreground">
             No related records yet.
           </p>
+        ) : null}
+
+        {notesSlug ? (
+          <ResearchNotesPanel slug={notesSlug} notes={notesTree} />
         ) : null}
       </div>
     </main>

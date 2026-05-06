@@ -1,3 +1,11 @@
+import type { Page, PageMeta } from '@core/pages/types.ts';
+import type { MigrateReport } from '@core/pages/migrate-runner.ts';
+import type { SyncResult } from '@core/gedcom/sync.ts';
+import type { ReciteEntry } from '@core/gedcom/types.ts';
+import type { SearchResult } from '@core/search/types.ts';
+
+export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult };
+
 export class ApiError extends Error {
   constructor(public status: number, public detail?: string) {
     super(`HTTP ${status}${detail ? `: ${detail}` : ''}`);
@@ -6,60 +14,6 @@ export class ApiError extends Error {
 export class NotFound extends ApiError {}
 export class BadRequest extends ApiError {}
 export class ServerError extends ApiError {}
-
-export interface PageMeta {
-  schemaVersion: number;
-  title: string;
-  owner: string;
-  editors: string[];
-  type: string;
-  aliases: string[];
-  categories: string[];
-  gedcom?: { file: string; record: string; snapshot: string };
-  portrait?: string;
-  created: string;
-  deletedAt?: string;
-}
-
-export interface Page {
-  slug: string;
-  meta: PageMeta;
-  body: string;
-}
-
-export type SyncResult =
-  | {
-      kind: 'wrote';
-      diff: { added: string[]; changed: string[]; removed: string[] };
-      commit: string;
-      snapshot: { hash: string; date: string; file: string; notes: string };
-    }
-  | {
-      kind: 'no-op';
-      reason: 'unchanged-hash';
-    };
-
-export interface ReciteEntry {
-  slug: string;
-  record: string;
-  citedSnapshot: string;
-  latestSnapshot: string;
-  changedFields: string[];
-}
-
-export interface SearchResult {
-  slug: string;
-  title: string;
-  type: string;
-}
-
-/** Mirror of core's MigrateReport — the wire format. */
-export interface MigrateReport {
-  walked: number;
-  migrated: { slug: string; from: number; to: number }[];
-  skipped: { slug: string; version: number }[];
-  failed: { slug: string; error: string }[];
-}
 
 export interface MigrateOptions {
   page?: string;
@@ -121,6 +75,15 @@ export class ApiClient {
    */
   async migrate(opts: MigrateOptions = {}): Promise<MigrateReport> {
     return this.json<MigrateReport>('POST', '/api/migrate', opts);
+  }
+
+  /**
+   * Append a dated research note to `<slug>.talk.md`. The slug is
+   * the article slug (server appends `.talk` itself). Returns the
+   * resolved talk slug and the date filed under.
+   */
+  async note(slug: string, note: string): Promise<{ slug: string; date: string }> {
+    return this.json('POST', `/api/notes/${slug}`, { note });
   }
 
   private async json<T>(method: string, path: string, body?: unknown): Promise<T> {

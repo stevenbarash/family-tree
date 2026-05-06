@@ -1,13 +1,19 @@
-import { createPageStore, type PageStore, type PageMetaSummary } from '@core/pages/index.ts';
+import type { ReactElement } from 'react';
+import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType } from '@core/pages/index.ts';
 import { buildSlugIndex, type SlugIndex } from './wikilinks';
-import { join } from 'node:path';
 import {
   createSearchIndex, loadSearchIndex, saveSearchIndex, rebuildSearchIndex,
   type SearchIndex, type SearchResult,
 } from '@core/search/module.ts';
 import { runMigrate, type MigrateRunnerOptions, type MigrateReport } from '@core/pages/migrate-runner.ts';
-import { WHOAMI_ROOT, PAGES_DIR, SEARCH_INDEX_FILE } from './env.ts';
+import { appendResearchNote, extractResearchNotesSection } from '@core/pages/research-notes.ts';
+import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
+import { CURRENT_SCHEMA_VERSION } from '@core/pages/migrations/index.ts';
+import { PageNotFoundError } from '@core/pages/store.ts';
+import { WHOAMI_ROOT, PAGES_DIR, GENEALOGY_DIR, SEARCH_INDEX_FILE, DEFAULT_AUTHOR } from './env.ts';
 import { isSearchIndexStale } from './search-staleness';
+import { getCachedDerivedRecords } from './family';
+import { renderMarkdown } from './render';
 
 let _pages: PageStore | null = null;
 
@@ -55,8 +61,8 @@ export async function getSearchIndex(): Promise<SearchIndex> {
       const loaded = await loadSearchIndex(_search!, SEARCH_INDEX_FILE);
       if (!loaded) {
         await rebuildSearchIndex(_search!, {
-          pagesDir: join(WHOAMI_ROOT, 'pages'),
-          genealogyDir: join(WHOAMI_ROOT, 'genealogy'),
+          pagesDir: PAGES_DIR,
+          genealogyDir: GENEALOGY_DIR,
         });
         await saveSearchIndex(_search!, SEARCH_INDEX_FILE);
       }
@@ -91,8 +97,8 @@ export async function rebuildSearchIndexFromDisk(): Promise<{ pages: number; ms:
   const t0 = Date.now();
   const idx = createSearchIndex();
   const pages = await rebuildSearchIndex(idx, {
-    pagesDir: join(WHOAMI_ROOT, 'pages'),
-    genealogyDir: join(WHOAMI_ROOT, 'genealogy'),
+    pagesDir: PAGES_DIR,
+    genealogyDir: GENEALOGY_DIR,
   });
   await saveSearchIndex(idx, SEARCH_INDEX_FILE);
   _search = idx;
@@ -129,6 +135,146 @@ export async function runMigrateOnDisk(
     runMigrate,
     rebuildSearchIndexFromDisk,
   );
+}
+
+export class InvalidRecordIdError extends Error {
+  constructor(public readonly recordId: string) {
+    super(`invalid record id: ${recordId}`);
+    this.name = 'InvalidRecordIdError';
+  }
+}
+
+export class UnknownRecordError extends Error {
+  constructor(public readonly recordId: string) {
+    super(`unknown record: ${recordId}`);
+    this.name = 'UnknownRecordError';
+  }
+}
+
+export class NameEmptySlugError extends Error {
+  constructor(public readonly name: string) {
+    super(`name produces empty slug: ${name}`);
+    this.name = 'NameEmptySlugError';
+  }
+}
+
+interface PageDefaultsOpts {
+  title: string;
+  type?: PageType;
+}
+
+export function defaultPageMeta(opts: PageDefaultsOpts): PageMeta {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    title: opts.title,
+    owner: DEFAULT_AUTHOR.name,
+    editors: [],
+    type: opts.type ?? 'meta',
+    aliases: [],
+    categories: [],
+    created: new Date().toISOString().slice(0, 10),
+  };
+}
+
+/**
+ * Resolve a GEDCOM record id to the article slug its notes hang under.
+ * Prefers an article tagged with the record; otherwise falls back to a
+ * name-derived slug, suffixed with the record id when that base slug
+ * is already taken.
+ */
+export async function resolveSlugForRecord(recordId: string): Promise<string> {
+  if (!/^I\d+$/.test(recordId)) throw new InvalidRecordIdError(recordId);
+  const { list } = await getCachedList();
+
+  let tagged: PageMetaSummary | undefined;
+  let nameConflict: PageMetaSummary | undefined;
+  let baseSlug = '';
+  // First pass: find the record-tagged article if it exists.
+  for (const p of list) {
+    if (p.isArchived) continue;
+    if (p.gedcomRecord === recordId) { tagged = p; break; }
+  }
+  if (tagged) return tagged.slug;
+
+  const derived = getCachedDerivedRecords().get(recordId);
+  if (!derived) throw new UnknownRecordError(recordId);
+  baseSlug = toSlug(derived.name);
+  if (!baseSlug) throw new NameEmptySlugError(derived.name);
+
+  for (const p of list) {
+    if (p.isArchived) continue;
+    if (p.slug === baseSlug) { nameConflict = p; break; }
+  }
+  return nameConflict ? `${baseSlug}-${recordId.toLowerCase()}` : baseSlug;
+}
+
+const noteLocks = new Map<string, Promise<unknown>>();
+
+async function withTalkLock<T>(talkSlug: string, fn: () => Promise<T>): Promise<T> {
+  const prev = noteLocks.get(talkSlug);
+  const next = (async () => {
+    if (prev) await prev.catch(() => undefined);
+    return fn();
+  })();
+  noteLocks.set(talkSlug, next);
+  try {
+    return await next;
+  } finally {
+    if (noteLocks.get(talkSlug) === next) noteLocks.delete(talkSlug);
+  }
+}
+
+/**
+ * Append a dated research note to `<slug>.talk.md`'s `## Research notes`
+ * section. Serialized per talk slug so concurrent writes can't drop
+ * each other's entries between read and write.
+ */
+export async function appendNoteOnDisk(slug: string, note: string): Promise<string> {
+  const talkSlug = toTalkSlug(slug);
+  const date = new Date().toISOString().slice(0, 10);
+  return withTalkLock(talkSlug, async () => {
+    const pages = getPageStore();
+    let body = '';
+    let meta: PageMeta;
+    try {
+      const page = await pages.read(talkSlug);
+      body = page.body;
+      meta = page.meta;
+    } catch (err) {
+      if (!(err instanceof PageNotFoundError)) throw err;
+      meta = defaultPageMeta({ title: `Talk: ${titleCaseFromSlug(talkSlug)}` });
+    }
+    const nextBody = appendResearchNote(body, date, note);
+    const nextPage: Page = { slug: talkSlug, meta, body: nextBody };
+    await pages.write(talkSlug, nextPage, DEFAULT_AUTHOR, `note: ${date}`);
+    invalidateListCache();
+    return date;
+  });
+}
+
+/**
+ * Read the talk-page body, returning '' when no talk page exists.
+ * Used by the article and tree pages so they can fire the read in
+ * parallel with the rest of their data fetching.
+ */
+export async function readTalkBody(talkSlug: string): Promise<string> {
+  try {
+    return (await getPageStore().read(talkSlug)).body;
+  } catch (err) {
+    if (err instanceof PageNotFoundError) return '';
+    throw err;
+  }
+}
+
+/** Render the `## Research notes` section of a talk-page body, or null
+ *  if the section is absent. */
+export async function renderNotesSection(
+  talkBody: string,
+  index: SlugIndex,
+): Promise<ReactElement | null> {
+  const section = extractResearchNotesSection(talkBody);
+  if (!section) return null;
+  return renderMarkdown(section, index);
 }
 
 export async function searchAndJoin(query: string, limit: number): Promise<SearchResult[]> {

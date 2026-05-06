@@ -224,7 +224,7 @@ function getCachedCoords(): ReturnType<typeof parseCoordsYaml> {
   return coords;
 }
 
-function getCachedDerivedRecords(): Map<string, DerivedRecord> {
+export function getCachedDerivedRecords(): Map<string, DerivedRecord> {
   const now = Date.now();
   let mtimeMs = 0;
   try {

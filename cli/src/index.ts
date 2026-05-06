@@ -3,12 +3,13 @@
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
 import { toSlug } from './slug.js';
-import { readFromFile, readFromStdin } from './body-input.js';
+import { readFromFile, readFromStdin, editInEditor } from './body-input.js';
 import { runRead } from './commands/read.js';
 import { runWrite } from './commands/write.js';
 import { runCreate } from './commands/create.js';
 import { runEdit } from './commands/edit.js';
 import { runDelete } from './commands/delete.js';
+import { runNote } from './commands/note.js';
 import { runSyncGedcom } from './commands/sync-gedcom.js';
 import { runRebuildSearch } from './commands/rebuild-search.js';
 import { runMigrate } from './commands/migrate.js';
@@ -31,6 +32,9 @@ Pages:
                                 requires --summary
   create <slug> [--file F]    Create a new page (refuses if exists)
   edit <slug>                 Edit a page in $EDITOR
+  note <slug> [text]          Append a dated research note to <slug>.talk
+                                body from positional, --file F, or --stdin;
+                                no body opens $EDITOR with an empty buffer
   delete <slug> --yes         Soft-delete a page (moves to _archived)
   search <query> [--limit N]  Search pages, body, aliases, categories,
                                 and GEDCOM-derived fields
@@ -115,6 +119,15 @@ async function resolveBody(args: Args): Promise<string> {
   return await readFromStdin();
 }
 
+async function resolveNoteBody(args: Args): Promise<string> {
+  if (typeof args.flags.file === 'string') return readFromFile(args.flags.file);
+  if (args.flags.stdin) return await readFromStdin();
+  if (args.positional[1] !== undefined) return args.positional[1];
+  // No body source. Open $EDITOR with an empty buffer (wai note -friendly).
+  if (process.stdin.isTTY) return editInEditor('');
+  return await readFromStdin();
+}
+
 const REMOVED = new Set([
   'upload', 'link', 'changes', 'category', 'source', 'task',
   'place', 'snapshot', 'export', 'import', 'talk', 'section', 'auth',
@@ -169,6 +182,12 @@ async function main(): Promise<number> {
       case 'delete': {
         const slug = toSlug(args.positional[0] ?? '');
         await runDelete({ slug, yes: !!args.flags.yes, client, write });
+        break;
+      }
+      case 'note': {
+        const slug = toSlug(args.positional[0] ?? '');
+        const note = await resolveNoteBody(args);
+        await runNote({ slug, note, client, write });
         break;
       }
       case 'sync-gedcom': {
