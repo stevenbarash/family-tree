@@ -3,8 +3,15 @@ import type { MigrateReport } from '@core/pages/migrate-runner.ts';
 import type { SyncResult } from '@core/gedcom/sync.ts';
 import type { ReciteEntry } from '@core/gedcom/types.ts';
 import type { SearchResult } from '@core/search/types.ts';
+import { parseResearchNotes, type Note } from '@core/pages/research-notes.ts';
 
 export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult };
+
+export type NoteSummary = Note;
+
+function parseNotesFromBody(body: string): Note[] {
+  return parseResearchNotes(body);
+}
 
 export class ApiError extends Error {
   constructor(public status: number, public detail?: string) {
@@ -78,12 +85,50 @@ export class ApiClient {
   }
 
   /**
-   * Append a dated research note to `<slug>.talk.md`. The slug is
-   * the article slug (server appends `.talk` itself). Returns the
-   * resolved talk slug and the date filed under.
+   * Append a dated research note to `<slug>.talk.md`. The slug is the
+   * article slug (server appends `.talk` itself). Returns the resolved
+   * talk slug, the date filed under, and the new note's id.
    */
-  async note(slug: string, note: string): Promise<{ slug: string; date: string }> {
-    return this.json('POST', `/api/notes/${slug}`, { note });
+  async note(
+    slug: string,
+    note: string,
+    opts: { by?: string; kind?: 'human' | 'agent' } = {},
+  ): Promise<{ slug: string; date: string; id: string }> {
+    return this.json('POST', `/api/notes/${slug}`, { note, ...opts });
+  }
+
+  async editNote(
+    slug: string,
+    id: string,
+    note: string,
+    opts: { by?: string } = {},
+  ): Promise<{ slug: string; id: string; editedAt: string }> {
+    return this.json('PATCH', `/api/notes/${slug}/${id}`, { note, ...opts });
+  }
+
+  async deleteNote(
+    slug: string,
+    id: string,
+    opts: { by?: string } = {},
+  ): Promise<{ slug: string; id: string; deletedAt: string }> {
+    return this.json('DELETE', `/api/notes/${slug}/${id}`, opts);
+  }
+
+  async restoreNote(
+    slug: string,
+    id: string,
+  ): Promise<{ slug: string; id: string }> {
+    return this.json('POST', `/api/notes/${slug}/${id}/restore`);
+  }
+
+  /**
+   * List all notes on a talk page (via the existing GET /api/pages and
+   * a client-side parse). Returns the structured Note[].
+   */
+  async listNotes(slug: string): Promise<NoteSummary[]> {
+    const talkSlug = slug.endsWith('.talk') ? slug : `${slug}.talk`;
+    const page = await this.read(talkSlug);
+    return parseNotesFromBody(page.body);
   }
 
   private async json<T>(method: string, path: string, body?: unknown): Promise<T> {
