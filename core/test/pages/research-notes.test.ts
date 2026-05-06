@@ -224,3 +224,33 @@ test('parseResearchNotes: legacy synthetic ids are unique per (date, position)',
     'n_legacy_2026-05-04_2',
   ]);
 });
+
+test('parseResearchNotes: malformed trailer without id is treated as legacy', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const [n] = parseResearchNotes(body);
+  assert.equal(n!.isLegacy, true);
+  assert.equal(n!.by, '(unknown)');
+  assert.match(n!.id, /^n_legacy_2026-05-06_0$/);
+});
+
+test('NoteNotFoundError carries noteId and standard name', () => {
+  const e = new NoteNotFoundError('n_abc');
+  assert.equal(e.name, 'NoteNotFoundError');
+  assert.equal(e.noteId, 'n_abc');
+  assert.match(e.message, /n_abc/);
+});
+
+test('NoteDeletedError carries noteId and standard name', () => {
+  const e = new NoteDeletedError('n_abc');
+  assert.equal(e.name, 'NoteDeletedError');
+  assert.equal(e.noteId, 'n_abc');
+});
+
+test('NoteAlreadyDeletedError carries noteId and standard name', () => {
+  const e = new NoteAlreadyDeletedError('n_abc');
+  assert.equal(e.name, 'NoteAlreadyDeletedError');
+  assert.equal(e.noteId, 'n_abc');
+});

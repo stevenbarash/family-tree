@@ -129,10 +129,10 @@ export function parseResearchNotes(body: string): Note[] {
     }
 
     const text = blockLines.join('\n').replace(/\s+$/, '');
-    if (trailerAttrs) {
-      const attrs = parseTrailerAttrs(trailerAttrs);
+    const attrs = trailerAttrs ? parseTrailerAttrs(trailerAttrs) : null;
+    if (attrs?.id) {
       notes.push({
-        id: attrs.id ?? `n_legacy_${currentDate}_${positionInDay}`,
+        id: attrs.id,
         date: currentDate,
         text,
         by: attrs.by ?? '(unknown)',
