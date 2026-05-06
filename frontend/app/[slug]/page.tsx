@@ -4,7 +4,7 @@ import {
   getPageStore,
   getCachedList,
   readTalkBody,
-  renderNotesSection,
+  buildNotesView,
 } from '@/lib/server-services';
 import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
@@ -54,9 +54,9 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
     talkBodyPromise,
   ]);
 
-  const [tree, notesTree] = await Promise.all([
+  const [tree, notes] = await Promise.all([
     renderMarkdown(page.body, index, { derived }),
-    renderNotesSection(talkBody, index),
+    buildNotesView(talkBody, index),
   ]);
 
   return (
@@ -85,7 +85,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         {tree}
       </article>
       {isTalkSlug(slug) ? null : (
-        <ResearchNotesPanel slug={slug} notes={notesTree} />
+        <ResearchNotesPanel slug={slug} notes={notes} />
       )}
     </main>
   );

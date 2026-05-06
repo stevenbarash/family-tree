@@ -1,15 +1,21 @@
-import type { ReactElement } from 'react';
 import { toTalkSlug } from '@core/pages/slug.ts';
 import { AddNoteForm } from './add-note-form';
+import { NoteItem, type NoteItemView } from './note-item';
 
 interface Props {
   slug: string;
-  /** Rendered notes section (or null if the talk page has no section yet). */
-  notes: ReactElement | null;
+  notes: NoteItemView[];
 }
 
 export function ResearchNotesPanel({ slug, notes }: Props) {
   const talkSlug = toTalkSlug(slug);
+  // Group by date heading, preserving the parser's newest-first order.
+  const byDate: { date: string; items: NoteItemView[] }[] = [];
+  for (const n of notes) {
+    const last = byDate[byDate.length - 1];
+    if (last && last.date === n.date) last.items.push(n);
+    else byDate.push({ date: n.date, items: [n] });
+  }
 
   return (
     <section
@@ -32,14 +38,23 @@ export function ResearchNotesPanel({ slug, notes }: Props) {
         <AddNoteForm slug={slug} />
       </div>
 
-      {notes ? (
-        <div className="prose prose-stone dark:prose-invert max-w-none prose-h3:mt-6 prose-h3:text-base prose-h3:font-semibold prose-h3:text-muted-foreground prose-li:my-0.5 prose-ul:my-2">
-          {notes}
-        </div>
-      ) : (
+      {byDate.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No notes yet. The first one you save creates the section in <code className="text-xs">{talkSlug}</code>.
         </p>
+      ) : (
+        <div className="space-y-6">
+          {byDate.map((day) => (
+            <div key={day.date}>
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{day.date}</h3>
+              <ul className="space-y-1 text-sm">
+                {day.items.map((n) => (
+                  <NoteItem key={n.id} slug={slug} note={n} />
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
       )}
     </section>
   );

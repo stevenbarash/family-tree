@@ -8,7 +8,7 @@ import { getFamilyTree } from '@/lib/family';
 import {
   getCachedList,
   readTalkBody,
-  renderNotesSection,
+  buildNotesView,
   resolveSlugForRecord,
   UnknownRecordError,
   NameEmptySlugError,
@@ -65,12 +65,12 @@ export default async function FamilyTreePage({ searchParams }: Props) {
       && !(err instanceof InvalidRecordIdError)
     ) throw err;
   }
-  const notesTree = notesSlug
-    ? await renderNotesSection(
+  const notes = notesSlug
+    ? await buildNotesView(
         await readTalkBody(toTalkSlug(notesSlug)),
         (await getCachedList()).index,
       )
-    : null;
+    : [];
 
   return (
     <main className="min-h-dvh bg-background">
@@ -117,7 +117,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
         ) : null}
 
         {notesSlug ? (
-          <ResearchNotesPanel slug={notesSlug} notes={notesTree} />
+          <ResearchNotesPanel slug={notesSlug} notes={notes} />
         ) : null}
       </div>
     </main>
