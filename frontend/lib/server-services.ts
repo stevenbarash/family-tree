@@ -7,7 +7,11 @@ import {
   type SearchIndex, type SearchResult,
 } from '@core/search/module.ts';
 import { runMigrate, type MigrateRunnerOptions, type MigrateReport } from '@core/pages/migrate-runner.ts';
-import { appendResearchNote, extractResearchNotesSection } from '@core/pages/research-notes.ts';
+import {
+  appendResearchNote,
+  extractResearchNotesSection,
+  parseResearchNotes,
+} from '@core/pages/research-notes.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
 import { CURRENT_SCHEMA_VERSION } from '@core/pages/migrations/index.ts';
 import { PageNotFoundError } from '@core/pages/store.ts';
@@ -249,14 +253,30 @@ async function withTalkLock<T>(talkSlug: string, fn: () => Promise<T>): Promise<
   }
 }
 
+export interface AppendNoteInput {
+  text: string;
+  by: string;
+  kind: 'human' | 'agent';
+}
+
+export interface AppendNoteResult {
+  date: string;
+  id: string;
+}
+
 /**
  * Append a dated research note to `<slug>.talk.md`'s `## Research notes`
  * section. Serialized per talk slug so concurrent writes can't drop
  * each other's entries between read and write.
  */
-export async function appendNoteOnDisk(slug: string, note: string): Promise<string> {
+export async function appendNoteOnDisk(
+  slug: string,
+  input: AppendNoteInput,
+): Promise<AppendNoteResult> {
   const talkSlug = toTalkSlug(slug);
-  const date = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const createdAt = now.toISOString();
+  const date = createdAt.slice(0, 10);
   return withTalkLock(talkSlug, async () => {
     const pages = getPageStore();
     let body = '';
@@ -269,12 +289,28 @@ export async function appendNoteOnDisk(slug: string, note: string): Promise<stri
       if (!(err instanceof PageNotFoundError)) throw err;
       meta = defaultPageMeta({ title: `Talk: ${titleCaseFromSlug(talkSlug)}` });
     }
-    const nextBody = appendResearchNote(body, date, note);
+    const id = uniqueIdForBody(body);
+    const nextBody = appendResearchNote(body, {
+      id,
+      text: input.text,
+      by: input.by,
+      kind: input.kind,
+      createdAt,
+    }, { date });
     const nextPage: Page = { slug: talkSlug, meta, body: nextBody };
     await pages.write(talkSlug, nextPage, DEFAULT_AUTHOR, `note: ${date}`);
     invalidateListCache();
-    return date;
+    return { date, id };
   });
+}
+
+function uniqueIdForBody(body: string): string {
+  const existing = new Set(parseResearchNotes(body).map((n) => n.id));
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const id = generateNoteId();
+    if (!existing.has(id)) return id;
+  }
+  throw new Error('failed to generate unique note id after 10 attempts');
 }
 
 /**
