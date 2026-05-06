@@ -7,12 +7,19 @@ import { DEFAULT_AUTHOR } from '@/lib/env';
 
 const NoteBody = z.object({
   note: z.string().min(1).max(5000),
+  by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
+  kind: z.enum(['human', 'agent']).optional(),
 });
 
 /**
- * POST /api/notes/<slug> — append a dated research note to the
- * `## Research notes` section of `<slug>.talk.md`. Pass `<slug>` as
- * the article slug; the `.talk` form is also accepted.
+ * POST /api/notes/<slug> — append a dated research note to
+ * `<slug>.talk.md`. The slug is the article slug; `.talk` form is also
+ * accepted. Body fields:
+ *   - note (required): bullet prose
+ *   - by (optional): author handle. Falls back to DEFAULT_AUTHOR.name.
+ *   - kind (optional): "human" (default) or "agent"
+ * Returns the resolved talk slug, the date filed under, and the new
+ * note's stable id.
  */
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -23,12 +30,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   if (!parsed.success) return errorResponse('bad-request', 400);
 
   try {
-    const result = await appendNoteOnDisk(slug, {
+    const { date, id } = await appendNoteOnDisk(slug, {
       text: parsed.data.note,
-      by: DEFAULT_AUTHOR.name,    // Task 11 will read from request body
-      kind: 'human',
+      by: parsed.data.by ?? DEFAULT_AUTHOR.name,
+      kind: parsed.data.kind ?? 'human',
     });
-    return NextResponse.json({ slug: toTalkSlug(slug), date: result.date, id: result.id });
+    return NextResponse.json({ slug: toTalkSlug(slug), date, id });
   } catch (err) {
     return routeError(err, slug, 'note-failed');
   }
