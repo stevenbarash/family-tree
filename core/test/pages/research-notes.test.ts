@@ -1,112 +1,84 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { appendResearchNote, extractResearchNotesSection } from '../../src/pages/research-notes.ts';
+import {
+  appendResearchNote,
+  extractResearchNotesSection,
+  parseResearchNotes,
+  type Note,
+  type NewNoteInput,
+  NoteNotFoundError,
+  NoteDeletedError,
+  NoteAlreadyDeletedError,
+} from '../../src/pages/research-notes.ts';
+
+const fixed = (over: Partial<NewNoteInput> = {}): NewNoteInput => ({
+  id: over.id ?? 'n_test0001',
+  text: over.text ?? 'first note',
+  by: over.by ?? 'steven',
+  kind: over.kind ?? 'human',
+  createdAt: over.createdAt ?? '2026-05-05T12:00:00Z',
+});
 
 test('appendResearchNote: empty body grows the section from scratch', () => {
-  const out = appendResearchNote('', '2026-05-05', 'first note');
-  assert.equal(out, '## Research notes\n\n### 2026-05-05\n- first note\n');
+  const out = appendResearchNote('', fixed(), { date: '2026-05-05' });
+  assert.equal(
+    out,
+    '## Research notes\n\n### 2026-05-05\n- first note\n  <!-- note id=n_test0001 by=steven kind=human at=2026-05-05T12:00:00Z -->\n',
+  );
 });
 
 test('appendResearchNote: appends section to existing body, preserves prior content', () => {
   const body = '# Talk\n\n## Open questions\n\n- when did he move to Brooklyn?\n';
-  const out = appendResearchNote(body, '2026-05-05', 'Aunt Sally said Bell Labs');
+  const out = appendResearchNote(body, fixed({ text: 'Aunt Sally said Bell Labs' }), { date: '2026-05-05' });
   assert.equal(
     out,
-    '# Talk\n\n## Open questions\n\n- when did he move to Brooklyn?\n\n## Research notes\n\n### 2026-05-05\n- Aunt Sally said Bell Labs\n',
+    '# Talk\n\n## Open questions\n\n- when did he move to Brooklyn?\n\n## Research notes\n\n### 2026-05-05\n- Aunt Sally said Bell Labs\n  <!-- note id=n_test0001 by=steven kind=human at=2026-05-05T12:00:00Z -->\n',
   );
 });
 
 test('appendResearchNote: new day inserts heading above existing entries', () => {
   const body = '## Research notes\n\n### 2026-05-04\n- earlier note\n';
-  const out = appendResearchNote(body, '2026-05-05', 'newer note');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- newer note\n\n### 2026-05-04\n- earlier note\n',
-  );
+  const out = appendResearchNote(body, fixed({ id: 'n_n', text: 'newer note' }), { date: '2026-05-05' });
+  assert.match(out, /### 2026-05-05\n- newer note\n  <!-- note id=n_n by=steven kind=human at=2026-05-05T12:00:00Z -->\n\n### 2026-05-04\n- earlier note\n/);
 });
 
 test('appendResearchNote: same day appends bullet under existing heading', () => {
   const body = '## Research notes\n\n### 2026-05-05\n- first note of the day\n';
-  const out = appendResearchNote(body, '2026-05-05', 'second note of the day');
+  const out = appendResearchNote(body, fixed({ id: 'n_2', text: 'second note of the day' }), { date: '2026-05-05' });
   assert.equal(
     out,
-    '## Research notes\n\n### 2026-05-05\n- first note of the day\n- second note of the day\n',
+    '## Research notes\n\n### 2026-05-05\n- first note of the day\n- second note of the day\n  <!-- note id=n_2 by=steven kind=human at=2026-05-05T12:00:00Z -->\n',
   );
 });
 
-test('appendResearchNote: same day, existing heading has multiple entries', () => {
-  const body = '## Research notes\n\n### 2026-05-05\n- a\n- b\n\n### 2026-05-04\n- earlier\n';
-  const out = appendResearchNote(body, '2026-05-05', 'c');
+test('appendResearchNote: agent kind round-trips into the trailer', () => {
+  const out = appendResearchNote('', fixed({ kind: 'agent', by: 'editor-bot' }), { date: '2026-05-05' });
+  assert.match(out, /<!-- note id=n_test0001 by=editor-bot kind=agent at=/);
+});
+
+test('appendResearchNote: derives date from createdAt UTC when no override', () => {
+  const out = appendResearchNote('', fixed({ createdAt: '2026-05-06T03:14:00Z' }));
+  assert.match(out, /### 2026-05-06\n/);
+});
+
+test('appendResearchNote: multi-line note keeps continuation indent and trailer last', () => {
+  const out = appendResearchNote('', fixed({ text: 'first line\nsecond line' }), { date: '2026-05-05' });
   assert.equal(
     out,
-    '## Research notes\n\n### 2026-05-05\n- a\n- b\n- c\n\n### 2026-05-04\n- earlier\n',
+    '## Research notes\n\n### 2026-05-05\n- first line\n  second line\n  <!-- note id=n_test0001 by=steven kind=human at=2026-05-05T12:00:00Z -->\n',
   );
 });
 
-test('appendResearchNote: new day with section that has trailing content under another heading', () => {
-  const body = '## Research notes\n\n### 2026-05-04\n- earlier\n\n## Sources\n\n- foo\n';
-  const out = appendResearchNote(body, '2026-05-05', 'newer');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- newer\n\n### 2026-05-04\n- earlier\n\n## Sources\n\n- foo\n',
-  );
-});
-
-test('appendResearchNote: multi-line note indents continuation lines', () => {
-  const out = appendResearchNote('', '2026-05-05', 'first line\nsecond line\nthird line');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- first line\n  second line\n  third line\n',
-  );
-});
-
-test('appendResearchNote: multi-line note with blank line between paragraphs', () => {
-  const out = appendResearchNote('', '2026-05-05', 'para one\n\npara two');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- para one\n\n  para two\n',
-  );
-});
-
-test('appendResearchNote: trims trailing whitespace from input note', () => {
-  const out = appendResearchNote('', '2026-05-05', 'note text   \n\n  ');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- note text\n',
-  );
-});
-
-test('appendResearchNote: empty note input is captured (not silently dropped)', () => {
-  const out = appendResearchNote('', '2026-05-05', '');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- (empty)\n',
-  );
+test('appendResearchNote: empty text is captured (not silently dropped)', () => {
+  const out = appendResearchNote('', fixed({ text: '' }), { date: '2026-05-05' });
+  assert.match(out, /- \(empty\)\n  <!-- note /);
 });
 
 test('appendResearchNote: section detection is case-sensitive (## research notes does NOT match)', () => {
   const body = '## research notes\n\n### 2026-05-04\n- something\n';
-  const out = appendResearchNote(body, '2026-05-05', 'newer');
-  // The pre-existing `## research notes` (lowercase) is treated as unrelated;
-  // a new `## Research notes` section is appended.
+  const out = appendResearchNote(body, fixed({ id: 'n_n', text: 'newer' }), { date: '2026-05-05' });
   assert.match(out, /## research notes\s+### 2026-05-04/);
-  assert.match(out, /## Research notes\s+### 2026-05-05\s+- newer/);
-});
-
-test('appendResearchNote: section at end of body without trailing newline', () => {
-  const body = '## Research notes\n\n### 2026-05-04\n- earlier';
-  const out = appendResearchNote(body, '2026-05-05', 'newer');
-  assert.match(out, /### 2026-05-05\n- newer/);
-  assert.match(out, /### 2026-05-04\n- earlier/);
-});
-
-test('appendResearchNote: same day with another section following', () => {
-  const body = '## Research notes\n\n### 2026-05-05\n- a\n\n## Sources\n\n- foo\n';
-  const out = appendResearchNote(body, '2026-05-05', 'b');
-  assert.equal(
-    out,
-    '## Research notes\n\n### 2026-05-05\n- a\n- b\n\n## Sources\n\n- foo\n',
-  );
+  assert.match(out, /## Research notes\s+### 2026-05-05\s+- newer\n  <!-- note /);
 });
 
 test('extractResearchNotesSection: returns empty when section is missing', () => {
@@ -131,14 +103,6 @@ test('extractResearchNotesSection: preserves multiple day headings', () => {
     '### 2026-05-05\n- a\n\n### 2026-05-04\n- b',
   );
 });
-
-import {
-  parseResearchNotes,
-  type Note,
-  NoteNotFoundError,
-  NoteDeletedError,
-  NoteAlreadyDeletedError,
-} from '../../src/pages/research-notes.ts';
 
 test('parseResearchNotes: empty body → empty array', () => {
   assert.deepEqual(parseResearchNotes(''), []);

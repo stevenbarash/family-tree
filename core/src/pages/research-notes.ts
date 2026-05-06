@@ -175,71 +175,76 @@ function parseTrailerAttrs(s: string): Record<string, string> {
   return out;
 }
 
+export interface AppendOptions {
+  /** Day heading to file under (YYYY-MM-DD). Defaults to UTC date of input.createdAt. */
+  date?: string;
+}
+
 /**
- * Append a single research note to the `## Research notes` section
- * of a talk-page body, preserving day-grouped chronology (newest day
- * first). Pure: returns a new body string, never mutates input.
- *
- * - If the section is missing, append it at the end of the body.
- * - If the section exists but has no entry for `date`, insert a new
- *   `### date` heading at the top of the section.
- * - If a `### date` heading already exists, append a new bullet to
- *   the end of that heading's bullet list.
+ * Append a single research note to the `## Research notes` section,
+ * newest-day-first chronology preserved. Pure: returns a new body string.
  */
-export function appendResearchNote(body: string, date: string, note: string): string {
-  const bullet = formatBullet(note);
+export function appendResearchNote(
+  body: string,
+  input: NewNoteInput,
+  options: AppendOptions = {},
+): string {
+  const date = options.date ?? input.createdAt.slice(0, 10);
+  const block = formatBulletBlock(input);
   const lines = body.split('\n');
 
-  const sectionIdx = lines.findIndex((l) => /^## Research notes\s*$/.test(l));
+  const sectionIdx = lines.findIndex((l) => SECTION_RE.test(l));
 
   if (sectionIdx === -1) {
     const trimmed = body.replace(/\s+$/, '');
     const sep = trimmed.length === 0 ? '' : '\n\n';
-    return `${trimmed}${sep}## Research notes\n\n### ${date}\n${bullet}\n`;
+    return `${trimmed}${sep}## Research notes\n\n### ${date}\n${block}\n`;
   }
 
-  // Section spans [sectionIdx+1, endIdx) — up to the next `## ` heading or EOF.
   let endIdx = lines.length;
   for (let i = sectionIdx + 1; i < lines.length; i++) {
-    if (/^## /.test(lines[i]!)) {
-      endIdx = i;
-      break;
-    }
+    if (/^## /.test(lines[i]!)) { endIdx = i; break; }
   }
 
   const todayHeading = `### ${date}`;
   let todayIdx = -1;
   for (let i = sectionIdx + 1; i < endIdx; i++) {
-    if (lines[i] === todayHeading) {
-      todayIdx = i;
-      break;
-    }
+    if (lines[i] === todayHeading) { todayIdx = i; break; }
   }
 
   if (todayIdx !== -1) {
     let blockEnd = endIdx;
     for (let i = todayIdx + 1; i < endIdx; i++) {
-      if (/^### /.test(lines[i]!)) {
-        blockEnd = i;
-        break;
-      }
+      if (/^### /.test(lines[i]!)) { blockEnd = i; break; }
     }
     let insertAt = blockEnd;
     while (insertAt > todayIdx + 1 && lines[insertAt - 1] === '') insertAt--;
-    lines.splice(insertAt, 0, ...bullet.split('\n'));
+    lines.splice(insertAt, 0, ...block.split('\n'));
     return lines.join('\n');
   }
 
-  // New day: insert above existing entries, just under the section heading.
   let insertAt = sectionIdx + 1;
   while (insertAt < endIdx && lines[insertAt] === '') insertAt++;
 
-  const block: string[] = [todayHeading, ...bullet.split('\n')];
-  if (insertAt < endIdx && lines[insertAt] !== '') block.push('');
-  if (lines[sectionIdx + 1] !== '') block.unshift('');
-
-  lines.splice(insertAt, 0, ...block);
+  const inserted: string[] = [todayHeading, ...block.split('\n')];
+  if (insertAt < endIdx && lines[insertAt] !== '') inserted.push('');
+  if (lines[sectionIdx + 1] !== '') inserted.unshift('');
+  lines.splice(insertAt, 0, ...inserted);
   return lines.join('\n');
+}
+
+function formatBulletBlock(input: NewNoteInput): string {
+  const trimmed = input.text.replace(/\s+$/, '').replace(/^\n+/, '');
+  const head = trimmed === '' ? '(empty)' : trimmed.split('\n')[0]!;
+  const tail = trimmed === ''
+    ? []
+    : trimmed.split('\n').slice(1).map((l) => (l.length === 0 ? '' : `  ${l}`));
+  const trailer = `  ${formatTrailer(input)}`;
+  return [`- ${head}`, ...tail, trailer].join('\n');
+}
+
+function formatTrailer(input: NewNoteInput): string {
+  return `<!-- note id=${input.id} by=${input.by} kind=${input.kind} at=${input.createdAt} -->`;
 }
 
 /**
@@ -264,11 +269,3 @@ export function extractResearchNotesSection(body: string): string {
   return lines.slice(bodyStart, end).join('\n').replace(/\s+$/, '');
 }
 
-function formatBullet(note: string): string {
-  const trimmed = note.replace(/\s+$/, '').replace(/^\n+/, '');
-  if (trimmed === '') return '- (empty)';
-  const noteLines = trimmed.split('\n');
-  const head = noteLines[0]!;
-  const tail = noteLines.slice(1).map((l) => (l.length === 0 ? '' : `  ${l}`));
-  return [`- ${head}`, ...tail].join('\n');
-}
