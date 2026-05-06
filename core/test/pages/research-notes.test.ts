@@ -218,3 +218,33 @@ test('NoteAlreadyDeletedError carries noteId and standard name', () => {
   assert.equal(e.name, 'NoteAlreadyDeletedError');
   assert.equal(e.noteId, 'n_abc');
 });
+
+test('appendResearchNote: same day with another section following keeps the next section intact', () => {
+  const body = '## Research notes\n\n### 2026-05-05\n- a\n  <!-- note id=n_a by=steven kind=human at=2026-05-05T12:00:00Z -->\n\n## Sources\n\n- foo\n';
+  const out = appendResearchNote(body, fixed({ id: 'n_b', text: 'b' }), { date: '2026-05-05' });
+  assert.match(out, /### 2026-05-05\n- a\n  <!-- note id=n_a by=steven kind=human at=2026-05-05T12:00:00Z -->\n- b\n  <!-- note id=n_b by=steven kind=human at=2026-05-05T12:00:00Z -->\n\n## Sources\n\n- foo\n/);
+});
+
+test('appendResearchNote: same day with multiple existing entries — new bullet lands after the last one', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-05\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-05T12:00:00Z -->\n' +
+    '- b\n' +
+    '  <!-- note id=n_b by=steven kind=human at=2026-05-05T12:00:00Z -->\n';
+  const out = appendResearchNote(body, fixed({ id: 'n_c', text: 'c' }), { date: '2026-05-05' });
+  assert.match(out, /- b\n  <!-- note id=n_b by=steven kind=human at=2026-05-05T12:00:00Z -->\n- c\n  <!-- note id=n_c by=steven kind=human at=2026-05-05T12:00:00Z -->\n$/);
+});
+
+test('appendResearchNote: section at end of body without trailing newline', () => {
+  const body = '## Research notes\n\n### 2026-05-04\n- earlier';
+  const out = appendResearchNote(body, fixed({ id: 'n_n', text: 'newer' }), { date: '2026-05-05' });
+  assert.match(out, /### 2026-05-05\n- newer\n  <!-- note id=n_n by=steven kind=human at=2026-05-05T12:00:00Z -->/);
+  assert.match(out, /### 2026-05-04\n- earlier/);
+});
+
+test('appendResearchNote: multi-line note with blank paragraph round-trips through parse', () => {
+  const out = appendResearchNote('', fixed({ text: 'para one\n\npara two' }), { date: '2026-05-05' });
+  const [n] = parseResearchNotes(out);
+  assert.equal(n!.text, 'para one\n\npara two');
+});
