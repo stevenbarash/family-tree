@@ -413,6 +413,49 @@ export async function renderNotesSection(
   return renderMarkdown(section, index);
 }
 
+export interface NoteView {
+  id: string;
+  date: string;
+  by: string;
+  kind: 'human' | 'agent';
+  createdAt: string | null;
+  editedAt: string | null;
+  editedBy: string | null;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  isLegacy: boolean;
+  /** Raw bullet prose, preserved so the edit form has source text. */
+  text: string;
+  /** Pre-rendered prose (wikilinks resolved). */
+  rendered: ReactElement;
+}
+
+export async function buildNotesView(
+  talkBody: string,
+  index: SlugIndex,
+): Promise<NoteView[]> {
+  const notes = parseResearchNotes(talkBody);
+  const views: NoteView[] = [];
+  for (const n of notes) {
+    const rendered = await renderMarkdown(n.text, index);
+    views.push({
+      id: n.id,
+      date: n.date,
+      by: n.by,
+      kind: n.kind,
+      createdAt: n.createdAt,
+      editedAt: n.editedAt,
+      editedBy: n.editedBy,
+      deletedAt: n.deletedAt,
+      deletedBy: n.deletedBy,
+      isLegacy: n.isLegacy,
+      text: n.text,
+      rendered,
+    });
+  }
+  return views;
+}
+
 export async function searchAndJoin(query: string, limit: number): Promise<SearchResult[]> {
   if (!query.trim()) return [];
   const idx = await getSearchIndex();
