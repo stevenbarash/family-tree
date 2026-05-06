@@ -11,6 +11,10 @@ import {
   appendResearchNote,
   extractResearchNotesSection,
   parseResearchNotes,
+  editResearchNote,
+  softDeleteResearchNote,
+  restoreResearchNote,
+  NoteNotFoundError,
 } from '@core/pages/research-notes.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
 import { CURRENT_SCHEMA_VERSION } from '@core/pages/migrations/index.ts';
@@ -311,6 +315,77 @@ function uniqueIdForBody(body: string): string {
     if (!existing.has(id)) return id;
   }
   throw new Error('failed to generate unique note id after 10 attempts');
+}
+
+export async function editNoteOnDisk(
+  slug: string,
+  id: string,
+  newText: string,
+  editor: string,
+): Promise<{ id: string; editedAt: string }> {
+  const talkSlug = toTalkSlug(slug);
+  const editedAt = new Date().toISOString();
+  return withTalkLock(talkSlug, async () => {
+    const pages = getPageStore();
+    let page;
+    try {
+      page = await pages.read(talkSlug);
+    } catch (err) {
+      if (err instanceof PageNotFoundError) throw new NoteNotFoundError(id);
+      throw err;
+    }
+    const nextBody = editResearchNote(page.body, id, newText, editor, editedAt);
+    const next: Page = { slug: talkSlug, meta: page.meta, body: nextBody };
+    await pages.write(talkSlug, next, DEFAULT_AUTHOR, `note: edit ${id.slice(0, 10)}`);
+    invalidateListCache();
+    return { id, editedAt };
+  });
+}
+
+export async function softDeleteNoteOnDisk(
+  slug: string,
+  id: string,
+  deleter: string,
+): Promise<{ id: string; deletedAt: string }> {
+  const talkSlug = toTalkSlug(slug);
+  const deletedAt = new Date().toISOString();
+  return withTalkLock(talkSlug, async () => {
+    const pages = getPageStore();
+    let page;
+    try {
+      page = await pages.read(talkSlug);
+    } catch (err) {
+      if (err instanceof PageNotFoundError) throw new NoteNotFoundError(id);
+      throw err;
+    }
+    const nextBody = softDeleteResearchNote(page.body, id, deleter, deletedAt);
+    const next: Page = { slug: talkSlug, meta: page.meta, body: nextBody };
+    await pages.write(talkSlug, next, DEFAULT_AUTHOR, `note: retract ${id.slice(0, 10)}`);
+    invalidateListCache();
+    return { id, deletedAt };
+  });
+}
+
+export async function restoreNoteOnDisk(
+  slug: string,
+  id: string,
+): Promise<{ id: string }> {
+  const talkSlug = toTalkSlug(slug);
+  return withTalkLock(talkSlug, async () => {
+    const pages = getPageStore();
+    let page;
+    try {
+      page = await pages.read(talkSlug);
+    } catch (err) {
+      if (err instanceof PageNotFoundError) throw new NoteNotFoundError(id);
+      throw err;
+    }
+    const nextBody = restoreResearchNote(page.body, id);
+    const next: Page = { slug: talkSlug, meta: page.meta, body: nextBody };
+    await pages.write(talkSlug, next, DEFAULT_AUTHOR, `note: restore ${id.slice(0, 10)}`);
+    invalidateListCache();
+    return { id };
+  });
 }
 
 /**
