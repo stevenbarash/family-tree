@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { PageNotFoundError, StaleSchemaVersionError } from '@core/pages/store.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
 import {
@@ -6,6 +7,11 @@ import {
   NoteDeletedError,
   NoteAlreadyDeletedError,
 } from '@core/pages/research-notes.ts';
+
+export const NOTE_ID_RE = /^n_[0-9a-z]{8}$/;
+
+/** Author handle validator; shared by every notes endpoint. */
+export const ByField = z.string().regex(/^[A-Za-z0-9._-]+$/).max(64);
 
 type ErrorBody = { error: string; [k: string]: unknown };
 

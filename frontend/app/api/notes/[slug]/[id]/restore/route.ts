@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
 import { restoreNoteOnDisk } from '@/lib/server-services';
-import { errorResponse, routeError } from '@/lib/api-errors';
+import { errorResponse, routeError, NOTE_ID_RE, ByField } from '@/lib/api-errors';
 import { DEFAULT_AUTHOR } from '@/lib/env';
 
-const NOTE_ID_RE = /^n_[0-9a-z]{8}$/;
-
-const RestoreBody = z.object({
-  by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
-}).optional();
+const RestoreBody = z.object({ by: ByField.optional() }).optional();
 
 /**
- * POST /api/notes/<slug>/<id>/restore — clear the soft-delete flag on a
- * retracted note and record the restore as `restoredAt`/`restoredBy`
- * on the trailer so the event is preserved in git.
+ * Records the restore as `restoredAt`/`restoredBy` on the trailer so
+ * the event is preserved in git.
  */
 export async function POST(
   req: NextRequest,

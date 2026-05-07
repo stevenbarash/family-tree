@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -27,24 +27,17 @@ interface Props {
 }
 
 type Fetched =
-  | { state: 'idle' }
   | { state: 'loading' }
   | { state: 'error'; message: string }
   | { state: 'loaded'; events: NoteEvent[] };
 
-const KIND_LABEL: Record<NoteEventKind, string> = {
-  created: 'created',
-  edited: 'edited',
-  retracted: 'retracted',
-  restored: 'restored',
-};
-
 export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
-  const [fetched, setFetched] = useState<Fetched>({ state: 'idle' });
+  const [fetched, setFetched] = useState<Fetched>({ state: 'loading' });
+  // Bumped by Retry to force a refetch without conflating with `fetched`.
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     if (!open) return;
-    if (fetched.state === 'loaded') return;
     let cancelled = false;
     setFetched({ state: 'loading' });
     fetch(`/api/notes/${encodeURIComponent(slug)}/${noteId}/history`)
@@ -65,10 +58,8 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
         if (cancelled) return;
         setFetched({ state: 'error', message: err?.message ?? 'request failed' });
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, slug, noteId, fetched.state]);
+    return () => { cancelled = true; };
+  }, [open, slug, noteId, nonce]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,51 +67,54 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Note history</DialogTitle>
         </DialogHeader>
-        {fetched.state === 'loading' || fetched.state === 'idle' ? (
-          <p className="text-sm text-muted-foreground">Loading history…</p>
-        ) : fetched.state === 'error' ? (
-          <div className="space-y-2">
-            <p className="text-sm text-destructive">{fetched.message}</p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setFetched({ state: 'idle' })}
-            >
-              Retry
-            </Button>
-          </div>
-        ) : fetched.events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No history for this note.</p>
-        ) : (
-          <ol className="space-y-3">
-            {fetched.events.map((e, i) => (
-              <li key={i} className="border-l-2 border-border pl-3">
-                <div className="flex items-baseline gap-2 text-sm">
-                  <span className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-                    {KIND_LABEL[e.kind]}
-                  </span>
-                  <span className="text-foreground" title={e.at ?? undefined}>
-                    {e.at ? formatRelative(e.at) : 'unknown time'}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {e.by ? `by ${e.by}` : <em>(unknown)</em>}
-                  </span>
-                </div>
-                {e.kind === 'edited' && typeof e.prevText === 'string' ? (
-                  <details className="mt-1">
-                    <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                      Show snapshot
-                    </summary>
-                    <pre className="mt-1 whitespace-pre-wrap rounded-sm bg-muted/50 p-2 font-mono text-xs">
-                      {e.prevText}
-                    </pre>
-                  </details>
-                ) : null}
-              </li>
-            ))}
-          </ol>
-        )}
+        {renderBody(fetched, () => setNonce((n) => n + 1))}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function renderBody(fetched: Fetched, retry: () => void): ReactNode {
+  if (fetched.state === 'loading') {
+    return <p className="text-sm text-muted-foreground">Loading history…</p>;
+  }
+  if (fetched.state === 'error') {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-destructive">{fetched.message}</p>
+        <Button size="sm" variant="outline" onClick={retry}>Retry</Button>
+      </div>
+    );
+  }
+  if (fetched.events.length === 0) {
+    return <p className="text-sm text-muted-foreground">No history for this note.</p>;
+  }
+  return (
+    <ol className="space-y-3">
+      {fetched.events.map((e, i) => (
+        <li key={i} className="border-l-2 border-border pl-3">
+          <div className="flex items-baseline gap-2 text-sm">
+            <span className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
+              {e.kind}
+            </span>
+            <span className="text-foreground" title={e.at ?? undefined}>
+              {e.at ? formatRelative(e.at) : 'unknown time'}
+            </span>
+            <span className="text-muted-foreground">
+              {e.by ? `by ${e.by}` : <em>(unknown)</em>}
+            </span>
+          </div>
+          {e.kind === 'edited' && typeof e.prevText === 'string' ? (
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                Show snapshot
+              </summary>
+              <pre className="mt-1 whitespace-pre-wrap rounded-sm bg-muted/50 p-2 font-mono text-xs">
+                {e.prevText}
+              </pre>
+            </details>
+          ) : null}
+        </li>
+      ))}
+    </ol>
   );
 }

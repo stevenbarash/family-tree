@@ -1,12 +1,10 @@
 /**
  * Boundary layer that turns the data repo's git log for a talk file
  * into the chronological body snapshots the pure reconstructor needs.
- * The git plumbing lives in `core/src/pages/git.ts`; this module just
- * wires paths and feeds the result through the reconstructor.
  */
 
 import { relative, join } from 'node:path';
-import { toTalkSlug } from '@core/pages/index.ts';
+import { toTalkSlug, extractBody } from '@core/pages/index.ts';
 import { fileVersions } from '@core/pages/git.ts';
 import {
   reconstructNoteHistory,
@@ -27,22 +25,10 @@ export async function loadNoteHistory(
 
   const fileLog = await fileVersions(WHOAMI_ROOT, relPath);
   const versions: NoteVersion[] = fileLog.map((v) => ({
-    body: stripFrontmatter(v.body),
+    body: extractBody(v.body),
     commitId: v.commitId,
     commitTime: v.commitTime,
   }));
 
   return reconstructNoteHistory(versions, noteId);
-}
-
-/**
- * `parseResearchNotes` operates on a page's body, not its frontmatter.
- * `git show` returns the whole file, so strip the YAML frontmatter
- * before handing the snapshot to the reconstructor.
- */
-function stripFrontmatter(raw: string): string {
-  if (!raw.startsWith('---\n')) return raw;
-  const end = raw.indexOf('\n---\n', 4);
-  if (end === -1) return raw;
-  return raw.slice(end + 5);
 }

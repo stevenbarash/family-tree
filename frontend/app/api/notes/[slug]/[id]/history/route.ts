@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isValidSlug } from '@core/pages/index.ts';
 import { loadNoteHistory } from '@/lib/note-history';
-import { errorResponse, routeError } from '@/lib/api-errors';
+import { errorResponse, routeError, NOTE_ID_RE } from '@/lib/api-errors';
 
-const NOTE_ID_RE = /^n_[0-9a-z]{8}$/;
-
-/**
- * GET /api/notes/<slug>/<id>/history — return every event that has
- * happened to this note (created, edited, retracted, restored),
- * reconstructed from the data repo's git log. Newest-first.
- */
 export async function GET(
   _req: NextRequest,
   ctx: { params: Promise<{ slug: string; id: string }> },

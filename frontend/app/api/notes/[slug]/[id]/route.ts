@@ -2,19 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
 import { editNoteOnDisk, softDeleteNoteOnDisk } from '@/lib/server-services';
-import { errorResponse, routeError } from '@/lib/api-errors';
+import { errorResponse, routeError, NOTE_ID_RE, ByField } from '@/lib/api-errors';
 import { DEFAULT_AUTHOR } from '@/lib/env';
-
-const NOTE_ID_RE = /^n_[0-9a-z]{8}$/;
 
 const PatchBody = z.object({
   note: z.string().min(1).max(5000),
-  by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
+  by: ByField.optional(),
 });
 
-const DeleteBody = z.object({
-  by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
-}).optional();
+const DeleteBody = z.object({ by: ByField.optional() }).optional();
 
 /**
  * PATCH /api/notes/<slug>/<id> — edit the prose of an existing note.

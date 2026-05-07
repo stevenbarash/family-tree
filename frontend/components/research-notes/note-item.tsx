@@ -31,6 +31,9 @@ interface Props {
 export function NoteItem({ slug, note }: Props) {
   const [editing, setEditing] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Mount the dialog on first open and keep it mounted so the exit
+  // animation can play; avoids mounting it for every note on the page.
+  const [historyEverOpened, setHistoryEverOpened] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -95,17 +98,17 @@ export function NoteItem({ slug, note }: Props) {
               {note.createdAt ? ` · ${formatRelative(note.createdAt)}` : ''}
             </span>
             {note.editedAt ? (
-              <span>
-                ·{' '}
+              <>
+                <span>·</span>
                 <button
                   type="button"
-                  onClick={() => setHistoryOpen(true)}
+                  onClick={() => { setHistoryEverOpened(true); setHistoryOpen(true); }}
                   className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   aria-label="Show note history"
                 >
                   edited {formatRelative(note.editedAt)}{note.editedBy ? ` by ${note.editedBy}` : ''}
                 </button>
-              </span>
+              </>
             ) : null}
             {isDeleted ? (
               <span>· retracted by {note.deletedBy} · {formatRelative(note.deletedAt)}</span>
@@ -129,12 +132,14 @@ export function NoteItem({ slug, note }: Props) {
             </span>
           </div>
           {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
-          <NoteHistoryDialog
-            slug={slug}
-            noteId={note.id}
-            open={historyOpen}
-            onOpenChange={setHistoryOpen}
-          />
+          {historyEverOpened ? (
+            <NoteHistoryDialog
+              slug={slug}
+              noteId={note.id}
+              open={historyOpen}
+              onOpenChange={setHistoryOpen}
+            />
+          ) : null}
         </>
       )}
     </li>

@@ -26,6 +26,15 @@ export function serializePage(page: Page): string {
 }
 
 /**
+ * Return just the body of a raw page (post-frontmatter). Skips the Zod
+ * validation `parsePage` runs, so it's safe to call on historical
+ * versions that may predate current schema migrations.
+ */
+export function extractBody(raw: string): string {
+  return matter(raw).content.trimStart();
+}
+
+/**
  * Read just the on-disk schemaVersion of a page file, defaulting to 1
  * when the field is absent. Used by store.write / store.softDelete to
  * enforce the strict-write rule without instantiating a full Page or

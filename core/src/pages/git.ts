@@ -50,9 +50,9 @@ export async function fileHistory(
 }
 
 export interface FileVersion {
-  body: string;       // file contents at this commit
-  commitId: string;   // git sha
-  commitTime: string; // ISO-8601-ish, as reported by `git log`
+  body: string;
+  commitId: string;
+  commitTime: string;
 }
 
 /**
@@ -62,7 +62,7 @@ export interface FileVersion {
  * note edit-history modal.
  *
  * `relPath` is relative to `repoRoot`. Commits where the file did not
- * exist (e.g. a `--follow`-confounding rename) are silently skipped.
+ * exist at the path are skipped; other `git show` errors propagate.
  */
 export async function fileVersions(
   repoRoot: string,
@@ -71,14 +71,27 @@ export async function fileVersions(
   const git = client(repoRoot);
   const log = await git.log({ file: relPath, '--follow': null });
   const oldestFirst = [...log.all].reverse();
+
+  const bodies = await Promise.all(
+    oldestFirst.map(async (c) => {
+      try {
+        return await git.show([`${c.hash}:${relPath}`]);
+      } catch (err) {
+        // `git show` reports a missing path as `exists on disk, but not in
+        // <sha>` or `path … does not exist in <sha>`. Anything else
+        // (corrupt repo, permission error) should surface.
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/does not exist in|exists on disk, but not in/i.test(msg)) return null;
+        throw err;
+      }
+    }),
+  );
+
   const out: FileVersion[] = [];
-  for (const c of oldestFirst) {
-    let body: string;
-    try {
-      body = await git.show([`${c.hash}:${relPath}`]);
-    } catch {
-      continue;
-    }
+  for (let i = 0; i < oldestFirst.length; i++) {
+    const body = bodies[i];
+    if (body === null || body === undefined) continue;
+    const c = oldestFirst[i]!;
     out.push({ body, commitId: c.hash, commitTime: c.date });
   }
   return out;
