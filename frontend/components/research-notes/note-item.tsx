@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Undo2 } from 'lucide-react';
 import { EditNoteForm } from './edit-note-form';
+import { NoteHistoryDialog } from './note-history-dialog';
 import { formatRelative } from './relative-time';
 
 export interface NoteItemView {
@@ -29,6 +30,7 @@ interface Props {
 
 export function NoteItem({ slug, note }: Props) {
   const [editing, setEditing] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -59,6 +61,8 @@ export function NoteItem({ slug, note }: Props) {
     startTransition(async () => {
       const res = await fetch(`/api/notes/${encodeURIComponent(slug)}/${note.id}/restore`, {
         method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ by: localStorage.getItem('whoami:author') ?? undefined }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -91,7 +95,17 @@ export function NoteItem({ slug, note }: Props) {
               {note.createdAt ? ` · ${formatRelative(note.createdAt)}` : ''}
             </span>
             {note.editedAt ? (
-              <span>· edited {formatRelative(note.editedAt)}{note.editedBy ? ` by ${note.editedBy}` : ''}</span>
+              <span>
+                ·{' '}
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen(true)}
+                  className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  aria-label="Show note history"
+                >
+                  edited {formatRelative(note.editedAt)}{note.editedBy ? ` by ${note.editedBy}` : ''}
+                </button>
+              </span>
             ) : null}
             {isDeleted ? (
               <span>· retracted by {note.deletedBy} · {formatRelative(note.deletedAt)}</span>
@@ -115,6 +129,12 @@ export function NoteItem({ slug, note }: Props) {
             </span>
           </div>
           {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+          <NoteHistoryDialog
+            slug={slug}
+            noteId={note.id}
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+          />
         </>
       )}
     </li>

@@ -369,8 +369,10 @@ export async function softDeleteNoteOnDisk(
 export async function restoreNoteOnDisk(
   slug: string,
   id: string,
-): Promise<{ id: string }> {
+  restorer: string,
+): Promise<{ id: string; restoredAt: string }> {
   const talkSlug = toTalkSlug(slug);
+  const restoredAt = new Date().toISOString();
   return withTalkLock(talkSlug, async () => {
     const pages = getPageStore();
     let page;
@@ -380,11 +382,11 @@ export async function restoreNoteOnDisk(
       if (err instanceof PageNotFoundError) throw new NoteNotFoundError(id);
       throw err;
     }
-    const nextBody = restoreResearchNote(page.body, id);
+    const nextBody = restoreResearchNote(page.body, id, restorer, restoredAt);
     const next: Page = { slug: talkSlug, meta: page.meta, body: nextBody };
     await pages.write(talkSlug, next, DEFAULT_AUTHOR, `note: restore ${id.slice(0, 10)}`);
     invalidateListCache();
-    return { id };
+    return { id, restoredAt };
   });
 }
 

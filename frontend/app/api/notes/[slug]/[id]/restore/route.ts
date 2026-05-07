@@ -1,25 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
 import { restoreNoteOnDisk } from '@/lib/server-services';
 import { errorResponse, routeError } from '@/lib/api-errors';
+import { DEFAULT_AUTHOR } from '@/lib/env';
 
 const NOTE_ID_RE = /^n_[0-9a-z]{8}$/;
 
+const RestoreBody = z.object({
+  by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
+}).optional();
+
 /**
  * POST /api/notes/<slug>/<id>/restore — clear the soft-delete flag on a
- * retracted note.
+ * retracted note and record the restore as `restoredAt`/`restoredBy`
+ * on the trailer so the event is preserved in git.
  */
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ slug: string; id: string }> },
 ) {
   const { slug, id } = await ctx.params;
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
   if (!NOTE_ID_RE.test(id)) return errorResponse('bad-note-id', 400);
 
+  const json = await req.json().catch(() => null);
+  const parsed = RestoreBody.safeParse(json);
+  if (!parsed.success) return errorResponse('bad-request', 400);
+
   try {
-    const result = await restoreNoteOnDisk(slug, id);
-    return NextResponse.json({ slug: toTalkSlug(slug), id: result.id });
+    const result = await restoreNoteOnDisk(
+      slug,
+      id,
+      parsed.data?.by ?? DEFAULT_AUTHOR.name,
+    );
+    return NextResponse.json({ slug: toTalkSlug(slug), id: result.id, restoredAt: result.restoredAt });
   } catch (err) {
     return routeError(err, slug, 'note-restore-failed');
   }
