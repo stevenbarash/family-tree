@@ -23,6 +23,8 @@ export interface Note {
   editedBy: string | null;
   deletedAt: string | null;
   deletedBy: string | null;
+  restoredAt: string | null;
+  restoredBy: string | null;
   isLegacy: boolean;        // derived: true iff bullet has no trailer
 }
 
@@ -142,6 +144,8 @@ export function parseResearchNotes(body: string): Note[] {
         editedBy: attrs.editedBy ?? null,
         deletedAt: attrs.deletedAt ?? null,
         deletedBy: attrs.deletedBy ?? null,
+        restoredAt: attrs.restoredAt ?? null,
+        restoredBy: attrs.restoredBy ?? null,
         isLegacy: false,
       });
     } else {
@@ -156,6 +160,8 @@ export function parseResearchNotes(body: string): Note[] {
         editedBy: null,
         deletedAt: null,
         deletedBy: null,
+        restoredAt: null,
+        restoredBy: null,
         isLegacy: true,
       });
     }
@@ -271,7 +277,9 @@ export function editResearchNote(
  * Soft-delete a note by setting `deletedAt`/`deletedBy` on its trailer.
  * Bullet prose is preserved verbatim (the trailer is the canonical
  * record; the UI strikes through visually based on the parsed flag).
- * Throws if the id is unknown or already deleted.
+ * Clears any prior `restoredAt`/`restoredBy` so the trailer reflects
+ * only the latest event. Throws if the id is unknown or already
+ * deleted.
  */
 export function softDeleteResearchNote(
   body: string,
@@ -284,14 +292,23 @@ export function softDeleteResearchNote(
   if (span.attrs.deletedAt) throw new NoteAlreadyDeletedError(id);
   span.attrs.deletedAt = deletedAt;
   span.attrs.deletedBy = deleter;
+  delete span.attrs.restoredAt;
+  delete span.attrs.restoredBy;
   return rewriteTrailer(body, span);
 }
 
 /**
- * Clear `deletedAt`/`deletedBy` from a soft-deleted note's trailer.
- * Throws if the id is unknown or the note isn't currently deleted.
+ * Clear `deletedAt`/`deletedBy` from a soft-deleted note's trailer
+ * and record the restore as `restoredAt`/`restoredBy` so the event
+ * is preserved in the next git snapshot. Throws if the id is unknown
+ * or the note isn't currently deleted.
  */
-export function restoreResearchNote(body: string, id: string): string {
+export function restoreResearchNote(
+  body: string,
+  id: string,
+  restorer: string,
+  restoredAt: string,
+): string {
   const span = findBulletSpan(body, id);
   if (!span) throw new NoteNotFoundError(id);
   if (!span.attrs.deletedAt) {
@@ -299,6 +316,8 @@ export function restoreResearchNote(body: string, id: string): string {
   }
   delete span.attrs.deletedAt;
   delete span.attrs.deletedBy;
+  span.attrs.restoredAt = restoredAt;
+  span.attrs.restoredBy = restorer;
   return rewriteTrailer(body, span);
 }
 
@@ -324,6 +343,8 @@ interface TrailerAttrs {
   editedBy?: string;
   deletedAt?: string;
   deletedBy?: string;
+  restoredAt?: string;
+  restoredBy?: string;
 }
 
 function findBulletSpan(body: string, id: string): BulletSpan | null {
@@ -370,6 +391,8 @@ function findBulletSpan(body: string, id: string): BulletSpan | null {
         editedBy: attrs.editedBy,
         deletedAt: attrs.deletedAt,
         deletedBy: attrs.deletedBy,
+        restoredAt: attrs.restoredAt,
+        restoredBy: attrs.restoredBy,
       },
       trailerLineIndex: trailerLine,
     };
@@ -406,6 +429,8 @@ function serializeTrailer(attrs: TrailerAttrs): string {
   if (attrs.editedBy) parts.push(`editedBy=${attrs.editedBy}`);
   if (attrs.deletedAt) parts.push(`deletedAt=${attrs.deletedAt}`);
   if (attrs.deletedBy) parts.push(`deletedBy=${attrs.deletedBy}`);
+  if (attrs.restoredAt) parts.push(`restoredAt=${attrs.restoredAt}`);
+  if (attrs.restoredBy) parts.push(`restoredBy=${attrs.restoredBy}`);
   return `<!-- note ${parts.join(' ')} -->`;
 }
 

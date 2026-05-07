@@ -347,23 +347,23 @@ test('softDeleteResearchNote: NoteNotFoundError on missing id', () => {
   );
 });
 
-test('restoreResearchNote: clears deletedAt/deletedBy', () => {
+test('restoreResearchNote: clears deletedAt/deletedBy and writes restoredAt/restoredBy', () => {
   const body =
     '## Research notes\n\n### 2026-05-06\n' +
     '- a\n' +
     '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T17:00:00Z deletedBy=steven -->\n';
-  const out = restoreResearchNote(body, 'n_a');
+  const out = restoreResearchNote(body, 'n_a', 'steven', '2026-05-06T18:00:00Z');
   assert.equal(
     out,
     '## Research notes\n\n### 2026-05-06\n' +
     '- a\n' +
-    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n',
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z restoredAt=2026-05-06T18:00:00Z restoredBy=steven -->\n',
   );
 });
 
 test('restoreResearchNote: throws NoteNotFoundError on missing id', () => {
   assert.throws(
-    () => restoreResearchNote('## Research notes\n\n### 2026-05-06\n- x\n', 'n_missing'),
+    () => restoreResearchNote('## Research notes\n\n### 2026-05-06\n- x\n', 'n_missing', 's', '2026-05-06T18:00:00Z'),
     NoteNotFoundError,
   );
 });
@@ -376,7 +376,21 @@ test('restoreResearchNote: no-op error when note is not deleted', () => {
   // Defining the v1 contract: restore on a live note throws (callers
   // should check first). Keeps the API symmetrical with delete.
   assert.throws(
-    () => restoreResearchNote(body, 'n_a'),
+    () => restoreResearchNote(body, 'n_a', 's', '2026-05-06T18:00:00Z'),
     /not deleted/,
+  );
+});
+
+test('softDeleteResearchNote: clears prior restoredAt/restoredBy', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z restoredAt=2026-05-06T18:00:00Z restoredBy=steven -->\n';
+  const out = softDeleteResearchNote(body, 'n_a', 'steven', '2026-05-06T19:00:00Z');
+  assert.equal(
+    out,
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z deletedAt=2026-05-06T19:00:00Z deletedBy=steven -->\n',
   );
 });

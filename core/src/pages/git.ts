@@ -49,6 +49,41 @@ export async function fileHistory(
   }));
 }
 
+export interface FileVersion {
+  body: string;       // file contents at this commit
+  commitId: string;   // git sha
+  commitTime: string; // ISO-8601-ish, as reported by `git log`
+}
+
+/**
+ * Return every version of a file in chronological order
+ * (oldest commit first). Follows renames. Used by code that needs to
+ * reconstruct per-line history from the commit chain — e.g. the
+ * note edit-history modal.
+ *
+ * `relPath` is relative to `repoRoot`. Commits where the file did not
+ * exist (e.g. a `--follow`-confounding rename) are silently skipped.
+ */
+export async function fileVersions(
+  repoRoot: string,
+  relPath: string,
+): Promise<FileVersion[]> {
+  const git = client(repoRoot);
+  const log = await git.log({ file: relPath, '--follow': null });
+  const oldestFirst = [...log.all].reverse();
+  const out: FileVersion[] = [];
+  for (const c of oldestFirst) {
+    let body: string;
+    try {
+      body = await git.show([`${c.hash}:${relPath}`]);
+    } catch {
+      continue;
+    }
+    out.push({ body, commitId: c.hash, commitTime: c.date });
+  }
+  return out;
+}
+
 /**
  * Restore a file to its state at HEAD. If the file was never tracked at HEAD,
  * remove it from the working tree (covers the rollback-after-failed-create case).
