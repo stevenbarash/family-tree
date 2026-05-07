@@ -16,6 +16,7 @@ import {
   restoreResearchNote,
   NoteNotFoundError,
 } from '@core/pages/research-notes.ts';
+import { findRedlinks, type RedlinkEntry } from '@core/pages/redlinks.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
 import { CURRENT_SCHEMA_VERSION } from '@core/pages/migrations/index.ts';
 import { PageNotFoundError } from '@core/pages/store.ts';
@@ -124,6 +125,26 @@ export async function getSearchIndex(): Promise<SearchIndex> {
 export async function persistSearchIndex(): Promise<void> {
   if (!_search) return;
   await saveSearchIndex(_search, SEARCH_INDEX_FILE);
+}
+
+// Talk + archived pages are skipped: notes and tombstones shouldn't
+// grow the want-list of articles to write.
+export async function getRedlinks(): Promise<RedlinkEntry[]> {
+  const { list, index } = await getCachedList();
+  const live = list.filter(p => !p.isTalk && !p.isArchived);
+  const store = getPageStore();
+  const pages = await Promise.all(
+    live.map(async p => {
+      try {
+        const page = await store.read(p.slug);
+        return { slug: p.slug, body: page.body };
+      } catch (err) {
+        console.warn(`getRedlinks: skipping ${p.slug}: ${(err as Error).message}`);
+        return { slug: p.slug, body: '' };
+      }
+    }),
+  );
+  return findRedlinks(pages, new Set(index.byCanonical.keys()));
 }
 
 export async function rebuildSearchIndexFromDisk(): Promise<{ pages: number; ms: number }> {

@@ -1,3 +1,5 @@
+import { WIKILINK_RE, canonical } from '@core/pages/wikilinks.ts';
+
 export interface IndexEntry {
   slug: string;
   title: string;
@@ -6,10 +8,6 @@ export interface IndexEntry {
 
 export interface SlugIndex {
   byCanonical: Map<string, string>;
-}
-
-function canonical(s: string): string {
-  return s.toLowerCase().replace(/[\s_]+/g, ' ').trim();
 }
 
 export function buildSlugIndex(entries: IndexEntry[]): SlugIndex {
@@ -21,13 +19,11 @@ export function buildSlugIndex(entries: IndexEntry[]): SlugIndex {
   return { byCanonical };
 }
 
-const WIKILINK_RE = /\[\[([^\]|#]+)(?:#([^\]|]+))?(?:\|([^\]]+))?\]\]/g;
-
 export function resolveWikilinks(md: string, index: SlugIndex): string {
   return md.replace(WIKILINK_RE, (_, target: string, anchor?: string, label?: string) => {
     const slug = index.byCanonical.get(canonical(target));
     const text = label ?? (anchor ? `${target}#${anchor}` : target);
-    if (!slug) return `<span class="redlink">${text}</span>`;
+    if (!slug) return `<span class="redlink" title="Page not yet written">${text}</span>`;
     const href = anchor
       ? `/${slug}#${anchor.toLowerCase().replace(/\s+/g, '-')}`
       : `/${slug}`;

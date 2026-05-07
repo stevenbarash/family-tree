@@ -14,6 +14,7 @@ import { runSyncGedcom } from './commands/sync-gedcom.js';
 import { runRebuildSearch } from './commands/rebuild-search.js';
 import { runMigrate } from './commands/migrate.js';
 import { runRecite } from './commands/recite.js';
+import { runRedlinks } from './commands/redlinks.js';
 import { runSearch } from './commands/search.js';
 import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
@@ -44,6 +45,9 @@ Pages:
   delete <slug> --yes         Soft-delete a page (moves to _archived)
   search <query> [--limit N]  Search pages, body, aliases, categories,
                                 and GEDCOM-derived fields
+  redlinks [--limit N] [--json]
+                              List unwritten pages that other pages link to,
+                                ranked by inbound count
 
 GEDCOM:
   sync-gedcom --ged-file F    Sync GEDCOM .ged → derived/ + commit
@@ -243,6 +247,11 @@ async function main(): Promise<number> {
         const query = args.positional[0] ?? '';
         const limit = parseInt(String(args.flags.limit ?? '25'), 10) || 25;
         await runSearch({ query, limit, json: !!args.flags.json, client, write });
+        break;
+      }
+      case 'redlinks': {
+        const limit = parseInt(String(args.flags.limit ?? '50'), 10) || 50;
+        await runRedlinks({ limit, json: !!args.flags.json, client, write });
         break;
       }
       case 'rebuild-search': {

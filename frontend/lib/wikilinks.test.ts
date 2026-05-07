@@ -23,7 +23,8 @@ test('resolves [[Title#anchor]]', () => {
 });
 
 test('renders red span for unknown link', () => {
-  assert.match(resolveWikilinks('Hi [[Unknown]].', idx), /<span class="redlink">Unknown<\/span>/);
+  const out = resolveWikilinks('Hi [[Unknown]].', idx);
+  assert.match(out, /<span class="redlink" title="Page not yet written">Unknown<\/span>/);
 });
 
 test('resolves alias', () => {

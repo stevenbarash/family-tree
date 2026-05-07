@@ -3,9 +3,10 @@ import type { MigrateReport } from '@core/pages/migrate-runner.ts';
 import type { SyncResult } from '@core/gedcom/sync.ts';
 import type { ReciteEntry } from '@core/gedcom/types.ts';
 import type { SearchResult } from '@core/search/types.ts';
+import type { RedlinkEntry } from '@core/pages/redlinks.ts';
 import { parseResearchNotes, type Note } from '@core/pages/research-notes.ts';
 
-export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult };
+export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult, RedlinkEntry };
 
 export type NoteSummary = Note;
 
@@ -62,6 +63,10 @@ export class ApiClient {
   async search(q: string, limit = 25): Promise<{ results: SearchResult[] }> {
     const params = new URLSearchParams({ q, limit: String(limit) });
     return this.json('GET', `/api/search?${params.toString()}`);
+  }
+
+  async redlinks(): Promise<{ redlinks: RedlinkEntry[] }> {
+    return this.json('GET', '/api/redlinks');
   }
 
   async rebuildSearch(): Promise<{ ok: true; pages: number; ms: number }> {
