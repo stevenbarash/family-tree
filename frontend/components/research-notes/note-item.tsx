@@ -98,8 +98,8 @@ export function NoteItem({ slug, note }: Props) {
               {note.createdAt ? ` · ${formatRelative(note.createdAt)}` : ''}
             </span>
             {note.editedAt ? (
-              <>
-                <span>·</span>
+              <span>
+                ·{' '}
                 <button
                   type="button"
                   onClick={() => { setHistoryEverOpened(true); setHistoryOpen(true); }}
@@ -108,7 +108,7 @@ export function NoteItem({ slug, note }: Props) {
                 >
                   edited {formatRelative(note.editedAt)}{note.editedBy ? ` by ${note.editedBy}` : ''}
                 </button>
-              </>
+              </span>
             ) : null}
             {isDeleted ? (
               <span>· retracted by {note.deletedBy} · {formatRelative(note.deletedAt)}</span>

@@ -13,7 +13,6 @@ export async function GET(
 
   try {
     const events = await loadNoteHistory(slug, id);
-    if (events.length === 0) return errorResponse('note-not-found', 404);
     return NextResponse.json({ events });
   } catch (err) {
     return routeError(err, slug, 'history-failed');
