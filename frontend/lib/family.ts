@@ -14,8 +14,9 @@ import {
   type MappedPlace,
   type UnmappedPlace,
 } from '@core/family/places-coords.ts';
+import { loadConflicts, type ConflictEntry } from '@core/family/conflicts.ts';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
-import { DERIVED_DIR, PLACES_COORDS_FILE, SELF_RECORD } from './env';
+import { DERIVED_DIR, GENEALOGY_DIR, PLACES_COORDS_FILE, SELF_RECORD } from './env';
 import { getCachedList } from './server-services';
 
 export type { AncestorNode, AncestryTree };
@@ -105,6 +106,9 @@ export interface FamilyTreeView {
     spouses: BrowserRelationView[];
     children: BrowserRelationView[];
   };
+  /** Disagreeing-source records for the focal person. Sourced from
+   *  `genealogy/conflicts/<record>.yml`; not derived from GEDCOM. */
+  selectedConflicts: ConflictEntry[];
   cohort: {
     siblings: BrowserSiblingView[];
     cousins: BrowserCousinView[];
@@ -409,6 +413,7 @@ export async function getFamilyTree(
       spouses: core.selectedRelations.spouses.map(r => relation(r, r.married ? `m. ${r.married}` : null)),
       children: core.selectedRelations.children.map(r => relation(r, r.born ? `b. ${r.born}` : null)),
     },
+    selectedConflicts: loadConflicts(GENEALOGY_DIR, targetRecord),
     cohort: { siblings, cousins },
     descendants: { byGeneration: descendantsByGen, total: descendantsRaw.total },
     coverage: { byGeneration: coverageByGen, knownTotal, possibleTotal, frontier },

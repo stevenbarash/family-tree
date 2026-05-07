@@ -15,6 +15,7 @@ import {
   InvalidRecordIdError,
 } from '@/lib/server-services';
 import { toTalkSlug } from '@core/pages/slug.ts';
+import { ConflictsSection } from '@/components/family/sections/conflicts-section';
 import { CoverageSection } from '@/components/family/sections/coverage-section';
 import { DescendantsSection } from '@/components/family/sections/descendants-section';
 import { FamilySection } from '@/components/family/sections/family-section';
@@ -104,6 +105,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
         <PersonHeaderSection view={view} ancestorCount={ancestorCount} generationCount={generationCount} />
         <FamilySection view={view} />
+        <ConflictsSection view={view} />
         <CoverageSection view={view} />
         <PlacesSection view={view} />
         <LifespansSection view={view} />
