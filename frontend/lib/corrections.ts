@@ -1,11 +1,17 @@
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import { join } from 'node:path';
-import matter from 'gray-matter';
 import { applyCorrections } from '@core/corrections/overlay.ts';
+import {
+  loadPageCorrections,
+  loadPageCorrectionsWithSource,
+  type SourcedCorrection,
+} from '@core/corrections/load.ts';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 import type { Correction } from '@core/pages/types.ts';
-import { parsePageMeta } from '@core/pages/schema.ts';
-import { migrate } from '@core/pages/migrations/index.ts';
+
+// Re-export for callers (preserves plan-3's API surface).
+export { loadPageCorrections, loadPageCorrectionsWithSource };
+export type { SourcedCorrection };
 
 /** Map of `record id` → list of corrections targeting that record. */
 export type CorrectionsMap = ReadonlyMap<string, ReadonlyArray<Correction>>;
@@ -28,51 +34,6 @@ export function correctRecords(
       continue;
     }
     out.set(id, applyCorrections(record, [...cs]));
-  }
-  return out;
-}
-
-/**
- * Read all pages in `pagesDir`, extract their frontmatter `corrections[]`,
- * group by target record id (defaulted to the page's own `gedcom.record`
- * when omitted on the correction), and return the resulting map.
- *
- * Boundary module: does file I/O at its public surface. Consumers should
- * call this once per request (or via the cached wrapper) — it walks the
- * pages directory each invocation.
- *
- * Pages whose frontmatter fails schema validation are silently skipped
- * (matches the loader convention in `core/src/checks/load.ts`). A single
- * malformed page does not break the rest of the corrections layer.
- */
-export function loadPageCorrections(pagesDir: string): Map<string, Correction[]> {
-  const out = new Map<string, Correction[]>();
-  if (!existsSync(pagesDir)) return out;
-  const entries = readdirSync(pagesDir, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
-    const path = join(pagesDir, entry.name);
-    const raw = readFileSync(path, 'utf-8');
-    const parsed = matter(raw);
-    const fmRaw = parsed.data ?? {};
-    const fmVersion = typeof fmRaw.schemaVersion === 'number' ? fmRaw.schemaVersion : 1;
-    let meta;
-    try {
-      const migrated = migrate(fmRaw, fmVersion);
-      meta = parsePageMeta(migrated);
-    } catch {
-      continue;
-    }
-    if (!meta.corrections || meta.corrections.length === 0) continue;
-    const pageRecord = meta.gedcom?.record;
-    for (const c of meta.corrections) {
-      const targetId = c.record ?? pageRecord;
-      if (!targetId) continue; // no record to attach this correction to
-      const stamped = c.record ? c : { ...c, record: targetId };
-      const arr = out.get(targetId) ?? [];
-      arr.push(stamped);
-      out.set(targetId, arr);
-    }
   }
   return out;
 }
