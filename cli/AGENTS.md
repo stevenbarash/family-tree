@@ -3,9 +3,10 @@
 The `wai` command-line tool — the surface agents use to interact with the
 wiki. When an editor agent (Claude, Codex, etc.) writes a page, it does so
 by shelling out to `wai write <slug>`. When it researches a topic, it runs
-`wai read`, `wai search`, `wai source list`. Keeping the agent surface
-behind a CLI (rather than an in-process library) means any harness can
-drive it without specific bindings.
+`wai read` and `wai search` (sources are now conventional pages whose slug
+starts with `source-`, e.g. `wai read source-whatsapp`). Keeping the agent
+surface behind a CLI (rather than an in-process library) means any harness
+can drive it without specific bindings.
 
 ## Commands
 
