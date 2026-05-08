@@ -57,6 +57,12 @@ the install script in the README.
 - **Don't break the existing flag surface** without bumping the major
   version. Agents in the wild are calling `wai` with specific flags;
   silent breakage is bad.
+- **Drift detectors are wired in `src/index.ts`** and live in
+  `@core/checks/<category>-drift.ts`. A single detector can emit
+  findings of multiple categories (see `places-drift.ts` — schema /
+  coverage / data). When adding one, also add a test alongside the
+  others in `core/test/checks/`. The data-quality invariants the
+  detectors enforce are documented in the data repo's `AGENTS.md`.
 
 ## Release
 

@@ -29,6 +29,7 @@ import { detectFormatDrift } from '@core/checks/format-drift.ts';
 import { detectDataDrift } from '@core/checks/data-drift.ts';
 import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
 import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
+import { detectPlacesDrift } from '@core/checks/places-drift.ts';
 import type { FindingCategory } from '@core/checks/types.ts';
 
 const VERSION = '2.0.0-pre.0';
@@ -295,6 +296,7 @@ async function main(): Promise<number> {
             detectDataDrift,
             detectSchemaDrift,
             detectCoverageDrift,
+            detectPlacesDrift,
           ],
           write,
           writeErr: (s) => process.stderr.write(s),

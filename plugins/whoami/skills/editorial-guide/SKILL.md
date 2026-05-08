@@ -251,6 +251,46 @@ Without `--apply` the command is dry-run and prints the planned changes only.
 - **promotable** — page value matches raw derived value (correction is redundant; either drop it from the page or run `wai promote-corrections`).
 - **conflict** — two pages target the same `(record, field)` with different values. Hard error; resolve before merging.
 
+## Genealogy data quality
+
+For pages that surface GEDCOM-derived data (person pages, family overviews,
+wartime/migration narratives), the page-side editorial rules above are not
+enough — the underlying data has its own invariants. The summary: **separate
+the physical place from the political regime**. `wai check` enforces these,
+and the data repo's `AGENTS.md` documents them in full. The points an editor
+needs to know while writing prose:
+
+1. **Same place, same dot.** "Kiev, Ukraine, Soviet Union" (1941) and "Kiev,
+   Ukraine, Russian Empire" (1900) and "Kyiv, Ukraine" (2025) all point at
+   the same town. The map collapses them. The page prose can and should keep
+   the historical attribution where it matters editorially ("died at Babi
+   Yar in Soviet Ukraine, September 1941").
+
+2. **Don't conflate the regimes in prose either.** A person born in 1902 was
+   born in the Russian Empire, not the Soviet Union — even if the GEDCOM
+   record says "Kiev, Ukraine, Soviet Union" (which would be a data-entry
+   error `wai check` flags as an anachronism). When you hit anachronism
+   findings while writing about a person, the fix lives in the GEDCOM
+   (correct the PLAC), not in the prose.
+
+3. **Tentative identifications stay tentative in prose.** If
+   `places-coords.yml` has a `note:` flagging an entry as best-effort
+   (Kozyatyn for "Kazotin, Russia", Pyzdry for "Peisern", the Trakai-vs-
+   Druskininkai Ratnyčia variants), the page prose should match — phrase as
+   "tentatively identified as", not as established fact. Cite the note's
+   reasoning if a reader would otherwise expect a citation.
+
+4. **Don't manufacture history to dress up data.** The temptation when
+   writing about a Russian-Empire-era ancestor is to drop in period color
+   ("during the reign of Nicholas II", "before the 1905 revolution"). Keep
+   it factual: state what the records show, name the regime only when the
+   record itself names it or when the regime materially shaped the event.
+
+5. **`wai check` before commit.** The detectors that matter for editorial
+   work: `coverage` (redlinks, unmapped places), `data` (correction
+   conflicts, anachronisms). Treat `info` findings as cleanup signals, not
+   blockers; treat `warn` and `error` as blockers.
+
 ## Page conventions
 
 The wiki is a tree of markdown files on git. Page kind is encoded in the filename, not a namespace prefix.

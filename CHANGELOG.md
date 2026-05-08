@@ -31,6 +31,15 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   route, `core/src/pages/redlinks.ts`. Addresses P2.2. *In progress.*
 - **GEDCOM normalize layer** (`core/src/gedcom/normalize.ts`) for
   cleaner derive output. *In progress.*
+- **Places-drift detector** (`core/src/checks/places-drift.ts`,
+  `core/test/checks/places-drift.test.ts`, wired into `wai check`)
+  — emits `schema` (lat/lon range, alias collisions), `coverage`
+  (dead aliases that match no GEDCOM PLAC string), and `data`
+  (anachronistic place/date pairs: Soviet Union pre-1922 / post-1991,
+  Russian Empire post-1917, Prussia post-1947) findings.
+- **Editorial guide: genealogy data quality** section added to
+  `plugins/whoami/skills/editorial-guide/SKILL.md` — keeps prose
+  consistent with the regime/anachronism rules `wai check` enforces.
 - **Plans index** at `docs/superpowers/plans/README.md` and project
   `SCOPE.md` / `ROADMAP.md`.
 
