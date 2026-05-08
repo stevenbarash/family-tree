@@ -1,12 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { isValidElement, type ReactElement, type ReactNode } from 'react';
-import yaml from 'js-yaml';
+import type { ReactNode } from 'react';
+import { Building2, Calendar, MapPin, Briefcase, Users, Globe, Package } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Infobox,
+  InfoboxBody,
+  InfoboxHeader,
+  InfoboxRow,
+  extractFieldsFromChildren,
+} from './infobox-shell';
 
-/**
- * The infobox body is a YAML block emitted by the wikitext converter
- * (Plan B). Children come through as a parsed React tree, but for the
- * structured key/value display we re-parse the underlying text.
- */
 interface Props {
   fields?: Record<string, string>;
   children?: ReactNode;
@@ -14,44 +17,44 @@ interface Props {
 
 export function InfoboxCompany({ fields, children }: Props) {
   const parsed = fields ?? extractFieldsFromChildren(children);
+  const name = parsed.name ?? 'Company';
+  const tagline = parsed.industry ?? parsed.sector ?? parsed.type ?? null;
+
   return (
-    <Card className="float-right ml-4 max-w-xs my-2 text-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{parsed.name ?? 'Company'}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1">
+    <Infobox>
+      <InfoboxHeader
+        eyebrow="Company"
+        title={name}
+        description={tagline}
+        avatar={
+          <Avatar size="lg" className="ring-2 ring-infobox-border/60">
+            <AvatarFallback className="bg-infobox-border/30 text-infobox-foreground">
+              <Building2 className="size-5 opacity-80" aria-hidden />
+            </AvatarFallback>
+          </Avatar>
+        }
+      />
+      <InfoboxBody>
         {Object.entries(parsed)
           .filter(([k]) => k !== 'name')
           .map(([k, v]) => (
-            <div key={k}>
-              <span className="text-muted-foreground">{k}:</span> {v}
-            </div>
+            <InfoboxRow key={k} label={k} icon={iconForKey(k)}>
+              {v}
+            </InfoboxRow>
           ))}
-      </CardContent>
-    </Card>
+      </InfoboxBody>
+    </Infobox>
   );
 }
 
-function extractFieldsFromChildren(children: ReactNode): Record<string, string> {
-  const text = childrenToText(children).trim();
-  try {
-    const parsed = yaml.load(text);
-    if (parsed && typeof parsed === 'object') {
-      return Object.fromEntries(
-        Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]),
-      );
-    }
-  } catch { /* ignore */ }
-  return {};
+function iconForKey(key: string): LucideIcon | undefined {
+  const k = key.toLowerCase();
+  if (/(found|established|since|date)/.test(k)) return Calendar;
+  if (/(headquarter|hq|location|address|city|country)/.test(k)) return MapPin;
+  if (/(industry|sector|type)/.test(k)) return Briefcase;
+  if (/(employee|staff|people|team)/.test(k)) return Users;
+  if (/(website|url|site|homepage)/.test(k)) return Globe;
+  if (/(product|service)/.test(k)) return Package;
+  return undefined;
 }
 
-function childrenToText(node: ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(childrenToText).join('\n');
-  if (isValidElement(node)) {
-    const props = (node as ReactElement<{ children?: ReactNode }>).props;
-    return childrenToText(props.children ?? null);
-  }
-  return '';
-}

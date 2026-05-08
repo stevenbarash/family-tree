@@ -1,5 +1,9 @@
 import type { ReactElement } from 'react';
 import { randomBytes } from 'node:crypto';
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { readManifest } from '@core/gedcom/snapshots.ts';
+import type { SnapshotEntry } from '@core/gedcom/types.ts';
 import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType } from '@core/pages/index.ts';
 import { buildSlugIndex, type SlugIndex } from './wikilinks';
 import {
@@ -18,6 +22,7 @@ import {
 } from '@core/pages/research-notes.ts';
 import { findRedlinks, type RedlinkEntry } from '@core/pages/redlinks.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
+import { lastSegment } from '@core/family/places.ts';
 import { CURRENT_SCHEMA_VERSION } from '@core/pages/migrations/index.ts';
 import { PageNotFoundError } from '@core/pages/store.ts';
 import { WHOAMI_ROOT, PAGES_DIR, GENEALOGY_DIR, SEARCH_INDEX_FILE, DEFAULT_AUTHOR } from './env.ts';
@@ -82,6 +87,48 @@ export async function getCachedList(): Promise<{ list: PageMetaSummary[]; index:
 
 export function invalidateListCache(): void {
   _listCache = null;
+}
+
+// Snapshot manifest is read by the dashboard (age banner) and by every
+// article page that has a frontmatter snapshot (date resolution). Same TTL
+// as the page list — short enough that a fresh sync shows up quickly.
+let _snapshotsCache: { entries: SnapshotEntry[]; expiresAt: number } | null = null;
+
+export async function getCachedSnapshots(genealogyDir: string): Promise<SnapshotEntry[]> {
+  const now = Date.now();
+  if (_snapshotsCache && _snapshotsCache.expiresAt > now) return _snapshotsCache.entries;
+  const entries = await readManifest(genealogyDir);
+  _snapshotsCache = { entries, expiresAt: now + LIST_TTL_MS };
+  return entries;
+}
+
+// Recently-revised articles by file mtime. Caching this avoids 100+ fs.stat
+// calls on every dashboard render; stale by up to LIST_TTL_MS is acceptable
+// because a freshly-edited page jumps to the top within a couple of seconds.
+let _recentCache: { items: RecentItem[]; expiresAt: number } | null = null;
+
+interface RecentItem extends PageMetaSummary {
+  mtime: number;
+}
+
+export async function getRecentlyRevised(pagesDir: string, limit: number): Promise<RecentItem[]> {
+  const now = Date.now();
+  if (_recentCache && _recentCache.expiresAt > now) return _recentCache.items.slice(0, limit);
+  const { list } = await getCachedList();
+  const live = list.filter(p => !p.isTalk && !p.isArchived);
+  const items = await Promise.all(
+    live.map(async p => {
+      try {
+        const s = await stat(join(pagesDir, `${p.slug}.md`));
+        return { ...p, mtime: s.mtimeMs };
+      } catch {
+        return { ...p, mtime: 0 };
+      }
+    }),
+  );
+  items.sort((a, b) => b.mtime - a.mtime);
+  _recentCache = { items, expiresAt: now + LIST_TTL_MS };
+  return items.slice(0, limit);
 }
 
 let _search: SearchIndex | null = null;
@@ -487,11 +534,29 @@ export async function searchAndJoin(query: string, limit: number): Promise<Searc
   if (hits.length === 0) return [];
   const { list } = await getCachedList();
   const bySlug = new Map(list.map(p => [p.slug, p]));
+  const records = getCachedDerivedRecords();
   const results: SearchResult[] = [];
   for (const h of hits) {
     const meta = bySlug.get(h.slug);
     if (!meta || meta.isArchived) continue;
-    results.push({ slug: h.slug, title: meta.title, type: meta.type });
+    const derived = meta.gedcomRecord ? records.get(meta.gedcomRecord) : null;
+    const place = derived?.birth?.place ?? null;
+    results.push({
+      slug: h.slug,
+      title: meta.title,
+      type: meta.type,
+      place,
+      placeBucket: placeBucketOf(place),
+    });
   }
   return results;
+}
+
+/** Bucket key for the search-page place facet — `lastSegment` (which already
+ *  handles country normalization like `USA` → `United States`), lowercased
+ *  for case-insensitive matching. Round-trips back to display form via the
+ *  caller's title-case helper. */
+function placeBucketOf(place: string | null | undefined): string | null {
+  if (!place) return null;
+  return lastSegment(place).toLowerCase() || null;
 }

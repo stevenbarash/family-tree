@@ -1,6 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { LifespanBar } from '@/components/family/lifespan-bar';
 import type { FamilyTreeView } from '@/lib/family';
+import { MobileDisclosure } from './mobile-disclosure';
 import { SectionHeader, familyTreeHref } from './shared';
 
 interface Props {
@@ -22,26 +23,28 @@ export function LifespansSection({ view }: Props) {
           </p>
         }
       />
-      <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
-        <div className="divide-y rule-hair">
-          {timeline.entries.map(e => (
-            <LifespanBar
-              key={`life-${e.record}`}
-              href={familyTreeHref(e.record)}
-              name={e.name}
-              birthYear={e.birthYear}
-              deathYear={e.deathYear}
-              side={e.side}
-              rangeMin={timeline.range!.minYear}
-              rangeMax={timeline.range!.maxYear}
-              endYear={e.endYear}
-              birthQualified={e.birthQualified}
-              deathQualified={e.deathQualified}
-              portrait={e.portrait}
-            />
-          ))}
-        </div>
-      </Card>
+      <MobileDisclosure storageKey="lifespans">
+        <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+          <div className="divide-y rule-hair">
+            {timeline.entries.map(e => (
+              <LifespanBar
+                key={`life-${e.record}`}
+                href={familyTreeHref(e.record)}
+                name={e.name}
+                birthYear={e.birthYear}
+                deathYear={e.deathYear}
+                side={e.side}
+                rangeMin={timeline.range!.minYear}
+                rangeMax={timeline.range!.maxYear}
+                endYear={e.endYear}
+                birthQualified={e.birthQualified}
+                deathQualified={e.deathQualified}
+                portrait={e.portrait}
+              />
+            ))}
+          </div>
+        </Card>
+      </MobileDisclosure>
     </section>
   );
 }

@@ -9,7 +9,8 @@ function rec(record: string, name: string, b: string | null, d: string | null): 
     birth: b ? { date: b, place: null } : null,
     death: d ? { date: d, place: null } : null,
     parents: [], spouses: [], children: [],
-    residences: [], occupations: [], sources: [],
+    familyOfOrigin: [], marriages: [],
+    residences: [], occupations: [], sources: [], media: [],
   };
 }
 

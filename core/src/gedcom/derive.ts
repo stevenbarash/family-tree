@@ -1,5 +1,19 @@
-import type { GedcomNode, DerivedRecord, DatedEvent, ParentRef, ResidenceEvent, OccupationEvent, SourceRef } from './types.ts';
-import type { ParseResult } from './parser.ts';
+import {
+  PEDIGREE_VALUES,
+  type GedcomNode,
+  type DerivedRecord,
+  type DatedEvent,
+  type ParentRef,
+  type ResidenceEvent,
+  type OccupationEvent,
+  type SourceRef,
+  type FamilyMemberRef,
+  type FamilyOfOriginEntry,
+  type MarriageEntry,
+  type PedigreeKind,
+  type MediaRef,
+} from './types.ts';
+import { stripPointer, type ParseResult } from './parser.ts';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -8,13 +22,13 @@ import yaml from 'js-yaml';
 function deriveParents(node: GedcomNode, ctx: ParseResult): ParentRef[] {
   const out: ParentRef[] = [];
   for (const famc of node.tree.filter(n => n.tag === 'FAMC')) {
-    const famPointer = (famc.data ?? '').replace(/^@|@$/g, '');
+    const famPointer = stripPointer(famc.data ?? '');
     const fam = ctx.families.get(famPointer);
     if (!fam) continue;
     for (const tag of ['HUSB', 'WIFE'] as const) {
       const link = fam.tree.find(n => n.tag === tag);
       if (!link?.data) continue;
-      const parentRecord = link.data.replace(/^@|@$/g, '');
+      const parentRecord = stripPointer(link.data);
       const parent = ctx.individuals.get(parentRecord);
       if (!parent) continue;
       out.push({
@@ -36,15 +50,15 @@ function deriveSpousesAndChildren(
   const children: DerivedRecord['children'] = [];
 
   for (const fams of node.tree.filter(n => n.tag === 'FAMS')) {
-    const famPointer = (fams.data ?? '').replace(/^@|@$/g, '');
+    const famPointer = stripPointer(fams.data ?? '');
     const fam = ctx.families.get(famPointer);
     if (!fam) continue;
-    const married = fam.tree.find(n => n.tag === 'MARR')?.tree.find(n => n.tag === 'DATE')?.data?.trim() || null;
+    const married = deriveDatedEvent(fam, 'MARR')?.date ?? null;
 
     for (const tag of ['HUSB', 'WIFE'] as const) {
       const link = fam.tree.find(n => n.tag === tag);
       if (!link?.data) continue;
-      const partnerRecord = link.data.replace(/^@|@$/g, '');
+      const partnerRecord = stripPointer(link.data);
       if (partnerRecord === selfRecord) continue;
       const partner = ctx.individuals.get(partnerRecord);
       if (!partner) continue;
@@ -52,7 +66,7 @@ function deriveSpousesAndChildren(
     }
 
     for (const chil of fam.tree.filter(n => n.tag === 'CHIL')) {
-      const childRecord = (chil.data ?? '').replace(/^@|@$/g, '');
+      const childRecord = stripPointer(chil.data ?? '');
       const child = ctx.individuals.get(childRecord);
       if (!child) continue;
       const born = child.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE')?.data?.trim() || null;
@@ -83,10 +97,154 @@ function deriveOccupations(node: GedcomNode): OccupationEvent[] {
     .filter(o => o.title);
 }
 
-function deriveSources(node: GedcomNode): SourceRef[] {
+function memberRef(record: string, ind: GedcomNode, includeBorn: boolean): FamilyMemberRef {
+  const ref: FamilyMemberRef = { record, name: deriveName(ind) };
+  if (includeBorn) {
+    ref.born = ind.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE')?.data?.trim() || null;
+  }
+  return ref;
+}
+
+function deriveFamilyOfOrigin(node: GedcomNode, selfRecord: string, ctx: ParseResult): FamilyOfOriginEntry[] {
+  const out: FamilyOfOriginEntry[] = [];
+  for (const famc of node.tree.filter(n => n.tag === 'FAMC')) {
+    if (!famc.data) continue;
+    const famPointer = stripPointer(famc.data);
+    const fam = ctx.families.get(famPointer);
+    if (!fam) continue;
+    const marr = deriveDatedEvent(fam, 'MARR');
+    const entry: FamilyOfOriginEntry = {
+      fam: famPointer,
+      siblings: [],
+      marriedDate: marr?.date ?? null,
+      marriedPlace: marr?.place ?? null,
+    };
+    const pedi = famc.tree.find(n => n.tag === 'PEDI')?.data?.trim().toLowerCase();
+    if (pedi && (PEDIGREE_VALUES as readonly string[]).includes(pedi)) {
+      entry.pedigree = pedi as PedigreeKind;
+    }
+    const husb = fam.tree.find(n => n.tag === 'HUSB');
+    if (husb?.data) {
+      const recId = stripPointer(husb.data);
+      const ind = ctx.individuals.get(recId);
+      if (ind) entry.father = memberRef(recId, ind, false);
+    }
+    const wife = fam.tree.find(n => n.tag === 'WIFE');
+    if (wife?.data) {
+      const recId = stripPointer(wife.data);
+      const ind = ctx.individuals.get(recId);
+      if (ind) entry.mother = memberRef(recId, ind, false);
+    }
+    for (const chil of fam.tree.filter(n => n.tag === 'CHIL')) {
+      if (!chil.data) continue;
+      const recId = stripPointer(chil.data);
+      if (recId === selfRecord) continue;
+      const ind = ctx.individuals.get(recId);
+      if (!ind) continue;
+      entry.siblings.push(memberRef(recId, ind, true));
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+function deriveMarriages(node: GedcomNode, selfRecord: string, ctx: ParseResult): MarriageEntry[] {
+  const out: MarriageEntry[] = [];
+  for (const fams of node.tree.filter(n => n.tag === 'FAMS')) {
+    if (!fams.data) continue;
+    const famPointer = stripPointer(fams.data);
+    const fam = ctx.families.get(famPointer);
+    if (!fam) continue;
+    const marr = deriveDatedEvent(fam, 'MARR');
+    const entry: MarriageEntry = {
+      fam: famPointer,
+      children: [],
+      marriedDate: marr?.date ?? null,
+      marriedPlace: marr?.place ?? null,
+    };
+    for (const tag of ['HUSB', 'WIFE'] as const) {
+      const link = fam.tree.find(n => n.tag === tag);
+      if (!link?.data) continue;
+      const recId = stripPointer(link.data);
+      if (recId === selfRecord) continue;
+      const ind = ctx.individuals.get(recId);
+      if (ind) entry.spouse = memberRef(recId, ind, false);
+    }
+    for (const chil of fam.tree.filter(n => n.tag === 'CHIL')) {
+      if (!chil.data) continue;
+      const recId = stripPointer(chil.data);
+      const ind = ctx.individuals.get(recId);
+      if (!ind) continue;
+      entry.children.push(memberRef(recId, ind, true));
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+function deriveSourceRef(pointer: string, sources: Map<string, GedcomNode>): SourceRef {
+  const record = stripPointer(pointer);
+  const sourceNode = sources.get(record);
+  if (!sourceNode) return { record };
+  const ref: SourceRef = { record };
+  const get = (tag: string): string | undefined =>
+    sourceNode.tree.find(n => n.tag === tag)?.data?.trim() || undefined;
+  const title = get('TITL');
+  if (title) ref.title = title;
+  const author = get('AUTH');
+  if (author) ref.author = author;
+  const publisher = get('PUBL');
+  if (publisher) ref.publisher = publisher;
+  const apid = get('_APID');
+  if (apid) ref.apid = apid;
+  const note = get('NOTE');
+  if (note) ref.note = note;
+  return ref;
+}
+
+/** Resolve an OBJE pointer + the citing INDI's local node (which may carry
+ *  `_PRIM Y`) into a denormalized MediaRef. Walks both the OBJE-level and
+ *  FILE-level subtrees for FORM and TITL because GEDCOM exporters disagree
+ *  about which depth those tags live at. */
+function deriveMediaRef(
+  pointerSrc: GedcomNode,
+  mediaMap: Map<string, GedcomNode>,
+): MediaRef | null {
+  if (!pointerSrc.data) return null;
+  const record = stripPointer(pointerSrc.data);
+  const objeNode = mediaMap.get(record);
+  const ref: MediaRef = { record };
+  if (pointerSrc.tree.find(n => n.tag === '_PRIM')?.data?.trim().toUpperCase() === 'Y') {
+    ref.primary = true;
+  }
+  if (!objeNode) return ref;
+  const fileNode = objeNode.tree.find(n => n.tag === 'FILE');
+  const file = fileNode?.data?.trim();
+  if (file) ref.file = file;
+  const findUnder = (parent: GedcomNode | undefined, tag: string): string | undefined =>
+    parent?.tree.find(n => n.tag === tag)?.data?.trim() || undefined;
+  const form = findUnder(fileNode, 'FORM') ?? findUnder(objeNode, 'FORM');
+  if (form) ref.form = form;
+  const title = findUnder(fileNode, 'TITL') ?? findUnder(objeNode, 'TITL');
+  if (title) ref.title = title;
+  const oid = findUnder(objeNode, '_OID');
+  if (oid) ref.oid = oid;
+  return ref;
+}
+
+function deriveMedia(node: GedcomNode, ctx: ParseResult): MediaRef[] {
+  const out: MediaRef[] = [];
+  for (const obje of node.tree.filter(n => n.tag === 'OBJE')) {
+    const ref = deriveMediaRef(obje, ctx.media);
+    if (ref) out.push(ref);
+  }
+  return out;
+}
+
+function deriveSources(node: GedcomNode, ctx: ParseResult): SourceRef[] {
   return node.tree
     .filter(n => n.tag === 'SOUR' && n.data)
-    .map(s => ({ record: (s.data ?? '').replace(/^@|@$/g, '') }));
+    .map(s => deriveSourceRef(s.data!, ctx.sources));
 }
 
 export function deriveIndividual(node: GedcomNode, record: string, ctx: ParseResult): DerivedRecord {
@@ -99,9 +257,12 @@ export function deriveIndividual(node: GedcomNode, record: string, ctx: ParseRes
     parents: deriveParents(node, ctx),
     spouses: sc.spouses,
     children: sc.children,
+    familyOfOrigin: deriveFamilyOfOrigin(node, record, ctx),
+    marriages: deriveMarriages(node, record, ctx),
     residences: deriveResidences(node),
     occupations: deriveOccupations(node),
-    sources: deriveSources(node),
+    sources: deriveSources(node, ctx),
+    media: deriveMedia(node, ctx),
   };
 }
 

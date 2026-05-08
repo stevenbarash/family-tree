@@ -15,7 +15,8 @@ import {
   type UnmappedPlace,
 } from '@core/family/places-coords.ts';
 import { loadConflicts, type ConflictEntry } from '@core/family/conflicts.ts';
-import type { DerivedRecord } from '@core/gedcom/types.ts';
+import type { DerivedRecord, MediaRef } from '@core/gedcom/types.ts';
+import { normalizeDerivedRecord } from '@core/gedcom/normalize.ts';
 import { DERIVED_DIR, GENEALOGY_DIR, PLACES_COORDS_FILE, SELF_RECORD } from './env';
 import { getCachedList } from './server-services';
 import { correctRecords, getCachedPageCorrections } from './corrections.ts';
@@ -94,6 +95,36 @@ export interface CoverageView {
   frontier: ResearchFrontierView[];
 }
 
+export interface FamilyOfOriginView {
+  fam: string;
+  pedigree?: 'adopted' | 'foster' | 'sealing';
+  father?: BrowserRelationView;
+  mother?: BrowserRelationView;
+  siblings: BrowserRelationView[];
+  marriedDate: string | null;
+  marriedPlace: string | null;
+}
+
+/** A parent's marriage that isn't the focal person's family-of-origin —
+ *  i.e. the focal person's step-family. Step-parent + half-siblings live
+ *  here, in the genealogically correct unit, instead of being scattered. */
+export interface StepFamilyView {
+  fam: string;
+  via: { record: string; name: string; role: 'father' | 'mother' };
+  stepParent?: BrowserRelationView;
+  halfSiblings: BrowserRelationView[];
+  marriedDate: string | null;
+  marriedPlace: string | null;
+}
+
+export interface MarriageView {
+  fam: string;
+  spouse?: BrowserRelationView;
+  children: BrowserRelationView[];
+  marriedDate: string | null;
+  marriedPlace: string | null;
+}
+
 export interface FamilyTreeView {
   root: BrowserPersonView;
   selected: BrowserPersonView;
@@ -107,9 +138,15 @@ export interface FamilyTreeView {
     spouses: BrowserRelationView[];
     children: BrowserRelationView[];
   };
+  selectedFamilies: {
+    familyOfOrigin: FamilyOfOriginView[];
+    marriages: MarriageView[];
+  };
+  selectedStepFamilies: StepFamilyView[];
   /** Disagreeing-source records for the focal person. Sourced from
    *  `genealogy/conflicts/<record>.yml`; not derived from GEDCOM. */
   selectedConflicts: ConflictEntry[];
+  selectedMedia: MediaRef[];
   cohort: {
     siblings: BrowserSiblingView[];
     cousins: BrowserCousinView[];
@@ -122,7 +159,12 @@ export interface FamilyTreeView {
   places: PlacesView;
   placesMap: { mapped: MappedPlace[]; unmapped: UnmappedPlace[] };
   timeline: TimelineViewWithPortraits;
-  relationship: { label: string; path: string[]; perspective: { record: string; name: string; isMe: boolean } } | null;
+  relationship: {
+    label: string;
+    path: string[];
+    crumbs: { record: string; name: string; slug?: string }[];
+    perspective: { record: string; name: string; isMe: boolean };
+  } | null;
 }
 
 /** Normalize a wiki page title into its slug shape so we can match the
@@ -194,8 +236,8 @@ export function loadDerivedRecordsForTree(derivedDir: string = DERIVED_DIR): Map
     if (!entry.isFile() || !entry.name.endsWith('.yml')) continue;
     try {
       const raw = readFileSync(join(derivedDir, entry.name), 'utf-8');
-      const record = yaml.load(raw) as DerivedRecord;
-      if (record?.record && /^I\d+$/.test(record.record)) records.set(record.record, record);
+      const record = normalizeDerivedRecord(yaml.load(raw));
+      if (record) records.set(record.record, record);
     } catch {
       continue;
     }
@@ -390,7 +432,7 @@ export async function getFamilyTree(
   const descendantsRaw = computeDescendants({ records, rootRecord: targetRecord });
 
   const fromRecord = perspectiveRecord ?? SELF_RECORD;
-  const relationship = computeRelationshipFromPerspective(records, targetRecord, fromRecord);
+  const relationship = computeRelationshipFromPerspective(records, targetRecord, fromRecord, findPage);
   const descendantsByGen = descendantsRaw.byGeneration.map(g => ({
     generation: g.generation,
     people: g.people.map(p => {
@@ -420,7 +462,10 @@ export async function getFamilyTree(
       spouses: core.selectedRelations.spouses.map(r => relation(r, r.married ? `m. ${r.married}` : null)),
       children: core.selectedRelations.children.map(r => relation(r, r.born ? `b. ${r.born}` : null)),
     },
+    selectedFamilies: buildSelectedFamilies(records.get(targetRecord), relation),
+    selectedStepFamilies: buildStepFamilies(records.get(targetRecord), records, relation),
     selectedConflicts: loadConflicts(GENEALOGY_DIR, targetRecord),
+    selectedMedia: records.get(targetRecord)?.media ?? [],
     cohort: { siblings, cousins },
     descendants: { byGeneration: descendantsByGen, total: descendantsRaw.total },
     coverage: { byGeneration: coverageByGen, knownTotal, possibleTotal, frontier },
@@ -431,18 +476,87 @@ export async function getFamilyTree(
   };
 }
 
+type RelationEnricher = (
+  r: { record: string; name: string; born?: string | null },
+  detail: string | null,
+) => BrowserRelationView;
+
+function buildSelectedFamilies(
+  selected: DerivedRecord | undefined,
+  enrich: RelationEnricher,
+): FamilyTreeView['selectedFamilies'] {
+  if (!selected) return { familyOfOrigin: [], marriages: [] };
+  const memberDetail = (m: { born?: string | null }): string | null =>
+    m.born ? `b. ${m.born}` : null;
+
+  const familyOfOrigin: FamilyOfOriginView[] = selected.familyOfOrigin.map(foo => ({
+    fam: foo.fam,
+    pedigree: foo.pedigree,
+    father: foo.father ? enrich(foo.father, null) : undefined,
+    mother: foo.mother ? enrich(foo.mother, null) : undefined,
+    siblings: foo.siblings.map(s => enrich(s, memberDetail(s))),
+    marriedDate: foo.marriedDate,
+    marriedPlace: foo.marriedPlace,
+  }));
+
+  const marriages: MarriageView[] = selected.marriages.map(m => ({
+    fam: m.fam,
+    spouse: m.spouse ? enrich(m.spouse, null) : undefined,
+    children: m.children.map(c => enrich(c, memberDetail(c))),
+    marriedDate: m.marriedDate,
+    marriedPlace: m.marriedPlace,
+  }));
+
+  return { familyOfOrigin, marriages };
+}
+
+function buildStepFamilies(
+  selected: DerivedRecord | undefined,
+  records: Map<string, DerivedRecord>,
+  enrich: RelationEnricher,
+): StepFamilyView[] {
+  if (!selected) return [];
+  // The focal person's own families-of-origin — we want each parent's
+  // OTHER marriages, not the one they had together with the other focal-parent.
+  const focalFamIds = new Set(selected.familyOfOrigin.map(f => f.fam));
+  const out: StepFamilyView[] = [];
+  for (const parent of selected.parents) {
+    const parentRec = records.get(parent.record);
+    if (!parentRec) continue;
+    for (const m of parentRec.marriages) {
+      if (focalFamIds.has(m.fam)) continue;
+      out.push({
+        fam: m.fam,
+        via: { record: parent.record, name: parent.name, role: parent.role },
+        stepParent: m.spouse ? enrich(m.spouse, null) : undefined,
+        halfSiblings: m.children.map(c => enrich(c, c.born ? `b. ${c.born}` : null)),
+        marriedDate: m.marriedDate,
+        marriedPlace: m.marriedPlace,
+      });
+    }
+  }
+  return out;
+}
+
 function computeRelationshipFromPerspective(
   records: Map<string, DerivedRecord>,
   targetRecord: string,
   fromRecord: string,
+  findPage: (record: string, name: string) => { slug?: string; portrait?: string },
 ): FamilyTreeView['relationship'] {
   if (targetRecord === fromRecord) return null;
   const rel = computeRelationship({ records, fromRecord, toRecord: targetRecord });
   if (!rel) return null;
   const fromRec = records.get(fromRecord);
+  const crumbs = rel.path.map(record => {
+    const rec = records.get(record);
+    const name = rec?.name ?? record;
+    return { record, name, slug: findPage(record, name).slug };
+  });
   return {
     label: rel.label,
     path: rel.path,
+    crumbs,
     perspective: {
       record: fromRecord,
       name: fromRec?.name ?? 'me',

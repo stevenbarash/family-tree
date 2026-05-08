@@ -4,7 +4,7 @@ import { searchAndJoin } from '@/lib/server-services';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: Promise<{ q?: string; type?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; place?: string }>;
 }
 
 const TYPE_ORDER = ['person', 'family', 'event', 'tree', 'meta'] as const;
@@ -15,23 +15,56 @@ const TYPE_LABELS: Record<string, string> = {
   tree: 'Trees',
   meta: 'Meta',
 };
+const PLACE_FACET_LIMIT = 8;
+
+function titleCasePlace(bucket: string): string {
+  return bucket
+    .split(/\s+/)
+    .map(w => (w.length > 0 ? w[0]!.toUpperCase() + w.slice(1) : w))
+    .join(' ');
+}
 
 export default async function SearchPage({ searchParams }: Props) {
-  const { q = '', type } = await searchParams;
+  const { q = '', type, place: placeRaw } = await searchParams;
   const trimmed = q.trim();
   const all = await searchAndJoin(trimmed, 200);
-  const filtered = type ? all.filter(r => r.type === type) : all;
 
   const counts = new Map<string, number>();
   for (const r of all) counts.set(r.type, (counts.get(r.type) ?? 0) + 1);
 
-  function tabHref(t?: string): string {
+  // Place buckets respect the active type filter so place counts reflect
+  // what the user would actually see; type tabs always show counts across all.
+  const placeCounts = new Map<string, number>();
+  for (const r of all) {
+    if (type && r.type !== type) continue;
+    if (!r.placeBucket) continue;
+    placeCounts.set(r.placeBucket, (placeCounts.get(r.placeBucket) ?? 0) + 1);
+  }
+  const topPlaces = [...placeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, PLACE_FACET_LIMIT);
+
+  // Honor the place query param only when it's an actual bucket the current
+  // result set surfaces. Anything else (typo, stale URL, hand-crafted) is
+  // ignored so the UI can't show "0 results" for a non-existent bucket.
+  const validBuckets = new Set(placeCounts.keys());
+  const place = placeRaw && validBuckets.has(placeRaw) ? placeRaw : undefined;
+  const filtered = all.filter(r =>
+    (!type || r.type === type) && (!place || r.placeBucket === place),
+  );
+
+  function buildHref(overrides: { type?: string | null; place?: string | null } = {}): string {
     const params = new URLSearchParams();
     if (trimmed) params.set('q', trimmed);
-    if (t) params.set('type', t);
+    const nextType = overrides.type === undefined ? type : (overrides.type ?? undefined);
+    if (nextType) params.set('type', nextType);
+    const nextPlace = overrides.place === undefined ? place : (overrides.place ?? undefined);
+    if (nextPlace) params.set('place', nextPlace);
     const s = params.toString();
     return s ? `/search?${s}` : '/search';
   }
+  const tabHref = (t?: string) => buildHref({ type: t ?? null });
+  const placeHref = (p?: string) => buildHref({ place: p ?? null });
 
   return (
     <main className="mx-auto max-w-3xl p-6">
@@ -80,6 +113,36 @@ export default async function SearchPage({ searchParams }: Props) {
               );
             })}
           </nav>
+
+          {topPlaces.length > 0 ? (
+            <nav className="mb-4 flex flex-wrap items-center gap-1.5">
+              <span className="font-display text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground/80">
+                Places
+              </span>
+              {place ? (
+                <Link
+                  href={placeHref()}
+                  className="rounded-md px-2 py-0.5 text-xs font-mono uppercase tracking-[0.08em] text-muted-foreground hover:bg-accent/45"
+                >
+                  clear ×
+                </Link>
+              ) : null}
+              {topPlaces.map(([bucket, n]) => {
+                const active = place === bucket;
+                return (
+                  <Link
+                    key={bucket}
+                    href={placeHref(active ? undefined : bucket)}
+                    className={`rounded-md px-2 py-0.5 text-xs font-mono uppercase tracking-[0.08em] transition-colors ${
+                      active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
+                    }`}
+                  >
+                    {titleCasePlace(bucket)} <span className="ml-1 tabular-nums text-muted-foreground/80">{n}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
 
           {type ? (
             <ul className="space-y-2">

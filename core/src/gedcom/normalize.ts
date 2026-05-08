@@ -1,32 +1,40 @@
-// NOTE on merge: this file was created by plan-1-format-normalizer because
-// the plan assumed `normalizeDerivedRecord` existed. The main branch has an
-// untracked richer version with additional fields (`familyOfOrigin`,
-// `marriages`, `media`) that aren't yet on the typed `DerivedRecord`. When
-// merging plan-1 back to main, prefer the richer version from main and drop
-// this stub.
 import type { DerivedRecord } from './types.ts';
 
 /**
- * Normalize a raw YAML-parsed object into a DerivedRecord, filling missing
- * array fields defensively. Returns null if the value is missing the required
- * `record` or `name` fields.
+ * Coerce a YAML-parsed object into a fully-populated `DerivedRecord`, filling
+ * in any array-shaped fields that may be missing because the YAML on disk was
+ * written by an older deriver. Returns `null` if the input is too malformed
+ * to use (missing `record` or `name`).
+ *
+ * This is a defensive *normalizer*, not a *validator*: existing array entries
+ * (`parents`, `marriages`, etc.) are presumed well-formed because our own
+ * deriver wrote them. The normalizer only protects against the
+ * "newer code reads older YAML" case where new array fields are absent —
+ * accessing `.map()` on `undefined` would crash. Run `wai sync-gedcom --force`
+ * to regenerate YAMLs against the current deriver and remove the need for
+ * defaults.
  */
 export function normalizeDerivedRecord(raw: unknown): DerivedRecord | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
-  if (typeof r['record'] !== 'string' || !r['record']) return null;
-  if (typeof r['name'] !== 'string' || !r['name']) return null;
+  if (typeof r.record !== 'string' || !/^I\d+$/.test(r.record)) return null;
+  if (typeof r.name !== 'string') return null;
+
+  const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
   return {
-    record: r['record'] as string,
-    name: r['name'] as string,
-    birth: (r['birth'] as DerivedRecord['birth']) ?? null,
-    death: (r['death'] as DerivedRecord['death']) ?? null,
-    parents: Array.isArray(r['parents']) ? (r['parents'] as DerivedRecord['parents']) : [],
-    spouses: Array.isArray(r['spouses']) ? (r['spouses'] as DerivedRecord['spouses']) : [],
-    children: Array.isArray(r['children']) ? (r['children'] as DerivedRecord['children']) : [],
-    residences: Array.isArray(r['residences']) ? (r['residences'] as DerivedRecord['residences']) : [],
-    occupations: Array.isArray(r['occupations']) ? (r['occupations'] as DerivedRecord['occupations']) : [],
-    sources: Array.isArray(r['sources']) ? (r['sources'] as DerivedRecord['sources']) : [],
+    record: r.record,
+    name: r.name,
+    birth: (r.birth as DerivedRecord['birth']) ?? null,
+    death: (r.death as DerivedRecord['death']) ?? null,
+    parents: arr(r.parents),
+    spouses: arr(r.spouses),
+    children: arr(r.children),
+    familyOfOrigin: arr(r.familyOfOrigin),
+    marriages: arr(r.marriages),
+    residences: arr(r.residences),
+    occupations: arr(r.occupations),
+    sources: arr(r.sources),
+    media: arr(r.media),
   };
 }

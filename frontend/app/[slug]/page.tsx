@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   getPageStore,
   getCachedList,
+  getCachedSnapshots,
   readTalkBody,
   buildNotesView,
 } from '@/lib/server-services';
@@ -10,9 +11,10 @@ import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
-import { WHOAMI_ROOT } from '@/lib/env';
+import { GENEALOGY_DIR, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
+import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,17 +49,30 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
     ? loadDerivedRecord(WHOAMI_ROOT, page.meta.gedcom.record)
     : Promise.resolve(null);
   const talkBodyPromise = isTalkSlug(slug) ? Promise.resolve('') : readTalkBody(toTalkSlug(slug));
+  const snapshotsPromise = page.meta.gedcom?.snapshot
+    ? getCachedSnapshots(GENEALOGY_DIR)
+    : Promise.resolve([]);
 
-  const [{ index }, derived, talkBody] = await Promise.all([
+  const [{ index }, derived, talkBody, snapshots] = await Promise.all([
     indexPromise,
     derivedPromise,
     talkBodyPromise,
+    snapshotsPromise,
   ]);
 
   const [tree, notes] = await Promise.all([
     renderMarkdown(page.body, index, { derived }),
     buildNotesView(talkBody, index),
   ]);
+
+  const gedcomSnapshotDate = page.meta.gedcom?.snapshot
+    ? snapshots.find(s => s.hash === page.meta.gedcom!.snapshot)?.date?.slice(0, 10) ?? null
+    : null;
+  const sourceCount = countCitations(page.body);
+  const liveNoteCount = notes.filter(n => !n.deletedAt).length;
+  const openGapCount = countOpenGaps(talkBody);
+  const showStrip = !isTalkSlug(slug)
+    && (page.meta.created || page.meta.editors.length > 0 || gedcomSnapshotDate || sourceCount > 0 || liveNoteCount > 0 || openGapCount > 0);
 
   return (
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-6 sm:px-6 lg:py-10">
@@ -78,6 +93,28 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
                 {category}
               </span>
             ))}
+          </div>
+        ) : null}
+        {showStrip ? (
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">
+            {page.meta.created ? <span>created {page.meta.created}</span> : null}
+            {page.meta.editors.length > 0 ? (
+              <span>editors: {page.meta.editors.join(', ')}</span>
+            ) : null}
+            {gedcomSnapshotDate ? (
+              <span>GEDCOM snapshot {gedcomSnapshotDate}</span>
+            ) : null}
+            {sourceCount > 0 ? (
+              <span>{sourceCount} {sourceCount === 1 ? 'source' : 'sources'} cited</span>
+            ) : null}
+            {liveNoteCount > 0 || openGapCount > 0 ? (
+              <Link
+                href={`/${toTalkSlug(slug)}`}
+                className="underline-offset-4 hover:text-foreground hover:underline"
+              >
+                talk: {formatTalkLabel(liveNoteCount, openGapCount)} →
+              </Link>
+            ) : null}
           </div>
         ) : null}
       </header>

@@ -43,6 +43,13 @@ export function relationMeta(relation: BrowserRelationView): string | null {
   return relation.detail || null;
 }
 
+/** Join non-empty metadata fragments with the project's mid-dot separator
+ *  (` · `). Falsy parts (`null`, `undefined`, empty string) are dropped, so
+ *  callers can pass conditional values directly without extra branching. */
+export function joinMeta(parts: Array<string | null | undefined | false>): string {
+  return parts.filter((p): p is string => Boolean(p)).join(' · ');
+}
+
 export function Stat({ label, value, sub }: { label: string; value: number; sub?: string }) {
   return (
     <div>

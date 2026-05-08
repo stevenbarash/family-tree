@@ -34,7 +34,11 @@ export function groupBirthplaces(cfg: { entries: PlaceEntry[] }): PlacesView {
   return { regions };
 }
 
-function lastSegment(place: string): string {
+/** Trailing comma-separated component of a place string, with country
+ *  spelling normalized (`USA` → `United States`, etc.). Used both for
+ *  region grouping in the places view and as the canonical key for the
+ *  search-page place facet. */
+export function lastSegment(place: string): string {
   const segs = place.split(',').map(s => s.trim()).filter(Boolean);
   const last = segs[segs.length - 1] ?? place.trim();
   return normalizeCountry(last);

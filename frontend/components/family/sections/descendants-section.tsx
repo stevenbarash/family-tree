@@ -2,6 +2,7 @@ import { Card } from '@/components/ui/card';
 import { AncestorTile } from '@/components/family/ancestor-tile';
 import { roman } from '@/lib/utils';
 import type { BrowserDescendantView, FamilyTreeView } from '@/lib/family';
+import { MobileDisclosure } from './mobile-disclosure';
 import { DESCENDANT_HEADING, SectionHeader, familyTreeHref } from './shared';
 
 interface Props {
@@ -14,15 +15,17 @@ export function DescendantsSection({ view }: Props) {
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '120ms' }}>
       <SectionHeader title="Descendants" count={view.descendants.total} />
-      <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
-        {view.descendants.byGeneration.map(group => (
-          <DescendantsBlock
-            key={`desc-${group.generation}`}
-            generation={group.generation}
-            people={group.people}
-          />
-        ))}
-      </Card>
+      <MobileDisclosure storageKey="descendants">
+        <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+          {view.descendants.byGeneration.map(group => (
+            <DescendantsBlock
+              key={`desc-${group.generation}`}
+              generation={group.generation}
+              people={group.people}
+            />
+          ))}
+        </Card>
+      </MobileDisclosure>
     </section>
   );
 }

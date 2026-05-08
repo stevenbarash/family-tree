@@ -5,7 +5,9 @@ import type { GedcomNode } from './types.ts';
 export interface ParseResult {
   individuals: Map<string, GedcomNode>;   // "I123" → its tree
   families: Map<string, GedcomNode>;      // "F1" → its tree
-  raw: GedcomNode[];                      // all top-level records (for sources, etc.)
+  sources: Map<string, GedcomNode>;       // "S1" → its tree (TITL/AUTH/PUBL/_APID/NOTE)
+  media: Map<string, GedcomNode>;         // "O1" → its tree (FILE/FORM/TITL/_OID)
+  raw: GedcomNode[];                      // all top-level records
 }
 
 /**
@@ -98,17 +100,23 @@ export async function parseGedcomFile(path: string): Promise<ParseResult> {
 
   const individuals = new Map<string, GedcomNode>();
   const families = new Map<string, GedcomNode>();
+  const sources = new Map<string, GedcomNode>();
+  const media = new Map<string, GedcomNode>();
   for (const record of top) {
     if (record.tag === 'INDI' && record.pointer) {
       individuals.set(stripPointer(record.pointer), record);
     } else if (record.tag === 'FAM' && record.pointer) {
       families.set(stripPointer(record.pointer), record);
+    } else if (record.tag === 'SOUR' && record.pointer) {
+      sources.set(stripPointer(record.pointer), record);
+    } else if (record.tag === 'OBJE' && record.pointer) {
+      media.set(stripPointer(record.pointer), record);
     }
   }
 
-  return { individuals, families, raw: top };
+  return { individuals, families, sources, media, raw: top };
 }
 
-function stripPointer(p: string): string {
+export function stripPointer(p: string): string {
   return p.replace(/^@|@$/g, '');
 }

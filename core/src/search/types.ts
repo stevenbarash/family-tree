@@ -22,4 +22,9 @@ export interface SearchResult {
   title: string;
   type: string;
   snippet?: string;
+  /** Raw birth-place string from the joined derived record, if any. */
+  place?: string | null;
+  /** Coarse bucket used for the place facet — typically the trailing
+   *  comma-separated component of the place string (country/region). */
+  placeBucket?: string | null;
 }

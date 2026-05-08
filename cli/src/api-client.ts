@@ -48,8 +48,8 @@ export class ApiClient {
     return this.json('DELETE', `/api/pages/${slug}`);
   }
 
-  async syncGedcom(gedFile: string, notes: string): Promise<SyncResult> {
-    return this.json('POST', '/api/gedcom/sync', { gedFile, notes });
+  async syncGedcom(gedFile: string, notes: string, force?: boolean): Promise<SyncResult> {
+    return this.json('POST', '/api/gedcom/sync', { gedFile, notes, force });
   }
 
   async reciteDrift(): Promise<{ drift: ReciteEntry[] }> {

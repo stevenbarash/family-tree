@@ -91,10 +91,116 @@ test('deriveIndividual: extracts occupations', async () => {
   assert.equal(derived.occupations[0]!.date, 'FROM 1900');
 });
 
-test('deriveIndividual: extracts source citations', async () => {
+test('deriveIndividual: extracts source citations with metadata', async () => {
   const result = await parseGedcomFile(FIX('multi-event.ged'));
   const derived = deriveIndividual(result.individuals.get('I1')!, 'I1', result);
-  assert.deepEqual(derived.sources, [{ record: 'S1' }]);
+  assert.equal(derived.sources.length, 3);
+  // Full metadata: title, author, publisher, _APID, note
+  assert.deepEqual(derived.sources[0], {
+    record: 'S1',
+    title: '1928 Teofipol Census',
+    author: 'Soviet Statistical Bureau',
+    publisher: 'Khmelnytsky Regional Archive',
+    apid: '1,99999::0',
+    note: 'Census conducted by district inspector',
+  });
+  // Partial: title only
+  assert.deepEqual(derived.sources[1], {
+    record: 'S2',
+    title: 'Yad Vashem Pages of Testimony',
+  });
+  // Orphan: cited record has no matching SOUR top-level entry
+  assert.deepEqual(derived.sources[2], { record: 'S99' });
+});
+
+test('deriveIndividual: emits familyOfOrigin grouped by FAMC', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const derived = deriveIndividual(result.individuals.get('I3')!, 'I3', result);
+  assert.equal(derived.familyOfOrigin.length, 1);
+  const foo = derived.familyOfOrigin[0]!;
+  assert.equal(foo.fam, 'F1');
+  assert.deepEqual(foo.father, { record: 'I1', name: 'John Doe' });
+  assert.deepEqual(foo.mother, { record: 'I2', name: 'Jane Doe' });
+  assert.deepEqual(foo.siblings, []);
+  assert.equal(foo.marriedDate, '14 FEB 1975');
+  assert.equal(foo.marriedPlace, 'Pittsburgh, PA, USA');
+});
+
+test('deriveIndividual: emits marriages grouped by FAMS with spouse + children', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const derived = deriveIndividual(result.individuals.get('I1')!, 'I1', result);
+  assert.equal(derived.marriages.length, 1);
+  const m = derived.marriages[0]!;
+  assert.equal(m.fam, 'F1');
+  assert.deepEqual(m.spouse, { record: 'I2', name: 'Jane Doe' });
+  assert.equal(m.marriedDate, '14 FEB 1975');
+  assert.equal(m.marriedPlace, 'Pittsburgh, PA, USA');
+  assert.equal(m.children.length, 1);
+  assert.deepEqual(m.children[0], { record: 'I3', name: 'Junior Doe', born: '1 JUN 1980' });
+});
+
+test('deriveIndividual: omits pedigree for default birth FAMC', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const derived = deriveIndividual(result.individuals.get('I3')!, 'I3', result);
+  assert.equal(derived.familyOfOrigin[0]!.pedigree, undefined);
+});
+
+test('deriveIndividual: surfaces pedigree=adopted from FAMC > PEDI', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const i3 = result.individuals.get('I3')!;
+  const original = i3.tree;
+  // Inject PEDI=adopted under I3's FAMC.
+  i3.tree = original.map(n =>
+    n.tag === 'FAMC'
+      ? { ...n, tree: [...n.tree, { tag: 'PEDI', data: 'adopted', tree: [] }] }
+      : n,
+  );
+  try {
+    const derived = deriveIndividual(i3, 'I3', result);
+    assert.equal(derived.familyOfOrigin[0]!.pedigree, 'adopted');
+  } finally {
+    i3.tree = original;
+  }
+});
+
+test('deriveIndividual: empty familyOfOrigin and marriages when no FAMC/FAMS', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const i1 = deriveIndividual(result.individuals.get('I1')!, 'I1', result);  // no FAMC
+  const i3 = deriveIndividual(result.individuals.get('I3')!, 'I3', result);  // no FAMS
+  assert.deepEqual(i1.familyOfOrigin, []);
+  assert.deepEqual(i3.marriages, []);
+});
+
+test('deriveIndividual: extracts media joined from OBJE pointer', async () => {
+  const result = await parseGedcomFile(FIX('multi-event.ged'));
+  const derived = deriveIndividual(result.individuals.get('I1')!, 'I1', result);
+  assert.equal(derived.media.length, 1);
+  assert.deepEqual(derived.media[0], {
+    record: 'O1',
+    title: 'Aidele Ayzman 1928 Teofipol portrait',
+    form: 'jpg',
+    oid: '12345-abcde',
+    primary: true,
+  });
+});
+
+test('deriveIndividual: orphan OBJE pointer keeps record-only ref', async () => {
+  const result = await parseGedcomFile(FIX('multi-event.ged'));
+  const i1 = result.individuals.get('I1')!;
+  const original = i1.tree;
+  i1.tree = [
+    ...original,
+    { tag: 'OBJE', data: '@O999@', tree: [] },
+  ];
+  try {
+    const derived = deriveIndividual(i1, 'I1', result);
+    const orphan = derived.media.find(m => m.record === 'O999');
+    assert.ok(orphan, 'orphan ref present');
+    assert.equal(orphan!.title, undefined);
+    assert.equal(orphan!.form, undefined);
+  } finally {
+    i1.tree = original;
+  }
 });
 
 test('writeDerivedYaml: writes a stable YAML file', async () => {

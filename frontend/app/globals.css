@@ -8,9 +8,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
+  --font-display: var(--font-fraunces);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,6 +48,13 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-infobox: var(--infobox);
+  --color-infobox-foreground: var(--infobox-foreground);
+  --color-infobox-border: var(--infobox-border);
+  --color-infobox-muted: var(--infobox-muted);
+  --color-infobox-accent: var(--infobox-accent);
+  --color-paternal: var(--paternal);
+  --color-maternal: var(--maternal);
 }
 
 :root {
@@ -82,6 +90,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --infobox: oklch(0.985 0.014 88);
+  --infobox-foreground: oklch(0.20 0.025 70);
+  --infobox-border: oklch(0.86 0.05 78);
+  --infobox-muted: oklch(0.46 0.04 72);
+  --infobox-accent: oklch(0.42 0.13 226);
+  --paternal: oklch(0.60 0.16 247);
+  --maternal: oklch(0.62 0.18 18);
 }
 
 .dark {
@@ -116,6 +131,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --infobox: oklch(0.225 0.022 70);
+  --infobox-foreground: oklch(0.96 0.012 86);
+  --infobox-border: oklch(0.34 0.04 72);
+  --infobox-muted: oklch(0.72 0.025 78);
+  --infobox-accent: oklch(0.78 0.12 220);
+  --paternal: oklch(0.72 0.14 247);
+  --maternal: oklch(0.74 0.16 18);
 }
 
 @layer base {
@@ -123,7 +145,8 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
   html {
     @apply font-sans;
@@ -132,8 +155,164 @@
 
 @layer components {
   .redlink { @apply text-red-600 underline decoration-dashed; }
-  .family-tree-surface {
-    background:
-      linear-gradient(135deg, oklch(0.985 0.006 260) 0%, oklch(0.965 0.012 235) 42%, oklch(0.985 0.012 20) 100%);
+  .wiki-article :where(h2, h3) {
+    scroll-margin-top: 2rem;
+  }
+  .wiki-article :where(h2) {
+    @apply border-b pb-1;
+  }
+  .wiki-article :where(a) {
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+  }
+
+  .rule-hair {
+    border-color: color-mix(in oklch, var(--foreground) 12%, transparent);
+  }
+
+  @keyframes registry-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .registry-rise {
+    animation: registry-rise 600ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+
+  /* Changelog page typography. Used by /changelog content blocks. */
+  .changelog-prose {
+    color: var(--muted-foreground);
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  .changelog-prose p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+  .changelog-prose p + p { margin-top: 0.7rem; }
+  .changelog-prose strong { color: var(--foreground); font-weight: 600; }
+  .changelog-prose em { font-style: italic; }
+  .changelog-prose a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklch, var(--foreground) 35%, transparent);
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: 0.06em;
+  }
+  .changelog-prose a:hover {
+    text-decoration-color: var(--foreground);
+  }
+
+  .changelog-prose ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+  }
+  .changelog-prose ul ul {
+    margin-top: 0.55rem;
+    padding-left: 0.65rem;
+    border-left: 1px solid color-mix(in oklch, var(--foreground) 9%, transparent);
+    gap: 0.5rem;
+  }
+  .changelog-prose li {
+    position: relative;
+    padding-left: 1.4rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+  .changelog-prose li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 0.6rem;
+    height: 1px;
+    background: color-mix(in oklch, var(--foreground) 38%, transparent);
+  }
+  .changelog-prose ul ul li {
+    padding-left: 1rem;
+    font-size: 0.88rem;
+  }
+  .changelog-prose ul ul li::before {
+    width: 0.4rem;
+    background: color-mix(in oklch, var(--foreground) 22%, transparent);
+  }
+  .changelog-prose li > strong:first-child,
+  .changelog-prose li > p:first-child > strong:first-child {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+  .changelog-prose li > p { margin: 0; }
+  .changelog-prose li > p + p { margin-top: 0.4rem; }
+
+  .changelog-prose code {
+    font-family: var(--font-mono);
+    font-size: 0.78em;
+    letter-spacing: 0.01em;
+    padding: 0.05em 0.36em;
+    border-radius: 0.2rem;
+    background: color-mix(in oklch, var(--muted) 70%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklch, var(--foreground) 6%, transparent);
+    word-break: break-word;
+  }
+  .changelog-prose pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+
+  .changelog-prose blockquote {
+    margin: 1rem 0;
+    padding: 0.6rem 1rem;
+    border-left: 2px solid color-mix(in oklch, var(--foreground) 18%, transparent);
+    background: color-mix(in oklch, var(--muted) 55%, transparent);
+    border-radius: 0 0.35rem 0.35rem 0;
+    font-style: italic;
+  }
+  .changelog-prose blockquote p {
+    font-size: 0.9rem;
+  }
+
+  .changelog-prose hr {
+    border: 0;
+    height: 1px;
+    background: color-mix(in oklch, var(--foreground) 12%, transparent);
+    margin: 1.5rem 0;
+  }
+
+  .changelog-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 1rem 0;
+  }
+  .changelog-prose th,
+  .changelog-prose td {
+    padding: 0.45rem 0.7rem;
+    text-align: left;
+    border-bottom: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+    vertical-align: top;
+  }
+  .changelog-prose th {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+    border-bottom-color: color-mix(in oklch, var(--foreground) 20%, transparent);
+  }
+
+  .changelog-prose h4 {
+    margin: 1.5rem 0 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--foreground);
   }
 }

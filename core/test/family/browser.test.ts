@@ -2,22 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildFamilyBrowser } from '../../src/family/browser.ts';
 import type { DerivedRecord } from '../../src/gedcom/types.ts';
-
-function person(record: string, name: string, patch: Partial<DerivedRecord> = {}): DerivedRecord {
-  return {
-    record,
-    name,
-    birth: null,
-    death: null,
-    parents: [],
-    spouses: [],
-    children: [],
-    residences: [],
-    occupations: [],
-    sources: [],
-    ...patch,
-  };
-}
+import { person } from './helpers.ts';
 
 test('buildFamilyBrowser: groups ancestors by generation and family line', () => {
   const records = new Map<string, DerivedRecord>([

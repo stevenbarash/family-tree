@@ -3,6 +3,7 @@ import type { ApiClient } from '../api-client.js';
 export interface SyncGedcomOptions {
   gedFile: string;
   notes: string;
+  force?: boolean;
   client: Pick<ApiClient, 'syncGedcom'>;
   write: (s: string) => void;
 }
@@ -10,7 +11,7 @@ export interface SyncGedcomOptions {
 export async function runSyncGedcom(opts: SyncGedcomOptions): Promise<void> {
   if (!opts.gedFile) throw new Error('--ged-file is required');
   if (!opts.notes) throw new Error('--notes is required');
-  const result = await opts.client.syncGedcom(opts.gedFile, opts.notes);
+  const result = await opts.client.syncGedcom(opts.gedFile, opts.notes, opts.force);
   if (result.kind === 'no-op') {
     opts.write(`no-op: ${result.reason}\n`);
   } else {

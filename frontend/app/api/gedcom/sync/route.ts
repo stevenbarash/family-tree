@@ -10,6 +10,7 @@ import { errorResponse } from '@/lib/api-errors';
 const Body = z.object({
   gedFile: z.string().regex(/^[a-z0-9._-]+\.ged$/i),
   notes: z.string().min(1).max(200),
+  force: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
       gedFile: parsed.data.gedFile,
       author: DEFAULT_AUTHOR,
       notes: parsed.data.notes,
+      force: parsed.data.force,
     });
     invalidateListCache();
     await rebuildSearchIndexFromDisk();

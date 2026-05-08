@@ -6,6 +6,17 @@
 1 CHAR UTF-8
 0 @S1@ SOUR
 1 TITL 1928 Teofipol Census
+1 AUTH Soviet Statistical Bureau
+1 PUBL Khmelnytsky Regional Archive
+1 _APID 1,99999::0
+1 NOTE Census conducted by district inspector
+0 @S2@ SOUR
+1 TITL Yad Vashem Pages of Testimony
+0 @O1@ OBJE
+1 FILE
+2 FORM jpg
+2 TITL Aidele Ayzman 1928 Teofipol portrait
+1 _OID 12345-abcde
 0 @I1@ INDI
 1 NAME Aidele /Ayzman/
 1 RESI
@@ -14,4 +25,8 @@
 1 OCCU Seamstress
 2 DATE FROM 1900
 1 SOUR @S1@
+1 SOUR @S2@
+1 SOUR @S99@
+1 OBJE @O1@
+2 _PRIM Y
 0 TRLR

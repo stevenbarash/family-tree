@@ -21,6 +21,7 @@ import { DescendantsSection } from '@/components/family/sections/descendants-sec
 import { FamilySection } from '@/components/family/sections/family-section';
 import { LifespansSection } from '@/components/family/sections/lifespans-section';
 import { LineageSection } from '@/components/family/sections/lineage-section';
+import { MediaSection } from '@/components/family/sections/media-section';
 import { PersonHeaderSection } from '@/components/family/sections/person-header-section';
 import { PlacesSection } from '@/components/family/sections/places-section';
 import { familyTreeHref } from '@/components/family/sections/shared';
@@ -30,6 +31,30 @@ export const dynamic = 'force-dynamic';
 
 interface Props {
   searchParams: Promise<{ person?: string; from?: string }>;
+}
+
+type Crumb = { record: string; name: string; slug?: string };
+type AbridgedCrumb =
+  | { kind: 'crumb'; record: string; name: string }
+  | { kind: 'ellipsis' };
+
+/** Cap rendered breadcrumbs at 5 items: keep the perspective (first), the
+ *  current person + their immediate ancestor (last two), and ellipsis the
+ *  middle. Cousin-twice-removed paths can be 10+ hops; beyond that they
+ *  become noise in the header. */
+function abridgeCrumbs(crumbs: Crumb[]): AbridgedCrumb[] {
+  if (crumbs.length <= 5) {
+    return crumbs.map(c => ({ kind: 'crumb', record: c.record, name: c.name }));
+  }
+  const first = crumbs[0]!;
+  const penult = crumbs[crumbs.length - 2]!;
+  const last = crumbs[crumbs.length - 1]!;
+  return [
+    { kind: 'crumb', record: first.record, name: first.name },
+    { kind: 'ellipsis' },
+    { kind: 'crumb', record: penult.record, name: penult.name },
+    { kind: 'crumb', record: last.record, name: last.name },
+  ];
 }
 
 export default async function FamilyTreePage({ searchParams }: Props) {
@@ -100,6 +125,32 @@ export default async function FamilyTreePage({ searchParams }: Props) {
             <CommandPalette />
           </div>
         </div>
+        {view.relationship && view.relationship.crumbs.length > 1 ? (
+          <nav
+            aria-label="Lineage path"
+            className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2 sm:px-6"
+          >
+            <ol className="flex items-center gap-x-1.5 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85 whitespace-nowrap">
+              {abridgeCrumbs(view.relationship.crumbs).map((c, i, arr) => (
+                <li key={`${c.kind}-${i}`} className="flex items-center gap-x-1.5">
+                  {c.kind === 'ellipsis' ? (
+                    <span aria-hidden>…</span>
+                  ) : i === arr.length - 1 ? (
+                    <span className="text-foreground" aria-current="location">{c.name}</span>
+                  ) : (
+                    <Link
+                      href={familyTreeHref(c.record)}
+                      className="underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                  )}
+                  {i < arr.length - 1 ? <span aria-hidden className="text-muted-foreground/40">→</span> : null}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
       </header>
 
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
@@ -110,6 +161,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
         <PlacesSection view={view} />
         <LifespansSection view={view} />
         <DescendantsSection view={view} />
+        <MediaSection view={view} />
         <LineageSection view={view} />
 
         {isEmpty ? (

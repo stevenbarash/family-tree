@@ -14,6 +14,10 @@ export interface SyncConfig {
   gedFile: string;
   author: AuthorIdentity;
   notes: string;
+  /** Bypass the unchanged-hash short-circuit; re-derive even when the input
+   *  bytes haven't changed. Use after a deriver-code update bumps the
+   *  derived schema. */
+  force?: boolean;
 }
 
 export type SyncResult =
@@ -39,7 +43,7 @@ export async function syncGedcom(cfg: SyncConfig): Promise<SyncResult> {
   // work even though hash matches.
   const derivedReady = existsSync(derivedDir)
     && readdirSync(derivedDir).some(n => n.endsWith('.yml'));
-  if (last && last.hash === hash && derivedReady) {
+  if (!cfg.force && last && last.hash === hash && derivedReady) {
     return { kind: 'no-op', reason: 'unchanged-hash' };
   }
 

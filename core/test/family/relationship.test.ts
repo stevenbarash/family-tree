@@ -2,16 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeRelationship } from '../../src/family/relationship.ts';
 import type { DerivedRecord } from '../../src/gedcom/types.ts';
-
-function person(record: string, name: string, patch: Partial<DerivedRecord> = {}): DerivedRecord {
-  return {
-    record, name,
-    birth: null, death: null,
-    parents: [], spouses: [], children: [],
-    residences: [], occupations: [], sources: [],
-    ...patch,
-  };
-}
+import { person } from './helpers.ts';
 
 test('computeRelationship: self', () => {
   const records = new Map<string, DerivedRecord>([['I1', person('I1', 'Self')]]);

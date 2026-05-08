@@ -1,9 +1,19 @@
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { isValidElement, type ReactElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { Calendar, Users, Heart, Baby, Home, Briefcase } from 'lucide-react';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
-import yaml from 'js-yaml';
+import { parseGedcomYear } from '@core/family/dates.ts';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { toSlug } from '@/lib/slug';
+import { initials } from '@/lib/initials';
+import {
+  Infobox,
+  InfoboxBody,
+  InfoboxHeader,
+  InfoboxRow,
+  extractFieldsFromChildren,
+} from './infobox-shell';
 
 interface Props {
   derived?: DerivedRecord | null;
@@ -11,67 +21,110 @@ interface Props {
 }
 
 export function InfoboxPerson({ derived, children }: Props) {
-  const fields = extractFieldsFromChildren(children);
-  const name = derived?.name ?? fields.name ?? 'Person';
+  const fields = derived ? null : extractFieldsFromChildren(children);
+  const name = derived?.name ?? fields?.name ?? 'Person';
+  const lifespan = derived ? formatLifespan(derived) : null;
 
   return (
-    <Card className="float-right ml-4 max-w-xs my-2 text-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{name}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1">
-        {derived ? <DerivedRows d={derived} /> : <FallbackRows fields={fields} />}
-      </CardContent>
-    </Card>
+    <Infobox>
+      <InfoboxHeader
+        eyebrow="Person"
+        title={name}
+        description={lifespan}
+        avatar={
+          <Avatar size="lg" className="ring-2 ring-infobox-border/60">
+            <AvatarFallback className="bg-infobox-border/30 font-heading text-sm text-infobox-foreground">
+              {initials(name)}
+            </AvatarFallback>
+          </Avatar>
+        }
+      />
+      <InfoboxBody>
+        {derived ? renderDerivedRows(derived) : renderFallbackRows(fields ?? {})}
+      </InfoboxBody>
+    </Infobox>
   );
 }
 
-function DerivedRows({ d }: { d: DerivedRecord }) {
-  return (
-    <>
-      {d.birth ? <Row label="born">{[d.birth.date, d.birth.place].filter(Boolean).join(', ') || '—'}</Row> : null}
-      {d.death ? <Row label="died">{[d.death.date, d.death.place].filter(Boolean).join(', ') || '—'}</Row> : null}
-      {d.parents.length > 0 ? <Row label="parents"><PersonList items={d.parents} /></Row> : null}
-      {d.spouses.length > 0 ? <Row label="spouses"><PersonList items={d.spouses} /></Row> : null}
-      {d.children.length > 0 ? <Row label="children"><PersonList items={d.children} /></Row> : null}
-      {d.residences.length > 0 ? (
-        <Row label="residences">
-          <ul className="list-none space-y-0.5">
-            {d.residences.map((r, i) => (
-              <li key={i}>{[r.date, r.place].filter(Boolean).join(', ')}</li>
-            ))}
-          </ul>
-        </Row>
-      ) : null}
-      {d.occupations.length > 0 ? (
-        <Row label="occupations">
-          <ul className="list-none space-y-0.5">
-            {d.occupations.map((o, i) => (
-              <li key={i}>{o.title}{o.date ? ` (${o.date})` : ''}</li>
-            ))}
-          </ul>
-        </Row>
-      ) : null}
-    </>
-  );
+function renderDerivedRows(d: DerivedRecord): ReactNode[] {
+  const rows: ReactNode[] = [];
+
+  if (d.birth) {
+    rows.push(
+      <InfoboxRow key="born" label="born" icon={Calendar}>
+        {formatPlaceDate(d.birth.date, d.birth.place)}
+      </InfoboxRow>,
+    );
+  }
+  if (d.death) {
+    rows.push(
+      <InfoboxRow key="died" label="died" icon={Calendar}>
+        {formatPlaceDate(d.death.date, d.death.place)}
+      </InfoboxRow>,
+    );
+  }
+  if (d.parents.length > 0) {
+    rows.push(
+      <InfoboxRow key="parents" label="parents" icon={Users}>
+        <PersonList items={d.parents} />
+      </InfoboxRow>,
+    );
+  }
+  if (d.spouses.length > 0) {
+    rows.push(
+      <InfoboxRow key="spouses" label="spouses" icon={Heart}>
+        <PersonList items={d.spouses} />
+      </InfoboxRow>,
+    );
+  }
+  if (d.children.length > 0) {
+    rows.push(
+      <InfoboxRow key="children" label="children" icon={Baby}>
+        <PersonList items={d.children} />
+      </InfoboxRow>,
+    );
+  }
+  if (d.residences.length > 0) {
+    rows.push(
+      <InfoboxRow key="residences" label="residences" icon={Home}>
+        <ul className="flex flex-col gap-0.5 list-none p-0">
+          {d.residences.map((r, i) => (
+            <li key={i}>{[r.date, r.place].filter(Boolean).join(' · ')}</li>
+          ))}
+        </ul>
+      </InfoboxRow>,
+    );
+  }
+  if (d.occupations.length > 0) {
+    rows.push(
+      <InfoboxRow key="occupations" label="work" icon={Briefcase}>
+        <div className="flex flex-wrap gap-1.5">
+          {d.occupations.map((o, i) => (
+            <Badge
+              key={i}
+              variant="outline"
+              className="border-infobox-border/70 bg-infobox-border/15 text-[0.7rem] text-infobox-foreground"
+            >
+              {o.title}
+              {o.date ? <span className="text-infobox-muted">· {o.date}</span> : null}
+            </Badge>
+          ))}
+        </div>
+      </InfoboxRow>,
+    );
+  }
+
+  return rows;
 }
 
-function FallbackRows({ fields }: { fields: Record<string, string> }) {
-  return (
-    <>
-      {Object.entries(fields)
-        .filter(([k]) => k !== 'name')
-        .map(([k, v]) => <Row key={k} label={k}>{v}</Row>)}
-    </>
-  );
-}
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <span className="text-muted-foreground">{label}:</span> {children}
-    </div>
-  );
+function renderFallbackRows(fields: Record<string, string>): ReactNode[] {
+  return Object.entries(fields)
+    .filter(([k]) => k !== 'name')
+    .map(([k, v]) => (
+      <InfoboxRow key={k} label={k}>
+        {v}
+      </InfoboxRow>
+    ));
 }
 
 function PersonList({ items }: { items: { record: string; name: string }[] }) {
@@ -79,34 +132,36 @@ function PersonList({ items }: { items: { record: string; name: string }[] }) {
     <span>
       {items.map((p, i) => (
         <span key={p.record}>
-          {i > 0 ? ', ' : ''}
-          <Link href={`/${toSlug(p.name)}`} className="text-blue-600 hover:underline">{p.name}</Link>
+          {i > 0 ? <span className="text-infobox-muted">, </span> : null}
+          <Link
+            href={`/${toSlug(p.name)}`}
+            className="font-medium text-infobox-accent decoration-infobox-accent/40 underline-offset-4 transition-colors hover:underline"
+          >
+            {p.name}
+          </Link>
         </span>
       ))}
     </span>
   );
 }
 
-function extractFieldsFromChildren(children: ReactNode): Record<string, string> {
-  const text = childrenToText(children).trim();
-  try {
-    const parsed = yaml.load(text);
-    if (parsed && typeof parsed === 'object') {
-      return Object.fromEntries(
-        Object.entries(parsed as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]),
-      );
-    }
-  } catch { /* ignore */ }
-  return {};
+function formatLifespan(d: DerivedRecord): string | null {
+  const b = parseGedcomYear(d.birth?.date);
+  const dy = parseGedcomYear(d.death?.date);
+  if (b && dy) return `${labelYear(b)} – ${dy.year}`;
+  if (b) return `b. ${labelYear(b)}`;
+  if (dy) return `d. ${dy.year}`;
+  return null;
 }
 
-function childrenToText(node: ReactNode): string {
-  if (typeof node === 'string') return node;
-  if (typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(childrenToText).join('\n');
-  if (isValidElement(node)) {
-    const props = (node as ReactElement<{ children?: ReactNode }>).props;
-    return childrenToText(props.children ?? null);
-  }
-  return '';
+function labelYear(p: { year: number; qualifier?: 'about' | 'before' | 'after' | 'range' }): string {
+  if (p.qualifier === 'about' || p.qualifier === 'range') return `c. ${p.year}`;
+  if (p.qualifier === 'before') return `<${p.year}`;
+  if (p.qualifier === 'after') return `>${p.year}`;
+  return String(p.year);
 }
+
+function formatPlaceDate(date: string | null | undefined, place: string | null | undefined): string {
+  return [date, place].filter(Boolean).join(' · ') || '—';
+}
+

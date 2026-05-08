@@ -45,9 +45,12 @@ test('buildSearchDoc: page + derived', () => {
     ],
     spouses: [{ record: 'I3', name: 'Thomas Campanella', married: null }],
     children: [],
+    familyOfOrigin: [],
+    marriages: [],
     residences: [{ date: '2010', place: 'Squirrel Hill' }],
     occupations: [{ title: 'Designer', date: null }],
     sources: [],
+    media: [],
   };
   const doc = buildSearchDoc(page, derived);
   assert.match(doc.places, /Pittsburgh/);

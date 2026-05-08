@@ -2,16 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeDescendants } from '../../src/family/descendants.ts';
 import type { DerivedRecord } from '../../src/gedcom/types.ts';
-
-function person(record: string, name: string, patch: Partial<DerivedRecord> = {}): DerivedRecord {
-  return {
-    record, name,
-    birth: null, death: null,
-    parents: [], spouses: [], children: [],
-    residences: [], occupations: [], sources: [],
-    ...patch,
-  };
-}
+import { person } from './helpers.ts';
 
 test('computeDescendants: direct children form generation 1', () => {
   const records = new Map<string, DerivedRecord>([
