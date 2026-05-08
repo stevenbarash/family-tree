@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
@@ -22,6 +22,7 @@ import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
+import { runInit } from './commands/init.js';
 import { loadRepoState } from '@core/checks/load.ts';
 import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
 import { detectFormatDrift } from '@core/checks/format-drift.ts';
@@ -77,6 +78,11 @@ Quality:
   promote-corrections         Promote a frontmatter correction to the GEDCOM.
         --record I...           Record id whose corrections to promote
         [--apply]               Write changes (default: dry-run)
+  init                        Install pre-commit hook + CI workflow into the
+                              data repo at $WHOAMI_ROOT.
+        [--force]               Overwrite existing files
+        [--hook-only]           Just the pre-commit hook
+        [--ci-only]             Just the CI workflow
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -313,6 +319,27 @@ async function main(): Promise<number> {
           loadCorrections: loadPageCorrectionsWithSource,
           readFile: (p) => readFileSync(p, 'utf-8'),
           writeFile: (p, c) => writeFileSync(p, c),
+          write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return code;
+      }
+      case 'init': {
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const code = await runInit({
+          rootDir: root,
+          force: !!args.flags.force,
+          hookOnly: !!args.flags['hook-only'],
+          ciOnly: !!args.flags['ci-only'],
+          readFile: (p) => readFileSync(p, 'utf-8'),
+          writeFile: (p, c) => {
+            // Hooks need exec permission; templates embed the shebang.
+            writeFileSync(p, c, { mode: 0o755 });
+          },
+          mkdirP: (p) => { mkdirSync(p, { recursive: true }); },
+          exists: (p) => existsSync(p),
           write,
           writeErr: (s) => process.stderr.write(s),
         });
