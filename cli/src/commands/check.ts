@@ -1,4 +1,4 @@
-import type { Detector, Finding, FindingCategory, RepoState } from '@core/checks/types.ts';
+import type { Detector, Finding, FindingCategory, Fix, RepoState } from '@core/checks/types.ts';
 
 export interface CheckOptions {
   rootDir: string;
@@ -25,7 +25,7 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
   if (opts.fix) {
     // Group fixes by file. We patch by line number, and fixes don't add or
     // remove lines, so simple index assignment is safe.
-    const fixesByFile = new Map<string, Array<NonNullable<Finding['fix']>>>();
+    const fixesByFile = new Map<string, Fix[]>();
     for (const f of findings) {
       if (!f.fix) continue;
       const arr = fixesByFile.get(f.fix.file) ?? [];
@@ -33,6 +33,7 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
       fixesByFile.set(f.fix.file, arr);
     }
 
+    let applied = 0;
     for (const [file, fixes] of fixesByFile) {
       // Pages use `text` (frontmatter included) so line numbers from detectors
       // refer to the full file. The GEDCOM is the only non-page file we touch.
@@ -47,11 +48,10 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
           continue;
         }
         lines[idx] = fix.newLine;
+        applied += 1;
       }
       opts.writeFile(file, lines.join('\n'));
     }
-
-    const applied = [...fixesByFile.values()].reduce((n, arr) => n + arr.length, 0);
     opts.write(`${applied} fix${applied === 1 ? '' : 'es'} applied.\n`);
 
     // Re-run detectors against the fresh state (caller's loadState should

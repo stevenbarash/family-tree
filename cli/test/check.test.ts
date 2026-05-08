@@ -182,3 +182,60 @@ test('check --fix: applies fixes, reports applied count, returns 0 if all fixed'
   assert.equal(code, 0);
   assert.match(out, /1 fix(es)? applied/);
 });
+
+test('check --fix: applied count excludes fixes whose oldLine no longer matches', async () => {
+  let out = '';
+  const errs: string[] = [];
+  const writes: Array<{ file: string; content: string }> = [];
+  let pass = 0;
+  // Detector emits 2 fixes for the same file; one fix's oldLine is stale.
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: true,
+    only: null,
+    failOn: null,
+    loadState: async () => {
+      const state = emptyState();
+      // gedcomText has 2 lines but the detector will emit a fix for line 2
+      // claiming an oldLine that doesn't match line 2.
+      state.gedcomText = pass === 0
+        ? '0 @I1@ INDI\n2 DATE 11 MAR 1866\n'
+        : '0 @I1@ INDI\n2 DATE 11 Mar 1866\n';
+      pass += 1;
+      return state;
+    },
+    detectors: [
+      (s) => {
+        if (s.gedcomText.includes('11 MAR 1866')) {
+          return [
+            {
+              category: 'format',
+              severity: 'info',
+              message: 'real fix',
+              location: { file: '/tmp/x/g.ged', line: 2 },
+              fix: { file: '/tmp/x/g.ged', lineNumber: 2, oldLine: '2 DATE 11 MAR 1866', newLine: '2 DATE 11 Mar 1866' },
+            },
+            {
+              category: 'format',
+              severity: 'info',
+              message: 'stale fix (oldLine wrong)',
+              location: { file: '/tmp/x/g.ged', line: 2 },
+              fix: { file: '/tmp/x/g.ged', lineNumber: 2, oldLine: 'this does not match', newLine: '2 DATE 11 Mar 1866' },
+            },
+          ];
+        }
+        return [];
+      },
+    ],
+    write: (s) => { out += s; },
+    writeErr: (s) => { errs.push(s); },
+    writeFile: (file, content) => writes.push({ file, content }),
+  });
+  // 2 fixes were proposed but only 1 had a matching oldLine.
+  assert.match(out, /^1 fix applied/m);
+  // The skipped fix produced a stderr warning.
+  assert.equal(errs.length, 1);
+  assert.match(errs[0]!, /skipping fix/);
+  assert.equal(code, 0);
+});
