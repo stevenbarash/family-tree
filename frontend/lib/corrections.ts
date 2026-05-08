@@ -76,3 +76,35 @@ export function loadPageCorrections(pagesDir: string): Map<string, Correction[]>
   }
   return out;
 }
+
+const PAGES_DIR = join(process.env.WHOAMI_ROOT || join(process.env.HOME || '/tmp', 'whoami'), 'pages');
+const CACHE_TTL_MS = 5_000;
+
+interface CacheEntry {
+  corrections: Map<string, Correction[]>;
+  expiresAt: number;
+  mtimeMs: number;
+}
+
+let _cache: CacheEntry | null = null;
+
+/**
+ * Cached wrapper around `loadPageCorrections`. Reuses the cached map until
+ * the pages dir mtime changes or the TTL expires, mirroring the
+ * `getCachedDerivedRecords` pattern in `frontend/lib/family.ts`.
+ */
+export function getCachedPageCorrections(): Map<string, Correction[]> {
+  const now = Date.now();
+  let mtimeMs = 0;
+  try {
+    mtimeMs = statSync(PAGES_DIR).mtimeMs;
+  } catch {
+    return new Map();
+  }
+  if (_cache && _cache.expiresAt > now && _cache.mtimeMs === mtimeMs) {
+    return _cache.corrections;
+  }
+  const corrections = loadPageCorrections(PAGES_DIR);
+  _cache = { corrections, expiresAt: now + CACHE_TTL_MS, mtimeMs };
+  return corrections;
+}
