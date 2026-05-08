@@ -85,7 +85,7 @@ test('normalizeDate: BET ... AND ... → "Bet YYYY And YYYY"', () => {
   assert.equal(normalizeDate('Bet 1850 And 1860').value, 'Bet 1850 And 1860');
 });
 
-test('normalizeDate: Abt is idempotent', () => {
+test('normalizeDate: qualified canonical forms are idempotent', () => {
   assert.equal(normalizeDate('Abt 1886').changed, false);
   assert.equal(normalizeDate('Bet 1850 And 1860').changed, false);
 });
@@ -106,4 +106,15 @@ test('normalizeDate: ambiguous slash date is flagged, not fixed', () => {
   assert.equal(r.value, '9/7/1997');
   assert.equal(r.changed, false);
   assert.equal(r.ambiguous, true);
+});
+
+test('normalizeDate: ambiguous slash inside qualifier is propagated', () => {
+  const r = normalizeDate('Abt 9/7/1997');
+  assert.equal(r.ambiguous, true);
+});
+
+test('normalizeDate: qualifier + non-canonical date recurses to normalize the rest', () => {
+  // Exercises the recursion: "August" → "Aug", inside the Abt wrapper.
+  assert.equal(normalizeDate('Abt 25 August 1889').value, 'Abt 25 Aug 1889');
+  assert.equal(normalizeDate('Bef 18 jul 1926').value, 'Bef 18 Jul 1926');
 });

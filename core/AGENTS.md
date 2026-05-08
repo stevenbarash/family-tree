@@ -15,6 +15,7 @@ should accept data, not paths.
 | Module          | Responsibility                                                            |
 | --------------- | ------------------------------------------------------------------------- |
 | `pages/`        | Markdown + frontmatter parsing, page metadata schema (Zod), file storage. |
+| `format/`       | Pure string canonicalization (dates, etc.). |
 | `gedcom/`       | GEDCOM file parsing, deriving per-individual YAML records, sync state.   |
 | `family/`       | Pure graph operations on GEDCOM records — ancestors, descendants, cohort (siblings/cousins), relationship calculator, lifespan timeline, places. |
 | `search/`       | FlexSearch index build + persist for wiki content. |
@@ -65,6 +66,7 @@ When you add a new module here, follow the same shape:
 
 **Pure** (take data, return data — no file I/O, no `process`, no `fetch`):
 
+- `core/src/format/dates.ts`.
 - All of `core/src/family/*` *except* `trace.ts`. `cohort.ts`,
   `descendants.ts`, `relationship.ts`, `dates.ts`, `timeline.ts`,
   `places.ts`, `places-coords.ts` (parser only), `browser.ts`, `sort.ts`.
@@ -110,9 +112,15 @@ keep your new module pure. Default answer: keep it pure.
   in `gedcom/types.ts`).
 - Sort comparators that show up in two modules go in `core/src/family/sort.ts`
   (or equivalent shared file). Don't duplicate.
-- Date parsing → `core/src/family/dates.ts`. The GEDCOM format has
-  date qualifiers (`ABT 1880`, `BEF 1900`, `BET 1850 AND 1860`) that
-  the parser handles — call it instead of hand-rolling regex.
+- Date parsing → `core/src/family/dates.ts`. `parseGedcomYear` extracts
+  a year (with qualifier) from any GEDCOM date form (`ABT 1880`,
+  `BEF 1900`, `BET 1850 AND 1860`). Use it for year-extraction —
+  don't hand-roll regex.
+- Date normalization (string canonicalization) → `core/src/format/dates.ts`.
+  `normalizeDate` rewrites any form into canonical `D Mon YYYY`
+  (with title-case `Abt`/`Bef`/`Aft`/`Bet … And …` qualifiers).
+  Use it whenever you're about to emit a date string for the GEDCOM,
+  derived YAML, or page prose.
 
 ## Pitfalls
 

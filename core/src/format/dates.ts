@@ -40,7 +40,11 @@ export function normalizeDate(raw: string): NormalizeResult {
     else if (tag === 'aft' || tag === 'after') prefix = 'Aft';
     else prefix = 'Abt';
     const out = `${prefix} ${rest.value}`;
-    return { value: out, changed: out !== raw };
+    return {
+      value: out,
+      changed: out !== raw,
+      ...(rest.ambiguous ? { ambiguous: true } : {}),
+    };
   }
 
   // Year-only: "1923"
