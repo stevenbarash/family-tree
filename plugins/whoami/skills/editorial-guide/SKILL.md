@@ -86,57 +86,31 @@ Don't quote:
 
 Integrate quotes grammatically into sentences. Save the `:::blockquote` directive for extended passages (2+ sentences) that need to stand alone.
 
+### Date formats
+
+Dates everywhere — frontmatter, body prose, GEDCOM, derived YAMLs — use `D Mon YYYY`:
+
+- `28 Feb 1970` — full date
+- `Feb 1970` — month-only
+- `1970` — year-only
+- `Abt 1886`, `Bef 1900`, `Aft 1850` — qualified
+- `Bet 1850 And 1860` — range
+
+Title-case month abbreviations (`Jan`–`Dec`). Title-case qualifiers (`Abt`, not `ABT` or `abt.`). Single-digit days (`8`, not `08`). Day-month-year order (never `Mon D YYYY` or `M/D/YYYY`).
+
+You don't have to enforce these manually — `wai write` and `wai check --fix` auto-normalize on save. But target the canonical form so commit diffs stay tight.
+
 ## Talk page structure
 
-Talk pages live alongside the page they discuss as `<slug>.talk.md` (e.g. `jane-doe.talk.md` next to `jane-doe.md`). They use these sections as needed, in this order. Omit any with no content.
+Talk pages live alongside main pages as `<slug>.talk.md`. They use a small set of directives the renderer recognizes:
 
-1. **Active gaps** — open editorial questions marked with the `::open` admonition
-2. **Resolved** — closed questions marked `::closed`, corrected ones `::superseded`
-3. **Editorial decisions** — choices about structure, scope, voice, what to include/exclude
-4. **Infrastructure** — technical issues and their resolutions
-5. **Agent log** — one entry per task: ID, date, what changed, link to task page
-6. **Research notes** — index of raw research materials (what exists, where it is, which pages consumed it)
-7. **Voice note transcriptions** — complete chronological index with inline audio embeds
+- `::open` — an open editorial question, counted by `wai search`'s "open gaps" badge.
+- `::closed` — a previously-open question that has been resolved.
+- `::superseded` — a closed question whose resolution has since been replaced.
 
-### Active gaps
+A talk page may interleave research notes (with `## Research notes` section header — see Editor agent spec) with directive blocks for editorial questions.
 
-```markdown
-### Birth year unknown
-
-::open
-
-Likely 1996-1998 based on contextual clues. Never stated directly in DMs.
-Would require external source to confirm.
-```
-
-### Resolved
-
-```markdown
-### Did they meet in person?
-
-::superseded
-
-Previously resolved as one meeting (dinner, Nov 12).
-
-::closed
-
-Three meetings confirmed via WhatsApp thread (snapshot 3f0390a3...):
-dinner (Nov 12), gallery opening (Nov 13), darkroom session (Nov 14).
-```
-
-### Agent log
-
-```markdown
-### Task:0008 — Initial page creation
-
-2026-02-15. Created page from Instagram DM research (6,200 messages).
-Posted 3 open gaps. See [[Task:0008]].
-```
-
-### What does NOT belong on talk pages
-
-- Reader-facing content (goes on person/episode pages)
-- Duplicate research indexes
+Do NOT use section headers like `## Active gaps` or `## Open editorial questions` — those don't render any UI affordance and aren't counted.
 
 ## Citation system
 
@@ -225,6 +199,57 @@ Every person and episode page ends with:
 **References** = inline citations tracing specific claims to specific moments in the vault.
 
 **Bibliography** = full vault snapshots consulted for the page overall.
+
+## Corrections
+
+When an external source contradicts a GEDCOM-derived value (cemetery records, Yad Vashem, family confirmation), record the correction in **two places**:
+
+1. **Page narrative** — explain the reasoning, cite the source.
+2. **Page frontmatter `corrections:` array** — machine-readable so the renderer can overlay the corrected value into the infobox.
+
+**Never write a narrative-only correction.** The infobox keeps showing the wrong (GEDCOM) value if the frontmatter is silent. The two-place rule keeps the rendered page consistent with the prose.
+
+### Frontmatter shape
+
+```yaml
+corrections:
+  - field: death.date         # required: birth.date, birth.place, death.date, death.place, name
+    value: "1989"             # the corrected value as a string
+    source: "Find A Grave Memorial #209496149"   # provenance
+    record: I372189255251     # OPTIONAL — defaults to this page's own gedcom.record
+```
+
+For corrections targeting a different individual (e.g. a family overview page correcting a parent's death year), spell out `record:` explicitly.
+
+### Field whitelist (v1)
+
+Only these fields are correctable via frontmatter today:
+
+- `birth.date`, `birth.place`
+- `death.date`, `death.place`
+- `name`
+
+Adding new relationships (parents, spouses, children) or new individuals is **not** a frontmatter correction — those require a direct GEDCOM edit. If the correction you want to make isn't in the whitelist, the right move is to edit `genealogy/barash-tree.ged` directly and run `wai sync-gedcom`.
+
+### Promotion to GEDCOM
+
+When you (or a human) decide the correction is durable enough to live in the GEDCOM itself, run:
+
+```bash
+wai promote-corrections --record I... --apply
+```
+
+This rewrites the relevant `1 BIRT` / `1 DEAT` block in `barash-tree.ged` (with a `2 NOTE` line citing your `source`) and removes the correction entry from the page. Provenance moves from the page to the GEDCOM. Run `wai sync-gedcom` afterwards to regenerate `derived/*.yml`.
+
+Without `--apply` the command is dry-run and prints the planned changes only.
+
+### Drift detection
+
+`wai check` reports your corrections as one of:
+
+- **active** — page value differs from raw derived value (the overlay is doing real work).
+- **promotable** — page value matches raw derived value (correction is redundant; either drop it from the page or run `wai promote-corrections`).
+- **conflict** — two pages target the same `(record, field)` with different values. Hard error; resolve before merging.
 
 ## Page conventions
 
