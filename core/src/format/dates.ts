@@ -24,6 +24,25 @@ export function normalizeDate(raw: string): NormalizeResult {
   const trimmed = raw.trim();
   if (!trimmed) return { value: trimmed, changed: trimmed !== raw };
 
+  // Qualified forms: "Abt 1882", "BET 1760 AND 1816", etc.
+  const between = trimmed.match(/^bet(?:ween)?\.?\s+(\d{4})\s+and\s+(\d{4})$/i);
+  if (between) {
+    const out = `Bet ${between[1]} And ${between[2]}`;
+    return { value: out, changed: out !== raw };
+  }
+
+  const qualifier = trimmed.match(/^(abt|about|circa|ca|est|bef|before|aft|after)\.?\s+(.+)$/i);
+  if (qualifier) {
+    const tag = qualifier[1]!.toLowerCase();
+    const rest = normalizeDate(qualifier[2]!);
+    let prefix: string;
+    if (tag === 'bef' || tag === 'before') prefix = 'Bef';
+    else if (tag === 'aft' || tag === 'after') prefix = 'Aft';
+    else prefix = 'Abt';
+    const out = `${prefix} ${rest.value}`;
+    return { value: out, changed: out !== raw };
+  }
+
   // Year-only: "1923"
   if (/^\d{4}$/.test(trimmed)) return { value: trimmed, changed: trimmed !== raw };
 

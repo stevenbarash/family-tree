@@ -63,3 +63,29 @@ test('normalizeDate: changed flag true when output differs from input', () => {
   assert.equal(normalizeDate('Feb 28 1970').changed, true);
   assert.equal(normalizeDate('28 Feb 1970').changed, false);
 });
+
+test('normalizeDate: Abt prefix variants → "Abt"', () => {
+  assert.equal(normalizeDate('abt 1882').value, 'Abt 1882');
+  assert.equal(normalizeDate('Abt. 1929').value, 'Abt 1929');
+  assert.equal(normalizeDate('ABT 1730').value, 'Abt 1730');
+  assert.equal(normalizeDate('About 1880').value, 'Abt 1880');
+  assert.equal(normalizeDate('Circa 1900').value, 'Abt 1900');
+  assert.equal(normalizeDate('Ca 1850').value, 'Abt 1850');
+});
+
+test('normalizeDate: Bef and Aft prefixes → "Bef" and "Aft"', () => {
+  assert.equal(normalizeDate('BEF 1900').value, 'Bef 1900');
+  assert.equal(normalizeDate('before 1900').value, 'Bef 1900');
+  assert.equal(normalizeDate('AFT 1850').value, 'Aft 1850');
+  assert.equal(normalizeDate('after 1850').value, 'Aft 1850');
+});
+
+test('normalizeDate: BET ... AND ... → "Bet YYYY And YYYY"', () => {
+  assert.equal(normalizeDate('BET 1760 AND 1816').value, 'Bet 1760 And 1816');
+  assert.equal(normalizeDate('Bet 1850 And 1860').value, 'Bet 1850 And 1860');
+});
+
+test('normalizeDate: Abt is idempotent', () => {
+  assert.equal(normalizeDate('Abt 1886').changed, false);
+  assert.equal(normalizeDate('Bet 1850 And 1860').changed, false);
+});
