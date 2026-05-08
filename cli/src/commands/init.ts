@@ -6,7 +6,6 @@ export interface InitOptions {
   force: boolean;
   hookOnly: boolean;
   ciOnly: boolean;
-  readFile: (path: string) => string;
   writeFile: (path: string, content: string) => void;
   mkdirP: (path: string) => void;
   exists: (path: string) => boolean;

@@ -333,7 +333,6 @@ async function main(): Promise<number> {
           force: !!args.flags.force,
           hookOnly: !!args.flags['hook-only'],
           ciOnly: !!args.flags['ci-only'],
-          readFile: (p) => readFileSync(p, 'utf-8'),
           writeFile: (p, c) => {
             // Hooks need exec permission; templates embed the shebang.
             writeFileSync(p, c, { mode: 0o755 });
