@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
@@ -21,7 +21,9 @@ import { runSearch } from './commands/search.js';
 import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
+import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { loadRepoState } from '@core/checks/load.ts';
+import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
 import { detectFormatDrift } from '@core/checks/format-drift.ts';
 import type { FindingCategory } from '@core/checks/types.ts';
 
@@ -67,6 +69,9 @@ Quality:
         [--only A,B]            Only run detectors for categories (format,data,schema,coverage)
         [--fail-on A,B]         Exit 1 only on findings in these categories
         [--json]                Machine-readable output
+  promote-corrections         Promote a frontmatter correction to the GEDCOM.
+        --record I...           Record id whose corrections to promote
+        [--apply]               Write changes (default: dry-run)
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -281,6 +286,28 @@ async function main(): Promise<number> {
           write,
           writeErr: (s) => process.stderr.write(s),
           writeFile: (file, content) => writeFileSync(file, content),
+        });
+        return code;
+      }
+      case 'promote-corrections': {
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const recordArg = args.flags.record;
+        if (typeof recordArg !== 'string' || !/^I\d+$/.test(recordArg)) {
+          process.stderr.write('promote-corrections: --record I<digits> required\n');
+          return 2;
+        }
+        const code = await runPromoteCorrections({
+          record: recordArg,
+          apply: !!args.flags.apply,
+          gedcomPath: resolve(root, 'genealogy', 'barash-tree.ged'),
+          pagesDir: resolve(root, 'pages'),
+          loadCorrections: loadPageCorrectionsWithSource,
+          readFile: (p) => readFileSync(p, 'utf-8'),
+          writeFile: (p, c) => writeFileSync(p, c),
+          write,
+          writeErr: (s) => process.stderr.write(s),
         });
         return code;
       }
