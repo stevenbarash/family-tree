@@ -1,0 +1,41 @@
+{
+  "id": "drift-prevention-001",
+  "suite": "incremental",
+  "description": "Score whether the agent introduces drift when editing an existing page. Pre-populate a vault and a person page; ask the agent to add a correction sourced from external evidence; verify (a) the correction appears in frontmatter, NOT just narrative, (b) wai check reports the correction as 'active' (not new format/schema findings), (c) any date strings the agent emits are in canonical D Mon YYYY form.",
+  "pageType": "Person",
+  "subject": "Sample Person",
+  "checkpoints": [
+    {
+      "id": "add-correction",
+      "description": "Read the person's page. The narrative says they died in 1990 (per GEDCOM). External evidence: a cemetery record (path provided in sources) shows 1989. Add a correction to the page's frontmatter so the infobox shows 1989. Update the narrative to cite the cemetery source. Run `wai check` and report findings.",
+      "successCriteria": [
+        "page frontmatter includes a `corrections:` block with `field: death.date`, `value: \"1989\"`, and a non-empty `source`",
+        "narrative mentions the cemetery as the source of the corrected year",
+        "`wai check --json` reports exactly one new `data` finding for this record (an 'active' correction)",
+        "`wai check --json` reports zero new `format` findings introduced by the agent's edit",
+        "`wai check --json` reports zero new `schema` findings"
+      ]
+    }
+  ],
+  "graders": [
+    {
+      "name": "drift-introduction",
+      "description": "Compare wai check output before and after the agent's edit. Score: 1.0 if no NEW findings (other than the expected 'active' data finding); 0.0 if any new format/schema findings appeared."
+    },
+    {
+      "name": "corrections-block-usage",
+      "description": "Verify the agent updated frontmatter `corrections:` (not just narrative). Score binary: 1.0 if frontmatter was updated, 0.0 if narrative-only."
+    },
+    {
+      "name": "format-conformance",
+      "description": "Walk every date string the agent emitted. Score: fraction in canonical D Mon YYYY form."
+    }
+  ],
+  "notes": "STUB — full eval implementation requires a vault directory layout and graders that compare wai check output before/after. The actual graders can run wai check --json from src/runner/e2e.ts and diff the findings list. Real fixtures live outside the repo per evals/AGENTS.md (.gitignored).",
+  "todo": [
+    "Implement `drift-introduction` grader in `src/graders/`",
+    "Wire wai check into `src/runner/e2e.ts` pre/post-edit",
+    "Create a real (non-stub) fixture vault and reference page in fixtures/ (gitignored)",
+    "Add this fixture to the default eval batch"
+  ]
+}
