@@ -126,3 +126,59 @@ test('check: --fail-on filters exit code by category', async () => {
   // Findings exist but only format (not data) → exit 0
   assert.equal(code, 0);
 });
+
+test('check --fix: applies fixes, reports applied count, returns 0 if all fixed', async () => {
+  let out = '';
+  const writes: Array<{ file: string; content: string }> = [];
+  // Fake initial state has the unfixed file content; after --fix the rerun
+  // should see the patched content with no findings.
+  let pass = 0;
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: true,
+    only: null,
+    failOn: null,
+    loadState: async () => {
+      const state = emptyState();
+      if (pass === 0) {
+        state.gedcomText = '0 @I1@ INDI\n2 DATE 11 MAR 1866\n';
+      } else {
+        state.gedcomText = '0 @I1@ INDI\n2 DATE 11 Mar 1866\n';
+      }
+      pass += 1;
+      return state;
+    },
+    detectors: [
+      (s) => {
+        const lines = s.gedcomText.split('\n');
+        const findings: Finding[] = [];
+        for (let i = 0; i < lines.length; i++) {
+          if (/MAR 1866/.test(lines[i]!)) {
+            findings.push({
+              category: 'format',
+              severity: 'info',
+              message: 'fix me',
+              location: { file: '/tmp/x/g.ged', line: i + 1 },
+              fix: {
+                file: '/tmp/x/g.ged',
+                lineNumber: i + 1,
+                oldLine: lines[i]!,
+                newLine: lines[i]!.replace('MAR', 'Mar'),
+              },
+            });
+          }
+        }
+        return findings;
+      },
+    ],
+    write: (s) => { out += s; },
+    writeErr: () => {},
+    writeFile: (file, content) => writes.push({ file, content }),
+  });
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0]!.file, '/tmp/x/g.ged');
+  assert.match(writes[0]!.content, /11 Mar 1866/);
+  assert.equal(code, 0);
+  assert.match(out, /1 fix(es)? applied/);
+});

@@ -22,7 +22,49 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
     findings = findings.filter(f => keep.has(f.category));
   }
 
-  // (Task 10 inserts the --fix branch here.)
+  if (opts.fix) {
+    // Group fixes by file. We patch by line number, and fixes don't add or
+    // remove lines, so simple index assignment is safe.
+    const fixesByFile = new Map<string, Array<NonNullable<Finding['fix']>>>();
+    for (const f of findings) {
+      if (!f.fix) continue;
+      const arr = fixesByFile.get(f.fix.file) ?? [];
+      arr.push(f.fix);
+      fixesByFile.set(f.fix.file, arr);
+    }
+
+    for (const [file, fixes] of fixesByFile) {
+      // Pages use `text` (frontmatter included) so line numbers from detectors
+      // refer to the full file. The GEDCOM is the only non-page file we touch.
+      const sourceText = file === state.gedcomPath
+        ? state.gedcomText
+        : (state.pages.find(p => p.path === file)?.text ?? '');
+      const lines = sourceText.split('\n');
+      for (const fix of fixes) {
+        const idx = fix.lineNumber - 1;
+        if (lines[idx] !== fix.oldLine) {
+          opts.writeErr(`skipping fix at ${file}:${fix.lineNumber} — line content changed since detection\n`);
+          continue;
+        }
+        lines[idx] = fix.newLine;
+      }
+      opts.writeFile(file, lines.join('\n'));
+    }
+
+    const applied = [...fixesByFile.values()].reduce((n, arr) => n + arr.length, 0);
+    opts.write(`${applied} fix${applied === 1 ? '' : 'es'} applied.\n`);
+
+    // Re-run detectors against the fresh state (caller's loadState should
+    // re-read disk OR return updated in-memory state).
+    const fresh = await opts.loadState(opts.rootDir);
+    let remaining: Finding[] = [];
+    for (const det of opts.detectors) remaining.push(...det(fresh));
+    if (opts.only) {
+      const keep = new Set(opts.only);
+      remaining = remaining.filter(f => keep.has(f.category));
+    }
+    return remaining.length === 0 ? 0 : 1;
+  }
 
   if (opts.json) {
     opts.write(JSON.stringify({ findings }, null, 2));
