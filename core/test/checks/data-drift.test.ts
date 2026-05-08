@@ -42,6 +42,9 @@ function rec(id: string, overrides: Partial<DerivedRecord> = {}): DerivedRecord 
     residences: [],
     occupations: [],
     sources: [],
+    familyOfOrigin: [],
+    marriages: [],
+    media: [],
     ...overrides,
   };
 }
