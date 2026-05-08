@@ -16,6 +16,8 @@ should accept data, not paths.
 | --------------- | ------------------------------------------------------------------------- |
 | `pages/`        | Markdown + frontmatter parsing, page metadata schema (Zod), file storage. |
 | `format/`       | Pure string canonicalization (dates, etc.). |
+| `corrections/`  | Pure overlay logic for page-frontmatter corrections (`applyCorrections`). |
+| `checks/`       | Drift detectors and the `RepoState` loader the CLI's `wai check` uses. |
 | `gedcom/`       | GEDCOM file parsing, deriving per-individual YAML records, sync state.   |
 | `family/`       | Pure graph operations on GEDCOM records — ancestors, descendants, cohort (siblings/cousins), relationship calculator, lifespan timeline, places. |
 | `search/`       | FlexSearch index build + persist for wiki content. |
@@ -67,6 +69,8 @@ When you add a new module here, follow the same shape:
 **Pure** (take data, return data — no file I/O, no `process`, no `fetch`):
 
 - `core/src/format/dates.ts`.
+- `core/src/corrections/overlay.ts`.
+- `core/src/checks/types.ts`, `format-drift.ts`.
 - All of `core/src/family/*` *except* `trace.ts`. `cohort.ts`,
   `descendants.ts`, `relationship.ts`, `dates.ts`, `timeline.ts`,
   `places.ts`, `places-coords.ts` (parser only), `browser.ts`, `sort.ts`.
