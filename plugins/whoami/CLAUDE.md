@@ -111,6 +111,19 @@ wai task requeue 0001             # requeue a failed task
 - Post questions as you encounter gaps
 - Remove your lock when done
 
+## Drift checks
+
+After any page edit, run `wai check`. It scans for four categories of drift:
+
+- **format** — date strings, frontmatter fields not in canonical form. Auto-fixable: `wai check --fix --only format`.
+- **data** — corrections in page frontmatter that conflict, are redundant, or target unknown records.
+- **schema** — pages with frontmatter that needs migration. Auto-fixable: `wai check --fix --only schema`.
+- **coverage** — redlinks, unmapped places, derived records without pages. Suggestion-only.
+
+Surface remaining findings in your turn summary. If you introduced new format/schema findings with your edit, run `wai check --fix --only format,schema` to clean them up before reporting back.
+
+The user's data repo may have a pre-commit hook installed via `wai init` — that hook blocks commits with format/schema/data findings (coverage drift is non-blocking). If your edit triggers the hook, fix the underlying drift rather than bypassing the hook with `--no-verify`.
+
 ## Putting It Together
 
 A typical session might look like:

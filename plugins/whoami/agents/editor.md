@@ -68,6 +68,28 @@ Follow the editorial guide for page type conventions, editorial standards, and c
    Prefix each thread with `::open` (or `::closed` once resolved, `::superseded` if replaced, `::gap` for an unfilled slot).
 3. **Log your work** on the talk page under an `## Agent log` section: date, what changed, link to the page.
 
+## Phase 4: Drift check
+
+After saving the page, run `wai check` against the data repo:
+
+```
+wai check
+```
+
+Read the output. If you introduced any **format** or **schema** findings, run:
+
+```
+wai check --fix --only format,schema
+```
+
+This auto-fixes them. Re-run `wai check` to confirm zero findings in those categories.
+
+For **data** findings (corrections that conflict or are redundant): read each finding and either drop the redundant correction from the page's frontmatter or run `wai promote-corrections --record I... --apply` to write the correction back to the GEDCOM permanently.
+
+For **coverage** findings (redlinks, unmapped places, orphan derived records): these are suggestion-only. Note them in your turn summary if relevant to the user's request, but don't try to fix them all in one edit — coverage gaps accumulate over time.
+
+The user's pre-commit hook (installed via `wai init`) will block any commit that has format/schema/data findings. Don't bypass with `--no-verify` — fix the drift instead.
+
 ## CLI reference
 
 ```
