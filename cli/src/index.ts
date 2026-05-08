@@ -339,6 +339,10 @@ async function main(): Promise<number> {
           },
           mkdirP: (p) => { mkdirSync(p, { recursive: true }); },
           exists: (p) => existsSync(p),
+          setGitConfig: (key, value) => {
+            const { execFileSync } = require('node:child_process');
+            execFileSync('git', ['-C', root, 'config', '--local', key, value], { stdio: 'inherit' });
+          },
           write,
           writeErr: (s) => process.stderr.write(s),
         });

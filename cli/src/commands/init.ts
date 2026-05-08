@@ -9,6 +9,8 @@ export interface InitOptions {
   writeFile: (path: string, content: string) => void;
   mkdirP: (path: string) => void;
   exists: (path: string) => boolean;
+  /** Set a local git config value in `rootDir` (e.g. `core.hooksPath = .githooks`). */
+  setGitConfig: (key: string, value: string) => void;
   write: (s: string) => void;
   writeErr: (s: string) => void;
 }
@@ -18,6 +20,8 @@ interface Target {
   dir: string;
   content: string;
   label: string;
+  /** If set, run after the file is written. */
+  afterWrite?: () => void;
 }
 
 export async function runInit(opts: InitOptions): Promise<number> {
@@ -30,10 +34,15 @@ export async function runInit(opts: InitOptions): Promise<number> {
   const targets: Target[] = [];
   if (!opts.ciOnly) {
     targets.push({
-      path: join(opts.rootDir, '.git', 'hooks', 'pre-commit'),
-      dir: join(opts.rootDir, '.git', 'hooks'),
+      // Tracked location so contributors can commit + share the hook.
+      // `core.hooksPath = .githooks` (set after install) tells git to use it.
+      path: join(opts.rootDir, '.githooks', 'pre-commit'),
+      dir: join(opts.rootDir, '.githooks'),
       content: PRE_COMMIT_HOOK,
       label: 'pre-commit hook',
+      afterWrite: () => {
+        opts.setGitConfig('core.hooksPath', '.githooks');
+      },
     });
   }
   if (!opts.hookOnly) {
@@ -55,6 +64,7 @@ export async function runInit(opts: InitOptions): Promise<number> {
     opts.mkdirP(t.dir);
     opts.writeFile(t.path, t.content);
     opts.write(`wrote ${t.label}: ${t.path}\n`);
+    t.afterWrite?.();
   }
 
   if (targets.length === 0) {

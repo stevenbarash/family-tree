@@ -3,11 +3,31 @@
  * categories as blocking (coverage findings are suggestion-only and don't
  * block commits).
  *
+ * The hook is graceful: skips with a warning to stderr and exits 0 when
+ * `wai` is not on PATH OR when the installed `wai` predates drift-prevention
+ * (no `check` subcommand). This avoids blocking commits on fresh clones or
+ * stale CLI installs.
+ *
  * Bypassable with `git commit --no-verify` per standard git convention.
  */
 export const PRE_COMMIT_HOOK = `#!/bin/sh
-# Installed by \`wai init\`. Edit freely or remove.
+# Installed by \`wai init\` (drift-prevention plan 6).
+# Tracked at .githooks/pre-commit; activated via \`git config core.hooksPath .githooks\`.
 # Bypass with \`git commit --no-verify\`.
+
+# Skip silently when \`wai\` is not on PATH or doesn't support \`check\`
+# (e.g., fresh clone, or an older CLI version pre-dating drift-prevention).
+if ! command -v wai >/dev/null 2>&1; then
+  echo "pre-commit: wai not on PATH; skipping drift check" >&2
+  echo "(install: cd <whoami-code>/cli && npm install && npm run build, then add dist/ to PATH)" >&2
+  exit 0
+fi
+if ! wai --help 2>&1 | grep -q '^[[:space:]]*check'; then
+  echo "pre-commit: \\\`wai check\\\` not supported by this CLI version; skipping" >&2
+  echo "(rebuild: cd <whoami-code>/cli && npm run build)" >&2
+  exit 0
+fi
+
 exec wai check --fail-on format,schema,data
 `;
 
