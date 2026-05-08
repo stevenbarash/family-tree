@@ -18,6 +18,7 @@ import { loadConflicts, type ConflictEntry } from '@core/family/conflicts.ts';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 import { DERIVED_DIR, GENEALOGY_DIR, PLACES_COORDS_FILE, SELF_RECORD } from './env';
 import { getCachedList } from './server-services';
+import { correctRecords, getCachedPageCorrections } from './corrections.ts';
 
 export type { AncestorNode, AncestryTree };
 
@@ -239,7 +240,8 @@ export function getCachedDerivedRecords(): Map<string, DerivedRecord> {
   if (_derivedRecordsCache && _derivedRecordsCache.expiresAt > now && _derivedRecordsCache.mtimeMs === mtimeMs) {
     return _derivedRecordsCache.records;
   }
-  const records = loadDerivedRecordsForTree();
+  const raw = loadDerivedRecordsForTree();
+  const records = correctRecords(raw, getCachedPageCorrections());
   _derivedRecordsCache = { records, expiresAt: now + FILE_CACHE_TTL_MS, mtimeMs };
   return records;
 }
