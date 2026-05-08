@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
 import { toSlug } from './slug.js';
@@ -18,6 +20,10 @@ import { runRedlinks } from './commands/redlinks.js';
 import { runSearch } from './commands/search.js';
 import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
+import { runCheck } from './commands/check.js';
+import { loadRepoState } from '@core/checks/load.ts';
+import { detectFormatDrift } from '@core/checks/format-drift.ts';
+import type { FindingCategory } from '@core/checks/types.ts';
 
 const VERSION = '2.0.0-pre.0';
 
@@ -54,6 +60,13 @@ GEDCOM:
               --notes "..."
   recite                      Report stale snapshot pointers
   recite --apply              Advance pointers in pages
+
+Quality:
+  check                       Run all drift detectors. Exit 1 if findings.
+        [--fix]                 Apply safe auto-fixes (format, schema)
+        [--only A,B]            Only run detectors for categories (format,data,schema,coverage)
+        [--fail-on A,B]         Exit 1 only on findings in these categories
+        [--json]                Machine-readable output
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -248,6 +261,28 @@ async function main(): Promise<number> {
         const limit = parseInt(String(args.flags.limit ?? '25'), 10) || 25;
         await runSearch({ query, limit, json: !!args.flags.json, client, write });
         break;
+      }
+      case 'check': {
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const parseList = (v: unknown): FindingCategory[] | null => {
+          if (typeof v !== 'string') return null;
+          return v.split(',').map(s => s.trim()) as FindingCategory[];
+        };
+        const code = await runCheck({
+          rootDir: root,
+          json: !!args.flags.json,
+          fix: !!args.flags.fix,
+          only: parseList(args.flags.only),
+          failOn: parseList(args.flags['fail-on']),
+          loadState: loadRepoState,
+          detectors: [detectFormatDrift],
+          write,
+          writeErr: (s) => process.stderr.write(s),
+          writeFile: (file, content) => writeFileSync(file, content),
+        });
+        return code;
       }
       case 'redlinks': {
         const limit = parseInt(String(args.flags.limit ?? '50'), 10) || 50;
