@@ -37,6 +37,16 @@ export function normalizeDate(raw: string): NormalizeResult {
     }
   }
 
+  // "Month D, YYYY" or "Month D YYYY": "August 19, 2001", "Feb 28 1970"
+  const monDY = trimmed.match(/^([A-Za-z]+)\s+0?(\d{1,2}),?\s+(\d{4})$/);
+  if (monDY) {
+    const m = titleCaseMonth(monDY[1]!);
+    if (m) {
+      const out = `${monDY[2]} ${m} ${monDY[3]}`;
+      return { value: out, changed: out !== raw };
+    }
+  }
+
   // D Mon YYYY: "7 Sep 1997", "08 OCT 1790"
   const dMonY = trimmed.match(/^0?(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
   if (dMonY) {
