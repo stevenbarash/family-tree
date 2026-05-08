@@ -91,3 +91,88 @@ test('parsePageMeta rejects non-integer schemaVersion', () => {
     }),
   );
 });
+
+const MINIMAL_VALID = {
+  schemaVersion: 1,
+  title: 'Test',
+  owner: 'steven',
+  editors: [],
+  type: 'person' as const,
+  aliases: [],
+  categories: [],
+  created: '2026-05-07',
+};
+
+test('parsePageMeta: corrections field defaults to empty array when absent', () => {
+  const meta = parsePageMeta(MINIMAL_VALID);
+  assert.deepEqual(meta.corrections, []);
+});
+
+test('parsePageMeta: accepts a single valid correction', () => {
+  const meta = parsePageMeta({
+    ...MINIMAL_VALID,
+    corrections: [
+      { field: 'death.date', value: '1989', source: 'Find A Grave #209496149' },
+    ],
+  });
+  assert.equal(meta.corrections.length, 1);
+  assert.equal(meta.corrections[0]!.field, 'death.date');
+  assert.equal(meta.corrections[0]!.value, '1989');
+  assert.equal(meta.corrections[0]!.source, 'Find A Grave #209496149');
+});
+
+test('parsePageMeta: accepts correction with explicit record id', () => {
+  const meta = parsePageMeta({
+    ...MINIMAL_VALID,
+    corrections: [
+      { record: 'I372189255251', field: 'death.date', value: '1989', source: 'src' },
+    ],
+  });
+  assert.equal(meta.corrections[0]!.record, 'I372189255251');
+});
+
+test('parsePageMeta: rejects correction with invalid record id', () => {
+  assert.throws(() =>
+    parsePageMeta({
+      ...MINIMAL_VALID,
+      corrections: [
+        { record: 'not-a-record-id', field: 'death.date', value: '1989', source: 'src' },
+      ],
+    }),
+  );
+});
+
+test('parsePageMeta: rejects correction with field not in whitelist', () => {
+  assert.throws(() =>
+    parsePageMeta({
+      ...MINIMAL_VALID,
+      corrections: [
+        { field: 'occupation', value: 'farmer', source: 'src' },
+      ],
+    }),
+  );
+});
+
+test('parsePageMeta: rejects correction with empty value or source', () => {
+  assert.throws(() =>
+    parsePageMeta({
+      ...MINIMAL_VALID,
+      corrections: [{ field: 'name', value: '', source: 'src' }],
+    }),
+  );
+  assert.throws(() =>
+    parsePageMeta({
+      ...MINIMAL_VALID,
+      corrections: [{ field: 'name', value: 'X', source: '' }],
+    }),
+  );
+});
+
+test('parsePageMeta: corrections is an array — single object rejected', () => {
+  assert.throws(() =>
+    parsePageMeta({
+      ...MINIMAL_VALID,
+      corrections: { field: 'name', value: 'X', source: 's' },
+    }),
+  );
+});
