@@ -91,6 +91,7 @@ because they *are* the seam between the rest of the system and disk):
 | `search/rebuild.ts` | Walk `pages/`, build the search index. |
 | `search/persist.ts` | Read/write FlexSearch shard files. |
 | `family/trace.ts` | Read derived records from disk for ancestor tracing. |
+| `checks/load.ts` | Read GEDCOM + pages + coords + derived YAMLs into a RepoState for drift detectors. |
 
 Other paths data takes:
 
