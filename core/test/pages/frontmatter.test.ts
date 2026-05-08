@@ -79,6 +79,7 @@ test('serializePage round-trips every PageMeta field including portrait and sche
       gedcom: { file: 'tree.ged', record: 'I42', snapshot: 'abc123' },
       portrait: 'sha256:deadbeef',
       created: '2026-05-01',
+      corrections: [],
     },
     body: 'Body text\n',
   };
@@ -101,6 +102,7 @@ test('serializePage omits portrait when not set (no empty/null emission)', () =>
       aliases: [],
       categories: [],
       created: '2026-05-01',
+      corrections: [],
     },
     body: 'x',
   };

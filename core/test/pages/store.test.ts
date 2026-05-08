@@ -132,6 +132,7 @@ test('PageStore.write: writes file and creates a commit', async () => {
           aliases: [],
           categories: [],
           created: '2026-04-29',
+          corrections: [],
         },
         body: 'Body.\n',
       },
@@ -151,7 +152,7 @@ test('PageStore.write: serializes concurrent writes to the same slug', async () 
     const store = createPageStore({ repoRoot: repo.root, pagesDir: repo.pagesDir });
     const base = (body: string): Page => ({
       slug: 'race',
-      meta: { schemaVersion: 1, title: 'Race', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29' },
+      meta: { schemaVersion: 1, title: 'Race', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29', corrections: [] },
       body,
     });
     await Promise.all([
@@ -171,7 +172,7 @@ test('PageStore.history: returns commit log for a slug', async () => {
     const store = createPageStore({ repoRoot: repo.root, pagesDir: repo.pagesDir });
     const page: Page = {
       slug: 'h',
-      meta: { schemaVersion: 1, title: 'H', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29' },
+      meta: { schemaVersion: 1, title: 'H', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29', corrections: [] },
       body: 'one',
     };
     await store.write('h', page, { name: 'A', email: 'a@x' }, 'first');
@@ -191,7 +192,7 @@ test('PageStore.write: working tree is clean after commit failure', async () => 
     const store = createPageStore({ repoRoot: repo.root, pagesDir: repo.pagesDir });
     const page: Page = {
       slug: 'r',
-      meta: { schemaVersion: 1, title: 'R', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29' },
+      meta: { schemaVersion: 1, title: 'R', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29', corrections: [] },
       body: 'first',
     };
     await store.write('r', page, { name: 'A', email: 'a@x' }, 'first');
@@ -215,7 +216,7 @@ test('PageStore.softDelete: moves file to _archived/ and marks deletedAt', async
     const store = createPageStore({ repoRoot: repo.root, pagesDir: repo.pagesDir });
     const page: Page = {
       slug: 'gone',
-      meta: { schemaVersion: 1, title: 'Gone', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29' },
+      meta: { schemaVersion: 1, title: 'Gone', owner: 's', editors: [], type: 'person', aliases: [], categories: [], created: '2026-04-29', corrections: [] },
       body: 'body',
     };
     await store.write('gone', page, { name: 'A', email: 'a@x' }, 'create');
@@ -249,6 +250,7 @@ function freshMeta(title: string): Page['meta'] {
     aliases: [],
     categories: [],
     created: '2026-04-29',
+    corrections: [],
   };
 }
 

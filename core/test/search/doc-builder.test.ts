@@ -15,6 +15,7 @@ const page: Page = {
     aliases: ['Abby', 'Abigail'],
     categories: ['Family', 'People'],
     created: '2026-04-29',
+    corrections: [],
   },
   body: 'Abby was born in 1991. She lives in Squirrel Hill.',
 };

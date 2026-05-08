@@ -10,6 +10,19 @@ const GedcomRefSchema = z.object({
   snapshot: z.string().min(1),
 });
 
+const CorrectionSchema = z.object({
+  record: z.string().regex(/^I\d+$/).optional(),
+  field: z.enum([
+    'birth.date',
+    'birth.place',
+    'death.date',
+    'death.place',
+    'name',
+  ]),
+  value: z.string().min(1),
+  source: z.string().min(1),
+});
+
 const PageMetaSchema = z.object({
   schemaVersion: z.number().int().positive().default(CURRENT_SCHEMA_VERSION),
   title: z.string().min(1),
@@ -28,6 +41,7 @@ const PageMetaSchema = z.object({
     z.string(),
     z.date().transform(d => d.toISOString().slice(0, 10))
   ]).optional(),
+  corrections: z.array(CorrectionSchema).default([]),
 });
 
 // Compile-time guarantee that the schema's output matches PageMeta.
