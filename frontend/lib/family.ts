@@ -237,6 +237,11 @@ export function getCachedDerivedRecords(): Map<string, DerivedRecord> {
   } catch {
     return new Map();
   }
+  // Cache key is DERIVED_DIR mtime only; page-corrections changes in
+  // pages/ are NOT detected here. Edits to a page's corrections[] become
+  // visible after the cache TTL expires (FILE_CACHE_TTL_MS). Acceptable
+  // for the dev-server use case; if a future plan needs immediate
+  // visibility, add an mtime check on the pages dir to this guard.
   if (_derivedRecordsCache && _derivedRecordsCache.expiresAt > now && _derivedRecordsCache.mtimeMs === mtimeMs) {
     return _derivedRecordsCache.records;
   }
