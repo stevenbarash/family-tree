@@ -70,3 +70,33 @@ test('applyCorrections: returns a new object — does not mutate input', () => {
   assert.notEqual(out.death, r.death);        // sub-object is new
   assert.equal(r.death!.date, '1990');        // input preserved
 });
+
+test('applyCorrections: multiple corrections on different fields compose', () => {
+  const r = baseRecord();
+  const out = applyCorrections(r, [
+    { field: 'death.date', value: '1989', source: 's1' },
+    { field: 'death.place', value: 'Italy', source: 's2' },
+  ]);
+  assert.equal(out.death!.date, '1989');
+  assert.equal(out.death!.place, 'Italy');
+});
+
+test('applyCorrections: later correction on the same field wins', () => {
+  const r = baseRecord();
+  const out = applyCorrections(r, [
+    { field: 'death.date', value: '1988', source: 's1' },
+    { field: 'death.date', value: '1989', source: 's2' },
+  ]);
+  assert.equal(out.death!.date, '1989');
+});
+
+test('applyCorrections: idempotent — applying the same list twice yields the same result', () => {
+  const r = baseRecord();
+  const corrections: Correction[] = [
+    { field: 'death.date', value: '1989', source: 's' },
+    { field: 'name', value: 'Renamed', source: 's' },
+  ];
+  const once = applyCorrections(r, corrections);
+  const twice = applyCorrections(once, corrections);
+  assert.deepEqual(twice, once);
+});
