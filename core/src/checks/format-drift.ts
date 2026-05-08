@@ -1,6 +1,8 @@
 import type { Detector, Finding, LoadedPage, RepoState } from './types.ts';
 import { normalizeDate } from '../format/dates.ts';
 
+const MAX_PREVIEW = 80;
+
 export const detectFormatDrift: Detector = (state: RepoState): Finding[] => {
   const findings: Finding[] = [];
   const lines = state.gedcomText.split('\n');
@@ -67,14 +69,6 @@ function findDatesInLine(line: string): Array<{ start: number; text: string }> {
   return hits.sort((a, b) => a.start - b.start);
 }
 
-function inFencedCodeBlock(lines: string[], lineIdx: number): boolean {
-  let inside = false;
-  for (let i = 0; i < lineIdx; i++) {
-    if (lines[i]!.trimStart().startsWith('```')) inside = !inside;
-  }
-  return inside;
-}
-
 /**
  * Find the line index (0-based) just past the frontmatter delimiter `---`,
  * if the file opens with one. Returns 0 if the file has no frontmatter.
@@ -91,15 +85,20 @@ function detectInPage(page: LoadedPage): Finding[] {
   const findings: Finding[] = [];
   const lines = page.text.split('\n');
   const bodyStart = bodyStartIndex(lines);
+  let inCode = false;
   for (let i = bodyStart; i < lines.length; i++) {
-    if (inFencedCodeBlock(lines.slice(bodyStart), i - bodyStart)) continue;
     const line = lines[i]!;
+    // Toggle on fence-open / fence-close lines, AND skip the fence line itself.
+    if (line.trimStart().startsWith('```')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
     const hits = findDatesInLine(line);
     if (hits.length === 0) continue;
     let newLine = line;
     let changed = false;
     let ambiguousHit = false;
-    // Apply replacements right-to-left so indices stay stable.
     for (const hit of [...hits].reverse()) {
       const result = normalizeDate(hit.text);
       if (result.ambiguous) { ambiguousHit = true; continue; }
@@ -108,10 +107,12 @@ function detectInPage(page: LoadedPage): Finding[] {
       changed = true;
     }
     if (changed) {
+      const trimmed = newLine.trim();
+      const preview = trimmed.length > MAX_PREVIEW ? trimmed.slice(0, MAX_PREVIEW) + '…' : trimmed;
       findings.push({
         category: 'format',
         severity: 'info',
-        message: `non-canonical date(s) in page body → "${newLine.trim().slice(0, 80)}…"`,
+        message: `non-canonical date(s) in page body → "${preview}"`,
         location: { file: page.path, line: i + 1 },
         fix: { file: page.path, lineNumber: i + 1, oldLine: line, newLine },
       });
