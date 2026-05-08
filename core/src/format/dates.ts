@@ -76,5 +76,24 @@ export function normalizeDate(raw: string): NormalizeResult {
     }
   }
 
+  // Slash format: "17/09/1923", "9/7/1997"
+  const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slash) {
+    const a = Number(slash[1]);
+    const b = Number(slash[2]);
+    const yyyy = slash[3]!;
+    const SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (a > 12 && b <= 12) {
+      // d/m/y unambiguous
+      return { value: `${a} ${SHORT[b - 1]} ${yyyy}`, changed: true };
+    }
+    if (b > 12 && a <= 12) {
+      // m/d/y unambiguous
+      return { value: `${b} ${SHORT[a - 1]} ${yyyy}`, changed: true };
+    }
+    // both ≤ 12: ambiguous, don't guess
+    return { value: trimmed, changed: trimmed !== raw, ambiguous: true };
+  }
+
   return { value: trimmed, changed: trimmed !== raw };
 }

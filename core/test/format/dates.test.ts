@@ -89,3 +89,21 @@ test('normalizeDate: Abt is idempotent', () => {
   assert.equal(normalizeDate('Abt 1886').changed, false);
   assert.equal(normalizeDate('Bet 1850 And 1860').changed, false);
 });
+
+test('normalizeDate: slash date with day > 12 → unambiguous d/m/y', () => {
+  assert.equal(normalizeDate('17/09/1923').value, '17 Sep 1923');
+  assert.equal(normalizeDate('29/09/1941').value, '29 Sep 1941');
+});
+
+test('normalizeDate: slash date with month-position > 12 → unambiguous m/d/y is impossible, treated as d/m/y', () => {
+  // 29/9/1941: 29 can only be a day → d/m/y
+  assert.equal(normalizeDate('29/9/1941').value, '29 Sep 1941');
+});
+
+test('normalizeDate: ambiguous slash date is flagged, not fixed', () => {
+  // 9/7/1997: could be 7 Sep or 9 Jul. Don't guess.
+  const r = normalizeDate('9/7/1997');
+  assert.equal(r.value, '9/7/1997');
+  assert.equal(r.changed, false);
+  assert.equal(r.ambiguous, true);
+});
