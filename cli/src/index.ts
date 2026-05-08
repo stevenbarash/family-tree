@@ -25,6 +25,9 @@ import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { loadRepoState } from '@core/checks/load.ts';
 import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
 import { detectFormatDrift } from '@core/checks/format-drift.ts';
+import { detectDataDrift } from '@core/checks/data-drift.ts';
+import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
+import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import type { FindingCategory } from '@core/checks/types.ts';
 
 const VERSION = '2.0.0-pre.0';
@@ -60,6 +63,8 @@ Pages:
 GEDCOM:
   sync-gedcom --ged-file F    Sync GEDCOM .ged → derived/ + commit
               --notes "..."
+              [--force]       Re-derive even when input bytes are unchanged
+                                (use after a deriver-code update)
   recite                      Report stale snapshot pointers
   recite --apply              Advance pointers in pages
 
@@ -93,10 +98,6 @@ Common flags:
   --summary <text>            Edit summary (required for write/create/edit)
 
 Server URL: ${getServer()}  (override: WHOAMI_SERVER, ~/.whoami/config.json)
-
-Removed in this migration (track future plans for replacements):
-  upload, link, changes, category, source, task, place,
-  snapshot, export, import, talk, section, auth
 `;
 
 interface Args {
@@ -254,7 +255,8 @@ async function main(): Promise<number> {
       case 'sync-gedcom': {
         const gedFile = String(args.flags['ged-file'] ?? '');
         const notes = String(args.flags.notes ?? '');
-        await runSyncGedcom({ gedFile, notes, client, write });
+        const force = !!args.flags.force;
+        await runSyncGedcom({ gedFile, notes, force, client, write });
         break;
       }
       case 'recite': {
@@ -282,7 +284,12 @@ async function main(): Promise<number> {
           only: parseList(args.flags.only),
           failOn: parseList(args.flags['fail-on']),
           loadState: loadRepoState,
-          detectors: [detectFormatDrift],
+          detectors: [
+            detectFormatDrift,
+            detectDataDrift,
+            detectSchemaDrift,
+            detectCoverageDrift,
+          ],
           write,
           writeErr: (s) => process.stderr.write(s),
           writeFile: (file, content) => writeFileSync(file, content),
