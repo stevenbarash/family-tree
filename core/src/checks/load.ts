@@ -31,13 +31,14 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
       const parsed = matter(raw);
       const fmRaw = parsed.data ?? {};
       const fmVersion = typeof fmRaw.schemaVersion === 'number' ? fmRaw.schemaVersion : 1;
-      const migrated = migrate(fmRaw, fmVersion);
       let meta;
       try {
+        const migrated = migrate(fmRaw, fmVersion);
         meta = parsePageMeta(migrated);
       } catch {
-        // Skip pages that fail schema validation (e.g. talk pages, research logs
-        // without structured frontmatter).
+        // Skip pages whose frontmatter fails migration or schema validation
+        // (talk pages, research logs without structured frontmatter, future-version
+        // pages from a code rev we don't have, malformed types).
         continue;
       }
       const slug = name.replace(/\.md$/, '');
