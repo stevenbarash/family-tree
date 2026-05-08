@@ -21,7 +21,7 @@ export async function runPromoteCorrections(opts: PromoteCorrectionsOptions): Pr
     return 1;
   }
 
-  const gedcomText = opts.readFile(opts.gedcomPath);
+  let gedcomText = opts.readFile(opts.gedcomPath);
   let promoted = 0;
   for (const c of matching) {
     const pageText = opts.readFile(c.sourcePagePath);
@@ -42,6 +42,7 @@ export async function runPromoteCorrections(opts: PromoteCorrectionsOptions): Pr
     if (opts.apply) {
       opts.writeFile(opts.gedcomPath, result.gedcomText);
       opts.writeFile(c.sourcePagePath, result.pageText);
+      gedcomText = result.gedcomText;
       opts.write(`promoted ${c.record} ${c.field} = "${c.value}" → ${c.sourcePagePath}\n`);
       promoted += 1;
     } else {

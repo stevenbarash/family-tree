@@ -77,3 +77,42 @@ test('promote-corrections: exits 1 when no correction matches the record', async
   assert.equal(code, 1);
   assert.match(outErr, /no.*correction.*found/i);
 });
+
+test('promote-corrections --apply: two corrections to same record both land in GEDCOM', async () => {
+  let out = '';
+  // Track the latest GEDCOM written, simulating disk state
+  let gedcomDisk = '0 @I1@ INDI\n1 NAME X //\n1 BIRT\n2 DATE 1900\n1 DEAT\n2 DATE 1990\n2 PLAC OldPlace\n0 TRLR\n';
+  const writes: Array<{ path: string; content: string }> = [];
+  const corrections: SourcedCorrection[] = [
+    { record: 'I1', field: 'death.date', value: '1989', source: 's1', sourcePagePath: '/tmp/x/pages/p1.md' },
+    { record: 'I1', field: 'death.place', value: 'NewPlace', source: 's2', sourcePagePath: '/tmp/x/pages/p2.md' },
+  ];
+  const code = await runPromoteCorrections({
+    record: 'I1',
+    apply: true,
+    gedcomPath: '/tmp/x/g.ged',
+    pagesDir: '/tmp/x/pages',
+    loadCorrections: () => corrections,
+    readFile: (p) => {
+      if (p === '/tmp/x/g.ged') return gedcomDisk;
+      // page files: build a minimal valid frontmatter for each
+      const slug = p.includes('p1') ? 'p1' : 'p2';
+      const field = p.includes('p1') ? 'death.date' : 'death.place';
+      const value = p.includes('p1') ? '1989' : 'NewPlace';
+      const src = p.includes('p1') ? 's1' : 's2';
+      return `---\ntitle: ${slug}\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: 2026-01-01\ngedcom: { file: barash-tree.ged, record: I1, snapshot: abc }\ncorrections:\n  - field: ${field}\n    value: "${value}"\n    source: "${src}"\n---\n`;
+    },
+    writeFile: (p, c) => {
+      writes.push({ path: p, content: c });
+      if (p === '/tmp/x/g.ged') gedcomDisk = c;  // simulate disk update
+    },
+    write: (s) => { out += s; },
+    writeErr: () => {},
+  });
+  assert.equal(code, 0);
+  // Final GEDCOM must contain BOTH corrections.
+  assert.match(gedcomDisk, /2 DATE 1989/);
+  assert.match(gedcomDisk, /2 PLAC NewPlace/);
+  assert.doesNotMatch(gedcomDisk, /2 DATE 1990/);
+  assert.doesNotMatch(gedcomDisk, /OldPlace/);
+});
