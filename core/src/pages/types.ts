@@ -6,6 +6,25 @@ export interface GedcomRef {
   snapshot: string;
 }
 
+/**
+ * A frontmatter-declared correction to a derived GEDCOM record. Applied
+ * at render time by `applyCorrections` (see `core/src/corrections/overlay.ts`).
+ *
+ * The `record` is optional and defaults to the page's own `gedcom.record`
+ * when the renderer collects corrections — pages that override only their
+ * own subject can omit it. Pages that correct another individual (e.g. a
+ * family overview page correcting a parent's death date) must spell it out.
+ *
+ * Field whitelist is intentionally narrow at v1; extend the union when a
+ * concrete need appears.
+ */
+export interface Correction {
+  record?: string;
+  field: 'birth.date' | 'birth.place' | 'death.date' | 'death.place' | 'name';
+  value: string;
+  source: string;
+}
+
 export interface PageMeta {
   /**
    * Schema version of this page's frontmatter. Always present after
@@ -23,6 +42,7 @@ export interface PageMeta {
   portrait?: string;
   created: string;
   deletedAt?: string;
+  corrections: Correction[];
 }
 
 export interface Page {
