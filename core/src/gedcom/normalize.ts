@@ -1,3 +1,9 @@
+// NOTE on merge: this file was created by plan-1-format-normalizer because
+// the plan assumed `normalizeDerivedRecord` existed. The main branch has an
+// untracked richer version with additional fields (`familyOfOrigin`,
+// `marriages`, `media`) that aren't yet on the typed `DerivedRecord`. When
+// merging plan-1 back to main, prefer the richer version from main and drop
+// this stub.
 import type { DerivedRecord } from './types.ts';
 
 /**

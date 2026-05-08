@@ -22,10 +22,12 @@ drive it without specific bindings.
 | `recite`         | Report or advance stale snapshot pointers in pages.                      |
 | `healthz`        | Ping the API.                                                            |
 | `config server`  | Set the server URL in `~/.whoami/config.json`.                           |
+| `check`          | Run drift detectors against the data repo at `$WHOAMI_ROOT`. `--fix` applies safe normalizations. Standalone — does not call the API. |
 
 The CLI is an HTTP client — it talks to the frontend's API routes (or
 any other host that implements the same surface). The host runs locally;
 the CLI is agent-callable.
+A new class of "quality" commands (starting with `check`) runs standalone against `$WHOAMI_ROOT` instead of going through the API — this lets them run in pre-commit hooks and CI where no frontend is available. Future drift-prevention commands (`promote-corrections`, `init`) will follow the same standalone pattern.
 
 ## Build and test
 

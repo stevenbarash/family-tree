@@ -56,7 +56,7 @@ test('check: findings produce non-zero exit', async () => {
   });
   assert.equal(code, 1);
   assert.match(out, /format/);
-  assert.match(out, /1 findings/);
+  assert.match(out, /1 finding[\.\s]/);
 });
 
 test('check: --json prints JSON', async () => {
@@ -103,7 +103,7 @@ test('check: --only filters detectors by category', async () => {
   });
   // 1 format finding (kept), data finding (filtered out)
   assert.equal(code, 1);
-  assert.match(out, /1 findings/);
+  assert.match(out, /1 finding[\.\s]/);
   assert.doesNotMatch(out, /\bb\b/);
 });
 

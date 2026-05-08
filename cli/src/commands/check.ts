@@ -41,6 +41,7 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
         ? state.gedcomText
         : (state.pages.find(p => p.path === file)?.text ?? '');
       const lines = sourceText.split('\n');
+      let fileApplied = 0;
       for (const fix of fixes) {
         const idx = fix.lineNumber - 1;
         if (lines[idx] !== fix.oldLine) {
@@ -48,9 +49,12 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
           continue;
         }
         lines[idx] = fix.newLine;
-        applied += 1;
+        fileApplied += 1;
       }
-      opts.writeFile(file, lines.join('\n'));
+      if (fileApplied > 0) {
+        opts.writeFile(file, lines.join('\n'));
+        applied += fileApplied;
+      }
     }
     opts.write(`${applied} fix${applied === 1 ? '' : 'es'} applied.\n`);
 
@@ -88,7 +92,9 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
     }
     opts.write('\n');
   }
-  opts.write(`${byCat.size} categories, ${findings.length} findings.\n`);
+  const cats = byCat.size === 1 ? 'category' : 'categories';
+  const finds = findings.length === 1 ? 'finding' : 'findings';
+  opts.write(`${byCat.size} ${cats}, ${findings.length} ${finds}.\n`);
 
   // Exit-code mapping
   if (findings.length === 0) return 0;
