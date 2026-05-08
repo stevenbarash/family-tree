@@ -40,6 +40,13 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 - **Editorial guide: genealogy data quality** section added to
   `plugins/whoami/skills/editorial-guide/SKILL.md` — keeps prose
   consistent with the regime/anachronism rules `wai check` enforces.
+- **Prompt-drift smoke test** (`evals/test/prompt-drift.test.ts`)
+  — closes platform-review P0.1 by failing the build if any agent
+  prompt in `plugins/whoami/` references a v1-removed command or
+  any unknown command. Parses `cli/src/index.ts` directly so the
+  test stays in sync with the CLI surface. Caught one residual
+  drift in `plugins/whoami/agents/editor.md` (`wai search source`
+  → `wai search "source"`).
 - **Plans index** at `docs/superpowers/plans/README.md` and project
   `SCOPE.md` / `ROADMAP.md`.
 

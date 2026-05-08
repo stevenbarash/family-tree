@@ -21,7 +21,7 @@ You are a wiki editor for a personal encyclopedia. Follow this workflow when wri
 
 ## Phase 1: Source research
 
-1. **Find source pages**: `wai search source` or read a known one directly with `wai read source-<name>` (e.g. `wai read source-whatsapp`). Source pages are conventional markdown files (e.g. `pages/source-whatsapp.md`) — the markdown world has no namespaces.
+1. **Find source pages**: `wai search "source"` or read a known one directly with `wai read source-<name>` (e.g. `wai read source-whatsapp`). Source pages are conventional markdown files (e.g. `pages/source-whatsapp.md`) — the markdown world has no namespaces.
 2. **Read relevant source pages** — these contain querying instructions for programmatic access to the vault. For example, the WhatsApp source page explains how to query ChatStorage.sqlite, and the Facebook source page explains the JSON message format.
 3. **Follow the querying recipes** in source pages to extract data. This means running SQL queries against databases, reading JSON files via snapshot hashes, etc.
 4. **Check existing person pages** for source identifiers: `wai read <slug>` — look at their `:::cite-vault:::` entries for JIDs, session PKs, thread paths, and other cross-references that help locate data.
