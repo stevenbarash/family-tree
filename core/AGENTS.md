@@ -70,7 +70,7 @@ When you add a new module here, follow the same shape:
 
 - `core/src/format/dates.ts`.
 - `core/src/corrections/overlay.ts`.
-- `core/src/checks/types.ts`, `format-drift.ts`.
+- `core/src/checks/types.ts`, `format-drift.ts`, `data-drift.ts`, `schema-drift.ts`, `coverage-drift.ts`.
 - All of `core/src/family/*` *except* `trace.ts`. `cohort.ts`,
   `descendants.ts`, `relationship.ts`, `dates.ts`, `timeline.ts`,
   `places.ts`, `places-coords.ts` (parser only), `browser.ts`, `sort.ts`.
