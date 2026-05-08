@@ -145,7 +145,8 @@ function removeCorrectionFromPage(pageText: string, input: PromoteInput): string
   // Build a new data object to avoid mutating gray-matter's cached parsed.data reference.
   const { corrections: _dropped, ...rest } = data as any;
   const newData = filtered.length === 0 ? rest : { ...rest, corrections: filtered };
-  return matter.stringify(parsed.content, newData, { lineWidth: -1 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return matter.stringify(parsed.content, newData, { lineWidth: -1 } as any);
 }
 
 export interface ApplyPromoteOptions extends PromoteInput {
