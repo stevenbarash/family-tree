@@ -227,6 +227,7 @@ export function defaultPageMeta(opts: PageDefaultsOpts): PageMeta {
     aliases: [],
     categories: [],
     created: new Date().toISOString().slice(0, 10),
+    corrections: [],
   };
 }
 
