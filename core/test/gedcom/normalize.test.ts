@@ -40,6 +40,8 @@ test('normalizeDerivedRecord: fills missing array fields with []', () => {
   assert.deepEqual(out.familyOfOrigin, []);
   assert.deepEqual(out.marriages, []);
   assert.deepEqual(out.media, []);
+  // Pre-privacy YAMLs default to unrestricted — older deriver had no privacy field.
+  assert.deepEqual(out.privacy, { restricted: false, reason: 'none' });
   // Existing fields preserved
   assert.deepEqual(out.birth, { date: '1900', place: null });
 });

@@ -11,6 +11,7 @@ function rec(record: string, name: string, b: string | null, d: string | null): 
     parents: [], spouses: [], children: [],
     familyOfOrigin: [], marriages: [],
     residences: [], occupations: [], sources: [], media: [],
+    privacy: { restricted: false, reason: 'none' },
   };
 }
 

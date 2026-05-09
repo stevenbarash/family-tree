@@ -51,6 +51,7 @@ test('buildSearchDoc: page + derived', () => {
     occupations: [{ title: 'Designer', date: null }],
     sources: [],
     media: [],
+    privacy: { restricted: false, reason: 'none' },
   };
   const doc = buildSearchDoc(page, derived);
   assert.match(doc.places, /Pittsburgh/);

@@ -37,6 +37,7 @@ function rec(id: string, place?: string): DerivedRecord {
     familyOfOrigin: [],
     marriages: [],
     media: [],
+    privacy: { restricted: false, reason: 'none' },
   };
 }
 

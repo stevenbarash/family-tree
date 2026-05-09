@@ -46,6 +46,7 @@ function rec(id: string, opts: {
     familyOfOrigin: [],
     marriages: [],
     media: [],
+    privacy: { restricted: false, reason: 'none' },
   };
 }
 

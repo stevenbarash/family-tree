@@ -36,5 +36,6 @@ export function normalizeDerivedRecord(raw: unknown): DerivedRecord | null {
     occupations: arr(r.occupations),
     sources: arr(r.sources),
     media: arr(r.media),
+    privacy: (r.privacy as DerivedRecord['privacy']) ?? { restricted: false, reason: 'none' },
   };
 }

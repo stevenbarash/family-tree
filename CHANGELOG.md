@@ -54,6 +54,16 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   explaining the ambiguity. Closes platform-review P0.3 (the underlying
   `normalizeDate` ambiguity flag and `wai check` audit were already in
   place; this surfaces the signal to the reader).
+- **Privacy gate (foundation)** for living-person records, addressing
+  platform-review P0.2. Adds `Privacy { restricted, reason }` to
+  `DerivedRecord` populated by the deriver from the GEDCOM `RESN`
+  tag (privacy/confidential/locked) and a "no death + latest possible
+  birth year within 110 of today" living-person heuristic. Bounds-aware
+  for `BET … AND …` and `AFT` dates so a record like `Bet 1900 And 1925`
+  is restricted via the upper bound. Older YAMLs without a `privacy`
+  field default to unrestricted via `normalizeDerivedRecord`. Search
+  filtering, export-redact command, and frontend gating are upcoming
+  follow-on commits.
 - **Skip-to-content link** in the root layout
   (`frontend/app/layout.tsx`) — visually-hidden anchor that becomes
   visible on focus and jumps past nav to the page's main content.

@@ -16,6 +16,7 @@ export function person(record: string, name: string, patch: Partial<DerivedRecor
     occupations: [],
     sources: [],
     media: [],
+    privacy: { restricted: false, reason: 'none' },
     ...patch,
   };
 }

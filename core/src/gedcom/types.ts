@@ -96,6 +96,26 @@ export interface MarriageEntry {
   marriedPlace: string | null;
 }
 
+/** Privacy classification for an individual. Set by the deriver from the
+ *  GEDCOM `RESN` tag and a "no death + recent birth" living-person heuristic.
+ *  Downstream surfaces (search index, export, article renderer) gate on
+ *  `restricted` to keep living-person details out of indices and exports.
+ *
+ *  `reason` values:
+ *    - `none` — not restricted
+ *    - `gedcom-resn-privacy` / `confidential` / `locked` — explicit RESN tag
+ *    - `living-heuristic` — no death record and the latest possible birth
+ *      year is within `PRIVACY_LIVING_THRESHOLD_YEARS` of today
+ */
+export interface Privacy {
+  restricted: boolean;
+  reason: string;
+}
+
+/** Years since the latest possible birth year, below or equal to which the
+ *  living-person heuristic flags an individual as potentially still alive. */
+export const PRIVACY_LIVING_THRESHOLD_YEARS = 110;
+
 /** The structured shape we emit per individual into `genealogy/derived/<record>.yml`.
  *
  *  Two parallel views of the same family relationships are emitted:
@@ -123,6 +143,7 @@ export interface DerivedRecord {
   occupations: OccupationEvent[];
   sources: SourceRef[];
   media: MediaRef[];
+  privacy: Privacy;
 }
 
 /** Snapshots manifest entry shape. Compatible with what tools/wikitext-to-md/

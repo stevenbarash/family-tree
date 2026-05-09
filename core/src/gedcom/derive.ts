@@ -1,5 +1,6 @@
 import {
   PEDIGREE_VALUES,
+  PRIVACY_LIVING_THRESHOLD_YEARS,
   type GedcomNode,
   type DerivedRecord,
   type DatedEvent,
@@ -12,8 +13,10 @@ import {
   type MarriageEntry,
   type PedigreeKind,
   type MediaRef,
+  type Privacy,
 } from './types.ts';
 import { stripPointer, type ParseResult } from './parser.ts';
+import { parseGedcomYear } from '../family/dates.ts';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
@@ -247,13 +250,20 @@ function deriveSources(node: GedcomNode, ctx: ParseResult): SourceRef[] {
     .map(s => deriveSourceRef(s.data!, ctx.sources));
 }
 
-export function deriveIndividual(node: GedcomNode, record: string, ctx: ParseResult): DerivedRecord {
+export function deriveIndividual(
+  node: GedcomNode,
+  record: string,
+  ctx: ParseResult,
+  today: Date = new Date(),
+): DerivedRecord {
   const sc = deriveSpousesAndChildren(node, record, ctx);
+  const birth = deriveDatedEvent(node, 'BIRT');
+  const death = deriveDatedEvent(node, 'DEAT');
   return {
     record,
     name: deriveName(node),
-    birth: deriveDatedEvent(node, 'BIRT'),
-    death: deriveDatedEvent(node, 'DEAT'),
+    birth,
+    death,
     parents: deriveParents(node, ctx),
     spouses: sc.spouses,
     children: sc.children,
@@ -263,7 +273,60 @@ export function deriveIndividual(node: GedcomNode, record: string, ctx: ParseRes
     occupations: deriveOccupations(node),
     sources: deriveSources(node, ctx),
     media: deriveMedia(node, ctx),
+    privacy: derivePrivacy(node, birth, death, today),
   };
+}
+
+/**
+ * Privacy classification:
+ *   1. RESN tag with privacy/confidential/locked → restricted (explicit).
+ *   2. A death event (any date or place) → not restricted (clearly deceased).
+ *   3. Birth year parses and the *latest* possible year is within
+ *      PRIVACY_LIVING_THRESHOLD_YEARS of `today` → restricted (heuristic).
+ *      Latest-possible matters for `BET 1900 AND 1925` and `AFT 1990`:
+ *      these could resolve to a still-living person, so err toward locked.
+ *   4. Otherwise → not restricted.
+ *
+ * Note that the heuristic only flags individuals where there's enough info
+ * to *suspect* they're living. Records with no birth and no death stay
+ * unrestricted (the dataset is full of distant ancestors with neither).
+ * The user can always add `RESN privacy` to the GEDCOM for an explicit
+ * override.
+ */
+export function derivePrivacy(
+  node: GedcomNode,
+  birth: DatedEvent | null,
+  death: DatedEvent | null,
+  today: Date,
+): Privacy {
+  const resn = node.tree.find(n => n.tag === 'RESN');
+  if (resn?.data) {
+    const v = resn.data.trim().toLowerCase();
+    if (v === 'privacy' || v === 'confidential' || v === 'locked') {
+      return { restricted: true, reason: `gedcom-resn-${v}` };
+    }
+  }
+  if (death) return { restricted: false, reason: 'none' };
+  if (!birth?.date) return { restricted: false, reason: 'none' };
+  const bounds = birthYearBounds(birth.date);
+  if (!bounds) return { restricted: false, reason: 'none' };
+  const ageAtMin = today.getFullYear() - bounds.max;
+  if (ageAtMin <= PRIVACY_LIVING_THRESHOLD_YEARS) {
+    return { restricted: true, reason: 'living-heuristic' };
+  }
+  return { restricted: false, reason: 'none' };
+}
+
+interface YearBounds { min: number; max: number; }
+
+function birthYearBounds(date: string): YearBounds | null {
+  const between = date.trim().toUpperCase().match(/^BET(?:WEEN)?\s+(\d{4})\s+AND\s+(\d{4})$/);
+  if (between) return { min: Number(between[1]), max: Number(between[2]) };
+  const parsed = parseGedcomYear(date);
+  if (!parsed) return null;
+  if (parsed.qualifier === 'before') return { min: -Infinity, max: parsed.year };
+  if (parsed.qualifier === 'after') return { min: parsed.year, max: Infinity };
+  return { min: parsed.year, max: parsed.year };
 }
 
 function deriveName(node: GedcomNode): string {
