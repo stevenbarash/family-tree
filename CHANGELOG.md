@@ -47,6 +47,20 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   test stays in sync with the CLI surface. Caught one residual
   drift in `plugins/whoami/agents/editor.md` (`wai search source`
   → `wai search "source"`).
+- **Ambiguous-date `?` glyph** in person infobox
+  (`frontend/components/directives/infobox-person.tsx`) — when a slash
+  date can't be unambiguously canonicalized (`m/d/y` vs `d/m/y`, both
+  numbers ≤ 12), the rendered date gets a `?` indicator with a tooltip
+  explaining the ambiguity. Closes platform-review P0.3 (the underlying
+  `normalizeDate` ambiguity flag and `wai check` audit were already in
+  place; this surfaces the signal to the reader).
+- **Prompt-drift smoke test** (`evals/test/prompt-drift.test.ts`)
+  — closes platform-review P0.1 by failing the build if any agent
+  prompt in `plugins/whoami/` references a v1-removed command or
+  any unknown command. Parses `cli/src/index.ts` directly so the
+  test stays in sync with the CLI surface. Caught one residual
+  drift in `plugins/whoami/agents/editor.md` (`wai search source`
+  → `wai search "source"`).
 - **Plans index** at `docs/superpowers/plans/README.md` and project
   `SCOPE.md` / `ROADMAP.md`.
 

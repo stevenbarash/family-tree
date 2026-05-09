@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Calendar, Users, Heart, Baby, Home, Briefcase } from 'lucide-react';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 import { parseGedcomYear } from '@core/family/dates.ts';
+import { normalizeDate } from '@core/format/dates.ts';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { toSlug } from '@/lib/slug';
@@ -89,7 +90,7 @@ function renderDerivedRows(d: DerivedRecord): ReactNode[] {
       <InfoboxRow key="residences" label="residences" icon={Home}>
         <ul className="flex flex-col gap-0.5 list-none p-0">
           {d.residences.map((r, i) => (
-            <li key={i}>{[r.date, r.place].filter(Boolean).join(' · ')}</li>
+            <li key={i}>{formatPlaceDate(r.date, r.place)}</li>
           ))}
         </ul>
       </InfoboxRow>,
@@ -106,7 +107,11 @@ function renderDerivedRows(d: DerivedRecord): ReactNode[] {
               className="border-infobox-border/70 bg-infobox-border/15 text-[0.7rem] text-infobox-foreground"
             >
               {o.title}
-              {o.date ? <span className="text-infobox-muted">· {o.date}</span> : null}
+              {o.date ? (
+                <span className="text-infobox-muted">
+                  · <DateText date={o.date} />
+                </span>
+              ) : null}
             </Badge>
           ))}
         </div>
@@ -161,7 +166,32 @@ function labelYear(p: { year: number; qualifier?: 'about' | 'before' | 'after' |
   return String(p.year);
 }
 
-function formatPlaceDate(date: string | null | undefined, place: string | null | undefined): string {
-  return [date, place].filter(Boolean).join(' · ') || '—';
+function formatPlaceDate(date: string | null | undefined, place: string | null | undefined): ReactNode {
+  if (!date && !place) return '—';
+  if (!date) return place;
+  if (!place) return <DateText date={date} />;
+  return (
+    <>
+      <DateText date={date} /> · {place}
+    </>
+  );
+}
+
+function DateText({ date }: { date: string }): ReactNode {
+  if (normalizeDate(date).ambiguous) {
+    return (
+      <>
+        {date}
+        <span
+          className="ml-1 cursor-help text-infobox-muted"
+          title="Date format ambiguous (m/d/y vs d/m/y) — original record needs disambiguation"
+          aria-label="ambiguous date"
+        >
+          ?
+        </span>
+      </>
+    );
+  }
+  return <>{date}</>;
 }
 
