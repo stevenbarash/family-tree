@@ -54,13 +54,12 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   explaining the ambiguity. Closes platform-review P0.3 (the underlying
   `normalizeDate` ambiguity flag and `wai check` audit were already in
   place; this surfaces the signal to the reader).
-- **Prompt-drift smoke test** (`evals/test/prompt-drift.test.ts`)
-  — closes platform-review P0.1 by failing the build if any agent
-  prompt in `plugins/whoami/` references a v1-removed command or
-  any unknown command. Parses `cli/src/index.ts` directly so the
-  test stays in sync with the CLI surface. Caught one residual
-  drift in `plugins/whoami/agents/editor.md` (`wai search source`
-  → `wai search "source"`).
+- **Skip-to-content link** in the root layout
+  (`frontend/app/layout.tsx`) — visually-hidden anchor that becomes
+  visible on focus and jumps past nav to the page's main content.
+  Partial close on platform-review P2.5 (alt text was already correct
+  via `AvatarMonogram`'s `alt=""` + `aria-hidden`; `lang=` on
+  multilingual name spans deferred — no rendering surface yet).
 - **Plans index** at `docs/superpowers/plans/README.md` and project
   `SCOPE.md` / `ROADMAP.md`.
 
