@@ -44,6 +44,32 @@ The published binary is a single CommonJS bundle. Keep dependencies thin
 — `wai` ships as one file and gets installed onto users' machines via
 the install script in the README.
 
+## Running `wai` locally
+
+Most commands (`read`, `write`, `search`, `sync-gedcom`, `note`, …) are
+HTTP clients. They need the frontend server up:
+
+```bash
+cd ~/dev/whoami/frontend && npm run dev      # serves on :3001
+```
+
+The CLI's default server URL is `http://localhost:3001` — same port the
+frontend script pins. If they ever drift, `wai healthz` returns
+`fetch failed`; fix with either:
+
+```bash
+wai config server http://localhost:<actual-port>
+```
+
+or by setting `WHOAMI_SERVER`. You can also run `wai config server` with
+no argument to see what URL `wai` is currently pointed at.
+
+The standalone commands (`check`, `init`, `promote-corrections`) work
+without the server — they read `$WHOAMI_ROOT` directly.
+
+`sync-gedcom` requires `--ged-file <filename>` (just the filename, e.g.
+`barash-tree.ged`; the server resolves it under `genealogy/`).
+
 ## Conventions
 
 - **Commands are one file each** under `src/commands/<name>.ts`,
