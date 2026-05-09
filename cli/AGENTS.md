@@ -17,7 +17,8 @@ can drive it without specific bindings.
 | `create`         | Create a new page (refuses if exists).                                  |
 | `edit`           | Open a page in `$EDITOR`.                                                |
 | `delete`         | Soft-delete (moves to `_archived/`).                                     |
-| `search`         | Search title/body/aliases/categories + GEDCOM-derived fields.            |
+| `search`         | Search title/body/aliases/categories + GEDCOM-derived fields. `--include-living` opts back into restricted records (default-hidden by the privacy gate). |
+| `export`         | Emit a copy of `genealogy/derived/` under `--out <dir>`. With `--redact-living`, restricted records are reduced to initials + birth year. Standalone — does not call the API. |
 | `sync-gedcom`    | Re-derive `genealogy/derived/*.yml` from a `.ged` file.                  |
 | `rebuild-search` | Rebuild the search index from disk (use after editing pages outside the API). `--check` exits non-zero if stale. |
 | `recite`         | Report or advance stale snapshot pointers in pages.                      |

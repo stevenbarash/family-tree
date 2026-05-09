@@ -18,6 +18,7 @@ import { runMigrate } from './commands/migrate.js';
 import { runRecite } from './commands/recite.js';
 import { runRedlinks } from './commands/redlinks.js';
 import { runSearch } from './commands/search.js';
+import { runExport } from './commands/export.js';
 import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
@@ -166,7 +167,7 @@ async function resolveNoteBody(args: Args): Promise<string> {
 
 const REMOVED = new Set([
   'upload', 'link', 'changes', 'category', 'source', 'task',
-  'place', 'snapshot', 'export', 'import', 'talk', 'section', 'auth',
+  'place', 'snapshot', 'import', 'talk', 'section', 'auth',
 ]);
 
 async function main(): Promise<number> {
@@ -350,6 +351,19 @@ async function main(): Promise<number> {
           writeErr: (s) => process.stderr.write(s),
         });
         return code;
+      }
+      case 'export': {
+        const root = process.env.WHOAMI_ROOT
+          ?? `${process.env.HOME}/whoami`;
+        const outDir = typeof args.flags.out === 'string' ? args.flags.out : './export';
+        await runExport({
+          whoamiRoot: root,
+          outDir,
+          redactLiving: !!args.flags['redact-living'],
+          write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        break;
       }
       case 'redlinks': {
         const limit = parseInt(String(args.flags.limit ?? '50'), 10) || 50;

@@ -54,6 +54,17 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   explaining the ambiguity. Closes platform-review P0.3 (the underlying
   `normalizeDate` ambiguity flag and `wai check` audit were already in
   place; this surfaces the signal to the reader).
+- **Privacy gate — `wai export --redact-living`:** new standalone
+  CLI command (third P0.2 sub-item). Walks `genealogy/derived/` and
+  emits a copy under `--out <dir>` where restricted records are
+  reduced to `{ initials, birth-year-only }` with all relations and
+  events dropped. Pure logic in `core/src/export/redact.ts`,
+  file-I/O orchestration in `core/src/export/run.ts` (boundary).
+  Pages export is intentionally out of scope for this iteration —
+  narrative content can't be safely auto-redacted; a future module
+  can drop pages whose joined record is restricted.
+  - Drive-by: `export` removed from the v1 REMOVED set since this
+    is its v2 reintroduction with a different shape.
 - **Privacy gate — search filter:** `wai search` now hides
   restricted records by default. `--include-living` flag (and
   `?include_living=1` API param) opt back in. Filtering happens
