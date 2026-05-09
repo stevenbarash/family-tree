@@ -527,10 +527,14 @@ export async function buildNotesView(
   return views;
 }
 
-export async function searchAndJoin(query: string, limit: number): Promise<SearchResult[]> {
+export async function searchAndJoin(
+  query: string,
+  limit: number,
+  opts: { includeRestricted?: boolean } = {},
+): Promise<SearchResult[]> {
   if (!query.trim()) return [];
   const idx = await getSearchIndex();
-  const hits = idx.query(query, limit);
+  const hits = idx.query(query, { limit, includeRestricted: opts.includeRestricted });
   if (hits.length === 0) return [];
   const { list } = await getCachedList();
   const bySlug = new Map(list.map(p => [p.slug, p]));

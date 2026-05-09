@@ -273,7 +273,8 @@ async function main(): Promise<number> {
       case 'search': {
         const query = args.positional[0] ?? '';
         const limit = parseInt(String(args.flags.limit ?? '25'), 10) || 25;
-        await runSearch({ query, limit, json: !!args.flags.json, client, write });
+        const includeLiving = !!args.flags['include-living'];
+        await runSearch({ query, limit, json: !!args.flags.json, includeLiving, client, write });
         break;
       }
       case 'check': {

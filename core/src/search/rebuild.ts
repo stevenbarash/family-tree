@@ -3,6 +3,7 @@ import { join, basename } from 'node:path';
 import yaml from 'js-yaml';
 import { parsePage } from '../pages/frontmatter.ts';
 import type { DerivedRecord } from '../gedcom/types.ts';
+import { normalizeDerivedRecord } from '../gedcom/normalize.ts';
 import type { SearchIndex } from './index.ts';
 import { buildSearchDoc } from './doc-builder.ts';
 
@@ -24,10 +25,14 @@ export async function rebuildSearchIndex(idx: SearchIndex, cfg: RebuildConfig): 
     if (page.meta.gedcom?.record) {
       const dpath = join(cfg.genealogyDir, 'derived', `${page.meta.gedcom.record}.yml`);
       if (existsSync(dpath)) {
-        try { derived = yaml.load(readFileSync(dpath, 'utf-8')) as DerivedRecord; } catch { /* ignore */ }
+        try {
+          // Use normalize so pre-privacy YAMLs default to unrestricted
+          // instead of crashing on missing fields.
+          derived = normalizeDerivedRecord(yaml.load(readFileSync(dpath, 'utf-8')));
+        } catch { /* ignore */ }
       }
     }
-    idx.upsert(buildSearchDoc(page, derived));
+    idx.upsert(buildSearchDoc(page, derived), { restricted: derived?.privacy?.restricted === true });
     count++;
   }
   return count;

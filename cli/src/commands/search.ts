@@ -4,13 +4,15 @@ export interface SearchOptions {
   query: string;
   limit: number;
   json: boolean;
+  /** Include living/restricted records in results (privacy gate opt-in). */
+  includeLiving?: boolean;
   client: Pick<ApiClient, 'search'>;
   write: (s: string) => void;
 }
 
 export async function runSearch(opts: SearchOptions): Promise<void> {
   if (!opts.query.trim()) throw new Error('search query is required');
-  const { results } = await opts.client.search(opts.query, opts.limit);
+  const { results } = await opts.client.search(opts.query, opts.limit, opts.includeLiving);
   if (opts.json) {
     opts.write(JSON.stringify(results, null, 2));
     return;

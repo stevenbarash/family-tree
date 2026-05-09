@@ -60,8 +60,9 @@ export class ApiClient {
     return this.json('POST', '/api/gedcom/recite', { apply: true });
   }
 
-  async search(q: string, limit = 25): Promise<{ results: SearchResult[] }> {
+  async search(q: string, limit = 25, includeLiving = false): Promise<{ results: SearchResult[] }> {
     const params = new URLSearchParams({ q, limit: String(limit) });
+    if (includeLiving) params.set('include_living', '1');
     return this.json('GET', `/api/search?${params.toString()}`);
   }
 

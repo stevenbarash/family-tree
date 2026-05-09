@@ -28,6 +28,41 @@ test('search: --json emits array', async () => {
   assert.equal(parsed[0].slug, 'a');
 });
 
+test('search: --include-living forwards true to client', async () => {
+  let receivedFlag: boolean | undefined = undefined;
+  await runSearch({
+    query: 'smith',
+    limit: 25,
+    json: true,
+    includeLiving: true,
+    client: {
+      search: async (_q: string, _limit: number, includeLiving?: boolean) => {
+        receivedFlag = includeLiving;
+        return { results: [] };
+      },
+    } as any,
+    write: () => {},
+  });
+  assert.equal(receivedFlag, true);
+});
+
+test('search: default (no --include-living) forwards false-y to client', async () => {
+  let receivedFlag: boolean | undefined = undefined;
+  await runSearch({
+    query: 'smith',
+    limit: 25,
+    json: true,
+    client: {
+      search: async (_q: string, _limit: number, includeLiving?: boolean) => {
+        receivedFlag = includeLiving;
+        return { results: [] };
+      },
+    } as any,
+    write: () => {},
+  });
+  assert.equal(receivedFlag, undefined);
+});
+
 test('search: empty query rejects', async () => {
   await assert.rejects(
     () => runSearch({

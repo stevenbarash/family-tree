@@ -53,7 +53,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   const derived = page.meta.gedcom?.record
     ? await loadDerivedRecord(WHOAMI_ROOT, page.meta.gedcom.record)
     : null;
-  idx.upsert(buildSearchDoc(page, derived));
+  idx.upsert(buildSearchDoc(page, derived), { restricted: derived?.privacy?.restricted === true });
   await persistSearchIndex();
   invalidateListCache();
   return NextResponse.json({ ok: true });

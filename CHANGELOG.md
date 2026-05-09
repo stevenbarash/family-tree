@@ -54,6 +54,14 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   explaining the ambiguity. Closes platform-review P0.3 (the underlying
   `normalizeDate` ambiguity flag and `wai check` audit were already in
   place; this surfaces the signal to the reader).
+- **Privacy gate — search filter:** `wai search` now hides
+  restricted records by default. `--include-living` flag (and
+  `?include_living=1` API param) opt back in. Filtering happens
+  query-time in the `SearchIndex` wrapper; restricted slugs are
+  tracked in a side set that round-trips through persist/load via
+  a sentinel key. `searchAndJoin` and the `/api/pages/[slug]` PUT
+  upsert path both pass the privacy flag through. Closes the second
+  of four P0.2 sub-items.
 - **Privacy gate (foundation)** for living-person records, addressing
   platform-review P0.2. Adds `Privacy { restricted, reason }` to
   `DerivedRecord` populated by the deriver from the GEDCOM `RESN`

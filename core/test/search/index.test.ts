@@ -59,5 +59,48 @@ test('SearchIndex.remove: drops entry', () => {
 test('SearchIndex.query: limit', () => {
   const idx = createSearchIndex();
   for (let i = 0; i < 10; i++) idx.upsert(doc(`p${i}`, { title: 'foo' }));
-  assert.equal(idx.query('foo', 3).length, 3);
+  assert.equal(idx.query('foo', { limit: 3 }).length, 3);
+});
+
+test('SearchIndex.query: restricted docs hidden by default', () => {
+  const idx = createSearchIndex();
+  idx.upsert(doc('alice', { title: 'Smith Alice' }));
+  idx.upsert(doc('bob', { title: 'Smith Bob' }), { restricted: true });
+  const r = idx.query('smith');
+  assert.deepEqual(r.map(h => h.slug).sort(), ['alice']);
+});
+
+test('SearchIndex.query: includeRestricted=true returns both', () => {
+  const idx = createSearchIndex();
+  idx.upsert(doc('alice', { title: 'Smith Alice' }));
+  idx.upsert(doc('bob', { title: 'Smith Bob' }), { restricted: true });
+  const r = idx.query('smith', { includeRestricted: true });
+  assert.deepEqual(r.map(h => h.slug).sort(), ['alice', 'bob']);
+});
+
+test('SearchIndex.upsert: re-upsert without restricted clears the flag', () => {
+  const idx = createSearchIndex();
+  idx.upsert(doc('person', { title: 'Person' }), { restricted: true });
+  // Default-mode query: hidden
+  assert.equal(idx.query('person').length, 0);
+  // Re-upsert as not-restricted (e.g. user's death record was added to GEDCOM)
+  idx.upsert(doc('person', { title: 'Person' }));
+  assert.equal(idx.query('person').length, 1);
+});
+
+test('SearchIndex.remove: drops slug from restricted set too', () => {
+  const idx = createSearchIndex();
+  idx.upsert(doc('p1', { title: 'p1' }), { restricted: true });
+  assert.ok(idx.restrictedSlugs().has('p1'));
+  idx.remove('p1');
+  assert.ok(!idx.restrictedSlugs().has('p1'));
+});
+
+test('SearchIndex.query: limit honored even when restricted docs are filtered', () => {
+  // Regression: with the 3x rawLimit hack, make sure we still cap output at `limit`
+  // when many public docs match — we shouldn't return more than the user asked for.
+  const idx = createSearchIndex();
+  for (let i = 0; i < 8; i++) idx.upsert(doc(`p${i}`, { title: 'foo' }));
+  for (let i = 0; i < 4; i++) idx.upsert(doc(`r${i}`, { title: 'foo' }), { restricted: true });
+  assert.equal(idx.query('foo', { limit: 5 }).length, 5);
 });
