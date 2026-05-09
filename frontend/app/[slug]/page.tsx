@@ -14,6 +14,7 @@ import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
 import { GENEALOGY_DIR, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
+import { RestrictedNotice } from '@/components/restricted-notice';
 import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
 
 export const dynamic = 'force-dynamic';
@@ -60,10 +61,17 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
     snapshotsPromise,
   ]);
 
-  const [tree, notes] = await Promise.all([
-    renderMarkdown(page.body, index, { derived }),
-    buildNotesView(talkBody, index),
-  ]);
+  // Privacy gate: if the joined record is flagged restricted, render only
+  // the redacted minimum. Skip the body render so directives like
+  // `:::infobox-person` can't interpolate from `derived` and leak fields.
+  const isRestricted = derived?.privacy?.restricted === true;
+
+  const [tree, notes] = isRestricted
+    ? [null, []]
+    : await Promise.all([
+        renderMarkdown(page.body, index, { derived }),
+        buildNotesView(talkBody, index),
+      ]);
 
   const gedcomSnapshotDate = page.meta.gedcom?.snapshot
     ? snapshots.find(s => s.hash === page.meta.gedcom!.snapshot)?.date?.slice(0, 10) ?? null
@@ -71,7 +79,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
   const sourceCount = countCitations(page.body);
   const liveNoteCount = notes.filter(n => !n.deletedAt).length;
   const openGapCount = countOpenGaps(talkBody);
-  const showStrip = !isTalkSlug(slug)
+  const showStrip = !isTalkSlug(slug) && !isRestricted
     && (page.meta.created || page.meta.editors.length > 0 || gedcomSnapshotDate || sourceCount > 0 || liveNoteCount > 0 || openGapCount > 0);
 
   return (
@@ -86,7 +94,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         <h1 className="text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
           {page.meta.title}
         </h1>
-        {page.meta.categories.length > 0 ? (
+        {!isRestricted && page.meta.categories.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {page.meta.categories.map(category => (
               <span key={category} className="rounded-full border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -118,11 +126,17 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
           </div>
         ) : null}
       </header>
-      <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 hover:prose-a:decoration-primary prose-blockquote:rounded-r-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
-        {tree}
-      </article>
-      {isTalkSlug(slug) ? null : (
-        <ResearchNotesPanel slug={slug} notes={notes} />
+      {isRestricted && derived ? (
+        <RestrictedNotice page={page} derived={derived} />
+      ) : (
+        <>
+          <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 hover:prose-a:decoration-primary prose-blockquote:rounded-r-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
+            {tree}
+          </article>
+          {isTalkSlug(slug) ? null : (
+            <ResearchNotesPanel slug={slug} notes={notes} />
+          )}
+        </>
       )}
     </main>
   );

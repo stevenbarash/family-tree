@@ -54,6 +54,14 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   explaining the ambiguity. Closes platform-review P0.3 (the underlying
   `normalizeDate` ambiguity flag and `wai check` audit were already in
   place; this surfaces the signal to the reader).
+- **Privacy gate — frontend article gating:** when a person page's
+  joined derived record has `privacy.restricted`, the renderer skips
+  the body, infobox, categories chips, and info strip; instead it
+  shows a `RestrictedNotice` with initials + birth year and a one-line
+  unlock recipe. Closes the fourth and final P0.2 sub-item. The skip
+  happens before `renderMarkdown` runs so directives like
+  `:::infobox-person` can't interpolate from `derived` and leak
+  fields.
 - **Privacy gate — `wai export --redact-living`:** new standalone
   CLI command (third P0.2 sub-item). Walks `genealogy/derived/` and
   emits a copy under `--out <dir>` where restricted records are
