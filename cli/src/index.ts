@@ -28,6 +28,8 @@ import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
 import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
+import { runTranscribe } from './commands/transcribe.js';
+import { whisperTranscriber } from './transcriber.js';
 import { probeServers, commonServerCandidates } from './probe.js';
 import { loadRepoState } from '@core/checks/load.ts';
 import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
@@ -97,6 +99,10 @@ Quality:
   narrative <slug>             Edit or create pages/<slug>.narrative.md
                                  --file F to ingest an existing file
                                  --print to write current contents to stdout
+  transcribe <slug> <audio>    Transcribe via OpenAI Whisper, append as
+                                 research note on <slug>.talk
+                                 --lang en|ru|he|auto (default: auto)
+                                 --speaker NAME, --date YYYY-MM-DD
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -414,6 +420,54 @@ async function main(): Promise<number> {
           gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(rootDir)} status --porcelain`).toString().trim().length > 0,
           now: () => new Date().toISOString().slice(0, 10),
           write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return code;
+      }
+      case 'transcribe': {
+        const slug = args.positional[0];
+        const audioPath = args.positional[1];
+        if (!slug || !audioPath) {
+          process.stderr.write('transcribe: usage — wai transcribe <slug> <audio>\n');
+          return 2;
+        }
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          process.stderr.write('transcribe: OPENAI_API_KEY is not set\n');
+          return 4;
+        }
+        const validLangs = ['en', 'ru', 'he', 'auto'] as const;
+        type ValidLang = typeof validLangs[number];
+        const langArg = args.flags.lang ?? 'auto';
+        if (typeof langArg !== 'string' || !(validLangs as readonly string[]).includes(langArg)) {
+          process.stderr.write(`transcribe: --lang must be one of en|ru|he|auto\n`);
+          return 2;
+        }
+        const speakerArg = typeof args.flags.speaker === 'string' ? args.flags.speaker : undefined;
+        const dateArg = typeof args.flags.date === 'string' ? args.flags.date : undefined;
+        const rootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const code = await runTranscribe({
+          rootDir,
+          slug,
+          audioPath,
+          lang: langArg as ValidLang,
+          speaker: speakerArg,
+          date: dateArg,
+          readFileBinary: (p) => existsSync(p) ? readFileSync(p) : null,
+          writeFileBinary: (p, b) => { writeFileSync(p, b); },
+          mkdirP: (p) => mkdirSync(p, { recursive: true }),
+          gitAdd: (paths) => { execSync(`git -C ${shellEscape(rootDir)} add ${paths.map(shellEscape).join(' ')}`); },
+          gitCommit: (msg) => { execSync(`git -C ${shellEscape(rootDir)} commit -m ${shellEscape(msg)}`); },
+          gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(rootDir)} status --porcelain`).toString().trim().length > 0,
+          appendNote: async (s, text, o) => {
+            const c = new ApiClient(getServer());
+            await c.note(s, text, { kind: o.kind });
+          },
+          transcriber: whisperTranscriber({ apiKey }),
+          now: () => new Date().toISOString().slice(0, 10),
+          write: (s) => process.stdout.write(s),
           writeErr: (s) => process.stderr.write(s),
         });
         return code;
