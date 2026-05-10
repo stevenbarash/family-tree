@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| 🚧 | [`2026-05-10-article-pipeline-plan-1-foundation.md`](./2026-05-10-article-pipeline-plan-1-foundation.md) | Article pipeline — Plan 1: Foundation | Evidence-drawer commands (`wai narrative`, `wai transcribe`, `wai interview`), `wai note --kind` extension, harness adapter, `writing-articles` skill scaffold. Sequenced before Plans 2 and 3. |
 | 🗂 | [`2026-05-02-family-explorer-roadmap.md`](./2026-05-02-family-explorer-roadmap.md) | Family Explorer Roadmap | Sequences nine family-browser features (#1–#9). All shipped 2026-05-02 / 2026-05-03. |
 | ✅ | [`2026-05-02-family-siblings-cousins.md`](./2026-05-02-family-siblings-cousins.md) | Siblings & cousins on person view | Cohort view with paternal/maternal split. (Family-explorer #1.) |
 | ✅ | [`2026-05-02-family-descendants.md`](./2026-05-02-family-descendants.md) | Descendants view | Recursive children-walker with depth limit. (Family-explorer #2.) |

@@ -23,6 +23,40 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai narrative <slug>`** *(2026-05-10)*. Edit, ingest (`--file F`),
+  or print (`--print`) the per-slug family-narrative file at
+  `pages/<slug>.narrative.md`. Each save commits in `$WHOAMI_ROOT`.
+  Aborts with exit 7 if the data repo has uncommitted changes; never
+  overwritten by the pipeline.
+- **`wai transcribe <slug> <audio>`** *(2026-05-10)*. Transcribe via
+  the OpenAI Whisper API, copy audio under `assets/audio/<slug>/`,
+  append the transcript as a `kind=transcript` research note, commit.
+  `--lang en|ru|he|auto` (default auto). `--dir` batch mode processes
+  every audio file in a directory; per-file failures journal to
+  `data/transcribe-runs/<run-id>-failed.txt` and the command exits 5.
+  Requires `OPENAI_API_KEY`; missing key exits 4.
+- **`wai interview <slug>`** *(2026-05-10)*. Harness-driven Q&A round.
+  Generates targeted questions from gaps in the evidence drawer
+  (derived YAML, talk page, narrative file), opens `$EDITOR` with a
+  fillable buffer, posts each answered pair as a `kind=interview`
+  note. First user of the harness adapter; selectable via
+  `WHOAMI_HARNESS` (v1 supports `claude-code`).
+- **`wai note --kind <k>`** *(2026-05-10)* accepts new sub-kinds for
+  agent-authored notes: `interview`, `research`, `transcript`. The
+  existing `human` and `agent` values continue to work.
+- **Harness adapter** *(2026-05-10)* — the new LLM-driver class of
+  CLI command at `cli/src/harness/`. Defined by an `invoke` contract
+  (request → `{ ok, result | error, retryable }`) with response
+  validation against a per-template `outputSchema`. v1 ships the
+  Claude Code adapter; Codex and OpenCode return exit 11 ("not yet
+  supported in v1; use claude-code").
+- **`writing-articles` skill** *(2026-05-10)* at
+  `plugins/whoami/skills/writing-articles/`. Plan-1 scope ships
+  `SKILL.md` (composes with `editorial-guide`, sets the three-stream
+  weaving rule and forbidden-prose list) plus the `interview` prompt
+  template with a typed `outputSchema`. The remaining four templates
+  (`research-questions`, `outline`, `draft-person`, `draft-episode`)
+  land alongside `wai author` in Plan 2.
 - **`wai doctor`** command and actionable connection errors. Replaces
   `fetch failed` with a probe-based hint that names the alive port and
   the exact `wai config server` command to run; `wai doctor` runs the
