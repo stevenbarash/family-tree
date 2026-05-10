@@ -29,6 +29,8 @@ import { runDoctor } from './commands/doctor.js';
 import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
 import { runTranscribe } from './commands/transcribe.js';
+import { runInterview } from './commands/interview.js';
+import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
 import { probeServers, commonServerCandidates } from './probe.js';
 import { loadRepoState } from '@core/checks/load.ts';
@@ -103,6 +105,9 @@ Quality:
                                  research note on <slug>.talk
                                  --lang en|ru|he|auto (default: auto)
                                  --speaker NAME, --date YYYY-MM-DD
+  interview <slug>             Generate Q&A questions via the harness;
+                                 captures answers as kind=interview notes
+                                 --questions N (default: 8)
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -471,6 +476,61 @@ async function main(): Promise<number> {
           writeErr: (s) => process.stderr.write(s),
         });
         return code;
+      }
+      case 'interview': {
+        const slug = args.positional[0];
+        if (!slug) {
+          process.stderr.write('interview: slug required\n');
+          return 2;
+        }
+        const maxQuestions = typeof args.flags.questions === 'string'
+          ? parseInt(args.flags.questions, 10) || 8
+          : 8;
+        let harness;
+        try {
+          harness = selectHarness(process.env.WHOAMI_HARNESS as 'claude-code' | 'codex' | 'opencode' | undefined);
+        } catch (e) {
+          if (e instanceof HarnessUnsupportedError) {
+            process.stderr.write(`interview: ${e.message}\n`);
+            return 11;
+          }
+          throw e;
+        }
+        const interviewClient = new ApiClient(getServer());
+        const rootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const interviewCode = await runInterview({
+          slug,
+          maxQuestions,
+          harness,
+          loadEvidence: async (s) => {
+            const talkPage = await interviewClient.read(`${s}.talk`).catch(() => null);
+            const talk = (talkPage as { body?: string } | null)?.body ?? '';
+
+            const narrPath = join(rootDir, 'pages', `${s}.narrative.md`);
+            const narrative = existsSync(narrPath) ? readFileSync(narrPath, 'utf8') : null;
+
+            let derived: string | null = null;
+            const pagePath = join(rootDir, 'pages', `${s}.md`);
+            if (existsSync(pagePath)) {
+              const pageText = readFileSync(pagePath, 'utf8');
+              const m = pageText.match(/gedcom:\s*\n[\s\S]*?record:\s*(\S+)/);
+              if (m) {
+                const yml = join(rootDir, 'genealogy', 'derived', `${m[1]}.yml`);
+                if (existsSync(yml)) derived = readFileSync(yml, 'utf8');
+              }
+            }
+            return { derived, talk, narrative };
+          },
+          editInEditor: async (initial) => editInEditor(initial),
+          appendNote: async (s, text, o) => {
+            await interviewClient.note(s, text, { kind: o.kind });
+          },
+          write: (s) => process.stdout.write(s),
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return interviewCode;
       }
       case 'export': {
         const root = process.env.WHOAMI_ROOT
