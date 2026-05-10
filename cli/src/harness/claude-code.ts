@@ -62,8 +62,9 @@ export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter 
         return { ok: false, error: `harness response missing string \`result\` field`, retryable: false };
       }
       let parsed: unknown;
+      const normalizedResult = stripMarkdownFences(outer.result);
       try {
-        parsed = JSON.parse(outer.result);
+        parsed = JSON.parse(normalizedResult);
       } catch (e) {
         return { ok: false, error: `harness inner result is not JSON: ${(e as Error).message}`, retryable: false };
       }
@@ -95,6 +96,22 @@ function defaultReadSkillFile(path: string): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Strip leading/trailing markdown code fences from a string that should be JSON.
+ * Claude often wraps JSON output in ```json ... ``` fences; this normalizes them out
+ * so the adapter can JSON.parse() the inner content.
+ */
+function stripMarkdownFences(text: string): string {
+  let t = text.trim();
+  // Leading fence: ```json\n or ```\n
+  const leadMatch = t.match(/^```(?:json)?\s*\n/);
+  if (leadMatch) t = t.slice(leadMatch[0].length);
+  // Trailing fence: \n```
+  const trailMatch = t.match(/\n?```\s*$/);
+  if (trailMatch) t = t.slice(0, -trailMatch[0].length);
+  return t;
 }
 
 /**

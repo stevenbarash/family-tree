@@ -106,3 +106,34 @@ test('claude-code adapter: returns ok=false when template file is missing', asyn
     assert.equal(res.retryable, false);
   }
 });
+
+test('claude-code adapter: strips ```json fences from inner result', async () => {
+  const spawn = fakeSpawn(JSON.stringify({ result: '```json\n{"questions":["q1"]}\n```' }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke<unknown, { questions: string[] }>({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object', required: ['questions'] },
+  });
+  assert.equal(res.ok, true);
+  if (res.ok) assert.deepEqual(res.result.questions, ['q1']);
+});
+
+test('claude-code adapter: strips plain ``` fences from inner result', async () => {
+  const spawn = fakeSpawn(JSON.stringify({ result: '```\n{"x":1}\n```' }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object' },
+  });
+  assert.equal(res.ok, true);
+});
+
+test('claude-code adapter: parses unfenced JSON unchanged', async () => {
+  const spawn = fakeSpawn(JSON.stringify({ result: '{"questions":["q1"]}' }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke<unknown, { questions: string[] }>({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object', required: ['questions'] },
+  });
+  assert.equal(res.ok, true);
+});
