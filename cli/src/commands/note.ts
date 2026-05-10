@@ -1,9 +1,9 @@
-import type { ApiClient, NoteSummary } from '../api-client.js';
+import type { ApiClient, NoteSummary, NoteKind } from '../api-client.js';
 import { toBaseSlug } from '@core/pages/slug.ts';
 
 type Mode = 'append' | 'edit' | 'delete' | 'restore' | 'list';
 
-export type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
+export type { NoteKind };
 
 export interface NoteOptions {
   slug: string;

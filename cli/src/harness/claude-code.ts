@@ -17,6 +17,18 @@ export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter 
         template: req.template,
         context: req.context,
       });
+      // TODO(plan-2): Resolve and append template content to the system prompt.
+      // Currently we pass `req.skill` literally (e.g. 'writing-articles') to
+      // `--append-system-prompt`, which is not interpreted as a skill name —
+      // Claude Code appends the literal string. The template name is in stdin
+      // as part of the JSON payload, but the prompt-templates/<template>.md
+      // file is never read. This works in Plan 1 because the only template
+      // (`interview`) is small enough that the model can infer its job from
+      // the request shape, but Plan 2 (which adds four more templates) must
+      // teach the adapter to read SKILL.md + prompt-templates/<template>.md
+      // and concatenate them into the appended system prompt. Track the
+      // design decision (paths injected vs. resolved by adapter) in the
+      // Plan 2 design pass.
       const args = ['--print', '--output-format', 'json', '--append-system-prompt', req.skill];
       let proc: { stdout: string; stderr: string; code: number };
       try {
