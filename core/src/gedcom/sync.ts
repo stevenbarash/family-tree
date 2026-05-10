@@ -29,7 +29,10 @@ export type SyncResult =
     }
   | {
       kind: 'no-op';
-      reason: 'unchanged-hash';
+      // `unchanged-hash`: skipped before re-deriving — same .ged bytes as last snapshot.
+      // `no-output-changes`: re-derived (typically with --force) but the deriver
+      // produced byte-identical files, so there's nothing to stage or commit.
+      reason: 'unchanged-hash' | 'no-output-changes';
     };
 
 export async function syncGedcom(cfg: SyncConfig): Promise<SyncResult> {
@@ -101,6 +104,17 @@ export async function syncGedcom(cfg: SyncConfig): Promise<SyncResult> {
   const git = simpleGit(cfg.repoRoot);
   await git.raw(['add', '-A', derivedDir]);
   await git.add([join(cfg.genealogyDir, 'snapshots.yml'), gedPath]);
+
+  // If nothing got staged, there's nothing to commit. This happens with --force
+  // after a no-op deriver-code update: re-deriving produces byte-identical files,
+  // and the .ged + snapshots.yml are also unchanged. Bail out cleanly instead of
+  // letting `git commit` fail (the failure mode varies — silent empty hash with no
+  // hook, thrown error when a pre-commit hook prints output).
+  const status = await git.status();
+  if (status.staged.length === 0) {
+    return { kind: 'no-op', reason: 'no-output-changes' };
+  }
+
   const result = await git.commit(`gedcom: sync ${cfg.gedFile} (${cfg.notes})`, undefined, {
     '--author': `${cfg.author.name} <${cfg.author.email}>`,
   });

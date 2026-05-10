@@ -71,6 +71,35 @@ test('syncGedcom: second run with same .ged is a no-op', async () => {
   }
 });
 
+test('syncGedcom: force=true with byte-identical deriver output returns no-op (no-output-changes)', async () => {
+  // Repro of the "wai sync-gedcom --force → HTTP 500: sync-failed" bug:
+  // re-running --force after the deriver already produced its current output
+  // stages nothing, so `git commit` fails with "no changes added to commit".
+  // We want a clean no-op instead.
+  const { root, cleanup } = await makeGenealogyRepo();
+  try {
+    copyFileSync(FIX('tiny.ged'), join(root, 'genealogy', 'tiny.ged'));
+    const cfg = {
+      repoRoot: root,
+      genealogyDir: join(root, 'genealogy'),
+      gedFile: 'tiny.ged',
+      author: { name: 'Test', email: 'test@example.com' },
+      notes: 'sync',
+    };
+    await syncGedcom(cfg);
+    // Same .ged + same deriver, just with force=true. Nothing to stage.
+    const second = await syncGedcom({ ...cfg, force: true });
+    assert.equal(second.kind, 'no-op');
+    if (second.kind === 'no-op') assert.equal(second.reason, 'no-output-changes');
+    // No new commit should have been created.
+    const log = await simpleGit(root).log({ maxCount: 5 });
+    const syncCommits = log.all.filter(c => c.message.startsWith('gedcom: sync'));
+    assert.equal(syncCommits.length, 1, 'should have exactly one sync commit, not two');
+  } finally {
+    cleanup();
+  }
+});
+
 test('syncGedcom: detects added record', async () => {
   const { root, cleanup } = await makeGenealogyRepo();
   try {
