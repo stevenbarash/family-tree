@@ -1,5 +1,5 @@
-import { Card } from '@/components/ui/card';
 import { LifespanBar } from '@/components/family/lifespan-bar';
+import { RegistryCard } from '@/components/family/registry-card';
 import type { FamilyTreeView } from '@/lib/family';
 import { MobileDisclosure } from './mobile-disclosure';
 import { SectionHeader, familyTreeHref } from './shared';
@@ -24,7 +24,7 @@ export function LifespansSection({ view }: Props) {
         }
       />
       <MobileDisclosure storageKey="lifespans">
-        <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+        <RegistryCard>
           <div className="divide-y rule-hair">
             {timeline.entries.map(e => (
               <LifespanBar
@@ -43,7 +43,7 @@ export function LifespansSection({ view }: Props) {
               />
             ))}
           </div>
-        </Card>
+        </RegistryCard>
       </MobileDisclosure>
     </section>
   );

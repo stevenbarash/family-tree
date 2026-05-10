@@ -1,9 +1,9 @@
-import { Card } from '@/components/ui/card';
 import { AncestorTile } from '@/components/family/ancestor-tile';
+import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { BrowserDescendantView, FamilyTreeView } from '@/lib/family';
 import { MobileDisclosure } from './mobile-disclosure';
-import { DESCENDANT_HEADING, SectionHeader, familyTreeHref } from './shared';
+import { DESCENDANT_HEADING, GenerationHeader, SectionHeader, familyTreeHref } from './shared';
 
 interface Props {
   view: FamilyTreeView;
@@ -16,7 +16,7 @@ export function DescendantsSection({ view }: Props) {
     <section className="registry-rise mb-12" style={{ animationDelay: '120ms' }}>
       <SectionHeader title="Descendants" count={view.descendants.total} />
       <MobileDisclosure storageKey="descendants">
-        <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+        <RegistryCard>
           {view.descendants.byGeneration.map(group => (
             <DescendantsBlock
               key={`desc-${group.generation}`}
@@ -24,7 +24,7 @@ export function DescendantsSection({ view }: Props) {
               people={group.people}
             />
           ))}
-        </Card>
+        </RegistryCard>
       </MobileDisclosure>
     </section>
   );
@@ -40,17 +40,11 @@ function DescendantsBlock({
   const heading = DESCENDANT_HEADING[generation] ?? `Generation +${generation}`;
   return (
     <section className="border-b rule-hair last:border-b-0">
-      <header className="flex items-baseline gap-3 px-3 py-1.5">
-        <span className="font-display text-[0.7rem] font-medium tabular-nums tracking-tight text-muted-foreground/70">
-          +{roman(generation)}
-        </span>
-        <h4 className="flex-1 truncate font-display text-[0.78rem] uppercase tracking-[0.16em] text-muted-foreground">
-          {heading}
-        </h4>
-        <span className="font-mono text-[0.62rem] tabular-nums text-muted-foreground/70">
-          {String(people.length).padStart(2, '0')}
-        </span>
-      </header>
+      <GenerationHeader
+        ordinal={`+${roman(generation)}`}
+        heading={heading}
+        count={String(people.length).padStart(2, '0')}
+      />
       <div className="grid gap-x-2 px-2 pb-1.5 sm:grid-cols-2">
         {people.map((p, i) => (
           <AncestorTile

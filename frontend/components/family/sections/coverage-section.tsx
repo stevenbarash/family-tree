@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { FamilyTreeView } from '@/lib/family';
 import { GENERATION_HEADING, SectionHeader, familyTreeHref } from './shared';
@@ -24,7 +25,7 @@ export function CoverageSection({ view }: Props) {
         }
       />
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
-        <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+        <RegistryCard>
           <header className="border-b rule-hair bg-muted/40 px-3 py-2">
             <h3 className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
               Per generation
@@ -48,10 +49,10 @@ export function CoverageSection({ view }: Props) {
               </li>
             ))}
           </ul>
-        </Card>
+        </RegistryCard>
 
         {coverage.frontier.length > 0 ? (
-          <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+          <RegistryCard>
             <header className="border-b rule-hair bg-muted/40 px-3 py-2 flex items-baseline justify-between gap-3">
               <h3 className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
                 Research frontier
@@ -80,7 +81,7 @@ export function CoverageSection({ view }: Props) {
                 </li>
               ))}
             </ul>
-          </Card>
+          </RegistryCard>
         ) : (
           <Card className="flex items-center justify-center p-6 shadow-none ring-foreground/12">
             <p className="font-display text-sm text-muted-foreground">

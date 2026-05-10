@@ -111,6 +111,15 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Changed
 
+- **`RegistryCard` and `GenerationHeader` extracted** from the family-
+  tree section files. Six call sites that hand-rolled
+  `<Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">`
+  now wrap a single primitive (`components/family/registry-card.tsx`),
+  and the in-card `roman + heading + count` flex header duplicated
+  between `DescendantsBlock` and `GenerationBlock` collapses to one
+  component in `components/family/sections/shared.tsx`. `GroupedList`
+  also routes through `RegistryCard` so the wrapper style has one
+  source of truth.
 - Family browser section components iterating: descendants, family,
   lifespans, infobox-shell.
 - `plugins/whoami/CLAUDE.md` rewritten (in flight; resolves part of

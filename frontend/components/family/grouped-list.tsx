@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Card } from '@/components/ui/card';
+import { RegistryCard } from './registry-card';
 
 interface Props {
   title?: ReactNode;
@@ -21,14 +21,14 @@ export function GroupedList({ title, action, children }: Props) {
           {action}
         </div>
       ) : null}
-      <Card className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12">
+      <RegistryCard>
         {items.map((item, i) => (
           <div key={i}>
             {i > 0 ? <div className="rule-hair border-t" /> : null}
             {item}
           </div>
         ))}
-      </Card>
+      </RegistryCard>
     </section>
   );
 }

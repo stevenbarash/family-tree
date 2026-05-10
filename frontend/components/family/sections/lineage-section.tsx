@@ -1,9 +1,9 @@
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { AncestorTile } from '@/components/family/ancestor-tile';
+import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { BrowserPersonView, FamilyTreeView } from '@/lib/family';
-import { GENERATION_HEADING, SectionHeader, familyTreeHref, formatTileMeta } from './shared';
+import { GENERATION_HEADING, GenerationHeader, SectionHeader, familyTreeHref, formatTileMeta } from './shared';
 
 interface Props {
   view: FamilyTreeView;
@@ -54,10 +54,7 @@ function LineageColumn({
   const total = groups.reduce((sum, g) => sum + g.people.length, 0);
 
   return (
-    <Card
-      className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12"
-      style={{ borderLeft: `2px solid ${accentVar}` }}
-    >
+    <RegistryCard style={{ borderLeft: `2px solid ${accentVar}` }}>
       <header className="flex items-center justify-between border-b rule-hair bg-muted/40 px-4 py-2.5">
         <div className="flex items-baseline gap-2.5">
           <h3 className="font-display text-lg font-medium tracking-tight text-foreground">
@@ -86,7 +83,7 @@ function LineageColumn({
           />
         ))}
       </div>
-    </Card>
+    </RegistryCard>
   );
 }
 
@@ -103,19 +100,15 @@ function GenerationBlock({
 
   return (
     <section className="border-b rule-hair last:border-b-0">
-      <header className="flex items-baseline gap-3 px-3 py-1.5">
-        <span className="font-display text-[0.7rem] font-medium tabular-nums tracking-tight text-muted-foreground/70">
-          {roman(generation)}
-        </span>
-        <h4 className="flex-1 truncate font-display text-[0.78rem] uppercase tracking-[0.16em] text-muted-foreground">
-          {heading}
-        </h4>
-        {sidePossible ? (
-          <span className="font-mono text-[0.62rem] tabular-nums text-muted-foreground/70">
-            {String(people.length).padStart(2, '0')} / {String(sidePossible).padStart(2, '0')}
-          </span>
-        ) : null}
-      </header>
+      <GenerationHeader
+        ordinal={roman(generation)}
+        heading={heading}
+        count={
+          sidePossible
+            ? `${String(people.length).padStart(2, '0')} / ${String(sidePossible).padStart(2, '0')}`
+            : undefined
+        }
+      />
       {isEmpty ? (
         <p className="px-3 pb-2 font-mono text-[0.65rem] text-muted-foreground/55">— absentia —</p>
       ) : (

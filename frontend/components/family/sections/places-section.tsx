@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
 import { BirthplacesMap } from '@/components/family/birthplaces-map';
+import { RegistryCard } from '@/components/family/registry-card';
 import type { FamilyTreeView } from '@/lib/family';
 import { SectionHeader, familyTreeHref } from './shared';
 
@@ -50,10 +50,7 @@ export function PlacesSection({ view }: Props) {
 
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
         {places.regions.map(region => (
-          <Card
-            key={`region-${region.region}`}
-            className="gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12"
-          >
+          <RegistryCard key={`region-${region.region}`}>
             <header className="flex items-baseline justify-between gap-3 border-b rule-hair bg-muted/40 px-3 py-2">
               <h3 className="truncate font-display text-[0.95rem] tracking-tight text-foreground">
                 {region.region}
@@ -79,7 +76,7 @@ export function PlacesSection({ view }: Props) {
                 </li>
               ))}
             </ul>
-          </Card>
+          </RegistryCard>
         ))}
       </div>
 

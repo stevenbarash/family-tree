@@ -103,3 +103,29 @@ export function RelationLabel({ children }: { children: string }) {
     </span>
   );
 }
+
+export function GenerationHeader({
+  ordinal,
+  heading,
+  count,
+}: {
+  ordinal: string;
+  heading: string;
+  count?: ReactNode;
+}) {
+  return (
+    <header className="flex items-baseline gap-3 px-3 py-1.5">
+      <span className="font-display text-[0.7rem] font-medium tabular-nums tracking-tight text-muted-foreground/70">
+        {ordinal}
+      </span>
+      <h4 className="flex-1 truncate font-display text-[0.78rem] uppercase tracking-[0.16em] text-muted-foreground">
+        {heading}
+      </h4>
+      {count !== undefined && count !== null ? (
+        <span className="font-mono text-[0.62rem] tabular-nums text-muted-foreground/70">
+          {count}
+        </span>
+      ) : null}
+    </header>
+  );
+}
