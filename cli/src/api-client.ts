@@ -11,6 +11,8 @@ export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResu
 
 export type NoteSummary = Note;
 
+export type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
+
 function parseNotesFromBody(body: string): Note[] {
   return parseResearchNotes(body);
 }
@@ -119,7 +121,7 @@ export class ApiClient {
   async note(
     slug: string,
     note: string,
-    opts: { by?: string; kind?: 'human' | 'agent' } = {},
+    opts: { by?: string; kind?: NoteKind } = {},
   ): Promise<{ slug: string; date: string; id: string }> {
     return this.json('POST', `/api/notes/${slug}`, { note, ...opts });
   }

@@ -2,8 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runNote } from '../src/commands/note.js';
 
+type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
+
 interface Calls {
-  note: { slug: string; note: string; by?: string; kind?: 'human' | 'agent' }[];
+  note: { slug: string; note: string; by?: string; kind?: NoteKind }[];
   edit: { slug: string; id: string; note: string; by?: string }[];
   del: { slug: string; id: string; by?: string }[];
   restore: { slug: string; id: string }[];
@@ -11,7 +13,7 @@ interface Calls {
 }
 
 type FakeClient = {
-  note: (s: string, n: string, o?: { by?: string; kind?: 'human' | 'agent' }) => Promise<{ slug: string; date: string; id: string }>;
+  note: (s: string, n: string, o?: { by?: string; kind?: NoteKind }) => Promise<{ slug: string; date: string; id: string }>;
   editNote: (s: string, id: string, n: string, o?: { by?: string }) => Promise<{ slug: string; id: string; editedAt: string }>;
   deleteNote: (s: string, id: string, o?: { by?: string }) => Promise<{ slug: string; id: string; deletedAt: string }>;
   restoreNote: (s: string, id: string) => Promise<{ slug: string; id: string }>;
@@ -122,4 +124,26 @@ test('note: append still strips .talk suffix from slug', async () => {
   const c = fakeClient();
   await runNote({ slug: 'grandpa.talk', mode: 'append', note: 'x', client: c, write: () => {} });
   assert.equal(c.calls.note[0]!.slug, 'grandpa');
+});
+
+test('note: append accepts kind=interview', async () => {
+  const c = fakeClient();
+  let out = '';
+  await runNote({ slug: 'aidele', mode: 'append', note: 'q&a body', kind: 'interview', client: c, write: (s) => { out += s; } });
+  assert.equal(c.calls.note.length, 1);
+  assert.equal(c.calls.note[0]!.kind, 'interview');
+});
+
+test('note: append accepts kind=research', async () => {
+  const c = fakeClient();
+  let out = '';
+  await runNote({ slug: 'aidele', mode: 'append', note: 'src', kind: 'research', client: c, write: (s) => { out += s; } });
+  assert.equal(c.calls.note[0]!.kind, 'research');
+});
+
+test('note: append accepts kind=transcript', async () => {
+  const c = fakeClient();
+  let out = '';
+  await runNote({ slug: 'aidele', mode: 'append', note: 't', kind: 'transcript', client: c, write: (s) => { out += s; } });
+  assert.equal(c.calls.note[0]!.kind, 'transcript');
 });

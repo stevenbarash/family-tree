@@ -11,7 +11,7 @@ import { runWrite } from './commands/write.js';
 import { runCreate } from './commands/create.js';
 import { runEdit } from './commands/edit.js';
 import { runDelete } from './commands/delete.js';
-import { runNote } from './commands/note.js';
+import { runNote, type NoteKind } from './commands/note.js';
 import { runSyncGedcom } from './commands/sync-gedcom.js';
 import { runRebuildSearch } from './commands/rebuild-search.js';
 import { runMigrate } from './commands/migrate.js';
@@ -58,6 +58,8 @@ Pages:
   note <slug> --restore <id>  Restore a previously retracted note
   note <slug> --list [--json] List notes (id, date, preview)
   note <slug> --as-agent ...  Tag the write kind=agent (append/edit only)
+  note <slug> --kind <k> ...  Tag the note as kind=<k>; one of: human, agent,
+                                interview, research, transcript
   delete <slug> --yes         Soft-delete a page (moves to _archived)
   search <query> [--limit N]  Search pages, body, aliases, categories,
                                 and GEDCOM-derived fields
@@ -249,9 +251,22 @@ async function main(): Promise<number> {
         const by = typeof args.flags.by === 'string'
           ? args.flags.by
           : (process.env.WHOAMI_AUTHOR_NAME || process.env.USER);
-        const kind: 'human' | 'agent' = args.flags['as-agent'] || process.env.WHOAMI_NOTE_KIND === 'agent'
-          ? 'agent'
-          : 'human';
+
+        // Parse --kind flag if provided, otherwise use --as-agent or default to 'human'
+        let kind: NoteKind;
+        if (typeof args.flags.kind === 'string') {
+          const validKinds: NoteKind[] = ['human', 'agent', 'interview', 'research', 'transcript'];
+          if (!validKinds.includes(args.flags.kind as NoteKind)) {
+            process.stderr.write(`note: invalid --kind value: ${args.flags.kind}\n`);
+            process.exit(2);
+          }
+          kind = args.flags.kind as NoteKind;
+        } else if (args.flags['as-agent'] || process.env.WHOAMI_NOTE_KIND === 'agent') {
+          kind = 'agent';
+        } else {
+          kind = 'human';
+        }
+
         const note = mode === 'append' || mode === 'edit'
           ? await resolveNoteBody(args)
           : undefined;

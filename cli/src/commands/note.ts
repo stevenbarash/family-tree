@@ -3,13 +3,15 @@ import { toBaseSlug } from '@core/pages/slug.ts';
 
 type Mode = 'append' | 'edit' | 'delete' | 'restore' | 'list';
 
+export type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
+
 export interface NoteOptions {
   slug: string;
   mode: Mode;
   note?: string;
   id?: string;
   by?: string;
-  kind?: 'human' | 'agent';
+  kind?: NoteKind;
   json?: boolean;
   client: Pick<ApiClient, 'note' | 'editNote' | 'deleteNote' | 'restoreNote' | 'listNotes'>;
   write: (s: string) => void;
@@ -23,7 +25,7 @@ export async function runNote(opts: NoteOptions): Promise<void> {
       if (text === '') {
         throw new Error('note is empty — pass text positionally, via --file, or via --stdin');
       }
-      const appendOpts: { by?: string; kind?: 'human' | 'agent' } = {};
+      const appendOpts: { by?: string; kind?: NoteKind } = {};
       if (opts.by !== undefined) appendOpts.by = opts.by;
       if (opts.kind !== undefined) appendOpts.kind = opts.kind;
       const result = await opts.client.note(slug, text, appendOpts);
