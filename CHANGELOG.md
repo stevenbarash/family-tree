@@ -115,6 +115,21 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   lifespans, infobox-shell.
 - `plugins/whoami/CLAUDE.md` rewritten (in flight; resolves part of
   P0.1 — agent-prompt drift after v2 CLI surface change).
+- **Frontend perf pass against Vercel React rules.** Parallelized
+  `buildNotesView` (was awaiting `renderMarkdown` per note in series)
+  and the family-tree page's slug/talk-body/notes resolution; both
+  were serial waterfalls on the render hot path.
+  (`frontend/lib/server-services.ts`,
+  `frontend/app/family/tree/page.tsx`.)
+- **Command palette deferred via `next/dynamic`.** The cmdk-backed
+  dialog body now ships in a chunk loaded on first open instead of in
+  every page's client bundle; the header button + ⌘K listener stay in
+  the main bundle. New `frontend/components/command-palette-dialog.tsx`.
+- **`AddNoteForm` author persistence on blur** instead of every
+  keystroke. (`frontend/components/research-notes/add-note-form.tsx`.)
+- **Misc loop/regex cleanups.** `lib/changelog.ts` no longer parses
+  each version H3 twice; `lib/family.ts` merges two passes over the
+  page list and hoists the year regex to module scope.
 
 ### Fixed
 

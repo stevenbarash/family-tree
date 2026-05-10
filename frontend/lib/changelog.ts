@@ -238,22 +238,25 @@ export function parseChangelog(src: string, generatedAt: string): ChangelogDoc {
         subsections: buildSubsections(src, h3s, children),
       });
     } else {
-      const versionH3s = h3s.filter(h => parseVersionHeading(parseHeadingText(h.node)));
+      const versionH3s: { node: MdNode; index: number; parsed: { label: string; subtitle: string | null } }[] = [];
+      for (const h of h3s) {
+        const parsed = parseVersionHeading(parseHeadingText(h.node));
+        if (parsed) versionH3s.push({ ...h, parsed });
+      }
       if (versionH3s.length > 0) {
         const groupIntro = bodyBetween(src, h2, versionH3s[0].node);
         const versions: VersionSection[] = versionH3s.map((h, k) => {
-          const m = parseVersionHeading(parseHeadingText(h.node));
-          if (!m) throw new Error('unreachable: version heading filtered above');
+          const { label, subtitle } = h.parsed;
           const next = versionH3s[k + 1]?.node ?? null;
           const before = next ?? findNextH2(children, h.index);
           const body = bodyBetween(src, h.node, before);
           return {
             kind: 'version',
-            id: sectionId(m.label),
+            id: sectionId(label),
             number: null,
-            label: m.label,
-            subtitle: m.subtitle,
-            status: deriveStatus(m.label, m.subtitle),
+            label,
+            subtitle,
+            status: deriveStatus(label, subtitle),
             intro: null,
             subsections: [{
               kind: 'Other',

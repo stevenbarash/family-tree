@@ -60,8 +60,34 @@ function abridgeCrumbs(crumbs: Crumb[]): AbridgedCrumb[] {
 export default async function FamilyTreePage({ searchParams }: Props) {
   const params = await searchParams;
   const rootRecord = params.person ?? SELF_RECORD;
-  const view = await getFamilyTree(rootRecord, params.from ?? null);
+
+  // Kick off the family-tree compute and the slug-resolution in parallel —
+  // resolveSlugForRecord doesn't depend on the assembled view, only on the
+  // root record, and both feed the page's data.
+  const viewPromise = getFamilyTree(rootRecord, params.from ?? null);
+  const notesSlugPromise = resolveSlugForRecord(rootRecord).catch(err => {
+    if (
+      err instanceof UnknownRecordError
+      || err instanceof NameEmptySlugError
+      || err instanceof InvalidRecordIdError
+    ) return null;
+    throw err;
+  });
+
+  const [view, notesSlug] = await Promise.all([viewPromise, notesSlugPromise]);
   if (!view) notFound();
+
+  // Now that we have the slug, fetch talk body and slug-index in parallel,
+  // then render notes — the original code did these three awaits sequentially.
+  const notes = notesSlug
+    ? await (async () => {
+        const [talkBody, { index }] = await Promise.all([
+          readTalkBody(toTalkSlug(notesSlug)),
+          getCachedList(),
+        ]);
+        return buildNotesView(talkBody, index);
+      })()
+    : [];
 
   const isMe = view.root.record === SELF_RECORD;
   let ancestorCount = 0;
@@ -80,23 +106,6 @@ export default async function FamilyTreePage({ searchParams }: Props) {
   const isEmpty = familyCount === 0
     && ancestorCount === 0
     && view.descendants.total === 0;
-
-  let notesSlug: string | null = null;
-  try {
-    notesSlug = await resolveSlugForRecord(view.root.record);
-  } catch (err) {
-    if (
-      !(err instanceof UnknownRecordError)
-      && !(err instanceof NameEmptySlugError)
-      && !(err instanceof InvalidRecordIdError)
-    ) throw err;
-  }
-  const notes = notesSlug
-    ? await buildNotesView(
-        await readTalkBody(toTalkSlug(notesSlug)),
-        (await getCachedList()).index,
-      )
-    : [];
 
   return (
     <main className="min-h-dvh bg-background">

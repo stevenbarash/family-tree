@@ -13,24 +13,25 @@ interface Props {
 
 export function AddNoteForm({ slug }: Props) {
   const [text, setText] = useState('');
+  // The input is server-rendered as empty (no `window` on the server) and
+  // hydrated from localStorage post-mount. Hydrating in `useState` directly
+  // would mismatch SSR markup and React would warn.
   const [author, setAuthor] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
   const router = useRouter();
 
-  // Hydrate author from localStorage on mount; persist on change.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem(AUTHOR_KEY) ?? '';
-    setAuthor(stored);
+    setAuthor(localStorage.getItem(AUTHOR_KEY) ?? '');
   }, []);
 
-  const onAuthorChange = (v: string) => {
-    setAuthor(v);
-    if (typeof window !== 'undefined') {
-      if (v) localStorage.setItem(AUTHOR_KEY, v);
-      else localStorage.removeItem(AUTHOR_KEY);
-    }
+  // Persist on blur rather than every keystroke — avoids a localStorage write
+  // per character when typing a name.
+  const onAuthorBlur = () => {
+    if (typeof window === 'undefined') return;
+    if (author) localStorage.setItem(AUTHOR_KEY, author);
+    else localStorage.removeItem(AUTHOR_KEY);
   };
 
   const submit = () => {
@@ -78,7 +79,8 @@ export function AddNoteForm({ slug }: Props) {
       <input
         type="text"
         value={author}
-        onChange={(e) => onAuthorChange(e.target.value)}
+        onChange={(e) => setAuthor(e.target.value)}
+        onBlur={onAuthorBlur}
         placeholder="Your name (optional, remembered)"
         className="h-8 rounded-md border bg-transparent px-2 text-xs"
         disabled={isSubmitting}

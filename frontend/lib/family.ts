@@ -167,6 +167,8 @@ export interface FamilyTreeView {
   } | null;
 }
 
+const YEAR_RE = /\b(\d{4})\b/;
+
 /** Normalize a wiki page title into its slug shape so we can match the
  *  recorded GEDCOM name against page titles when there's no explicit
  *  `gedcom.record` in the frontmatter. */
@@ -185,14 +187,10 @@ export async function getFamily(): Promise<FamilyView | null> {
 
   const { list } = await getCachedList();
   const slugByRecord = new Map<string, string>();
-  for (const page of list) {
-    if (page.isArchived) continue;
-    if (page.gedcomRecord) slugByRecord.set(page.gedcomRecord, page.slug);
-  }
-
   const titleByName = new Map<string, string>();
   for (const page of list) {
     if (page.isArchived) continue;
+    if (page.gedcomRecord) slugByRecord.set(page.gedcomRecord, page.slug);
     titleByName.set(slugifyName(page.title), page.slug);
   }
   const findSlug = (a: AncestorNode): string | undefined =>
@@ -567,6 +565,6 @@ function computeRelationshipFromPerspective(
 
 function yearLabel(raw: string | null): string | null {
   if (!raw) return null;
-  const m = raw.match(/\b(\d{4})\b/);
+  const m = raw.match(YEAR_RE);
   return m ? `b. ${m[1]}` : null;
 }

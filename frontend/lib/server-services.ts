@@ -506,25 +506,20 @@ export async function buildNotesView(
   index: SlugIndex,
 ): Promise<NoteView[]> {
   const notes = parseResearchNotes(talkBody);
-  const views: NoteView[] = [];
-  for (const n of notes) {
-    const rendered = await renderMarkdown(n.text, index);
-    views.push({
-      id: n.id,
-      date: n.date,
-      by: n.by,
-      kind: n.kind,
-      createdAt: n.createdAt,
-      editedAt: n.editedAt,
-      editedBy: n.editedBy,
-      deletedAt: n.deletedAt,
-      deletedBy: n.deletedBy,
-      isLegacy: n.isLegacy,
-      text: n.text,
-      rendered,
-    });
-  }
-  return views;
+  return Promise.all(notes.map(async n => ({
+    id: n.id,
+    date: n.date,
+    by: n.by,
+    kind: n.kind,
+    createdAt: n.createdAt,
+    editedAt: n.editedAt,
+    editedBy: n.editedBy,
+    deletedAt: n.deletedAt,
+    deletedBy: n.deletedBy,
+    isLegacy: n.isLegacy,
+    text: n.text,
+    rendered: await renderMarkdown(n.text, index),
+  })));
 }
 
 export async function searchAndJoin(
