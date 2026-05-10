@@ -26,6 +26,7 @@ can drive it without specific bindings.
 | `config server`  | Set the server URL in `~/.whoami/config.json`.                           |
 | `check`          | Run drift detectors against the data repo at `$WHOAMI_ROOT`. `--fix` applies safe normalizations. Standalone — does not call the API. |
 | `init`           | Install pre-commit hook + CI workflow into `$WHOAMI_ROOT`. Standalone — does not call the API. |
+| `doctor`         | Diagnose dev-env health: server reachability + port discovery, workspace presence, version skew. `--fix` auto-corrects the configured server URL when an alternative wai server is reachable. Standalone for the workspace checks; talks to the API for reachability. |
 
 The CLI is an HTTP client — it talks to the frontend's API routes (or
 any other host that implements the same surface). The host runs locally;
@@ -55,8 +56,9 @@ cd ~/dev/whoami/frontend && npm run dev      # serves on :3001
 ```
 
 The CLI's default server URL is `http://localhost:3001` — same port the
-frontend script pins. If they ever drift, `wai healthz` returns
-`fetch failed`; fix with either:
+frontend script pins. If they ever drift, run `wai doctor` (or `wai
+doctor --fix` to auto-update the configured URL to whatever wai server
+is actually responding on localhost). For manual override:
 
 ```bash
 wai config server http://localhost:<actual-port>

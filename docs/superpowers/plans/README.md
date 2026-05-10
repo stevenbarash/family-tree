@@ -55,8 +55,9 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-cli-server-contract.md`](./2026-05-03-cli-server-contract.md) | Typed CLI/server HTTP contract | Zod schemas to prevent contract drift. **Trigger:** first contract-drift bug that costs > 30 min. |
 | 📝 | [`2026-05-03-narrative-to-gedcom.md`](./2026-05-03-narrative-to-gedcom.md) | Narrative ↔ GEDCOM round-trip | Paste raw text → fact extraction → unified GEDCOM diff. **Trigger:** user wants paste-to-vault flow. |
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
+| ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 23 plans** — 14 shipped (✅), 3 in-progress (🚧), 5 sketches (📝), 1 index (🗂).
+**Total: 24 plans** — 15 shipped (✅), 3 in-progress (🚧), 5 sketches (📝), 1 index (🗂).
 
 ---
 

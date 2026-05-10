@@ -23,6 +23,14 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai doctor`** command and actionable connection errors. Replaces
+  `fetch failed` with a probe-based hint that names the alive port and
+  the exact `wai config server` command to run; `wai doctor` runs the
+  same checks proactively (server reachability, workspace presence,
+  CLI/frontend version skew) and `--fix` writes the discovered URL into
+  `~/.whoami/config.json`. New `/api/version` route on the frontend.
+  (`cli/src/probe.ts`, `cli/src/commands/doctor.ts`,
+  `frontend/app/api/version/route.ts`.)
 - **Conflict-resolution schema** for disagreeing sources, addressing
   platform-review P1.5 (`core/src/family/conflicts.ts`,
   `frontend/components/family/sections/conflicts-section.tsx`).
