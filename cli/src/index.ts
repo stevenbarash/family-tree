@@ -389,6 +389,11 @@ async function main(): Promise<number> {
           process.stderr.write('narrative: slug required\n');
           return 2;
         }
+        // Reject --file without a path argument
+        if (args.flags.file !== undefined && typeof args.flags.file !== 'string') {
+          process.stderr.write('narrative: --file requires a path\n');
+          return 2;
+        }
         const printFlag = !!args.flags.print;
         const fileFlag = typeof args.flags.file === 'string' ? args.flags.file : undefined;
         const mode: NarrativeMode = printFlag ? 'print' : (fileFlag !== undefined ? 'ingest' : 'edit');
