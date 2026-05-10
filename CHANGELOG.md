@@ -29,7 +29,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   same checks proactively (server reachability, workspace presence,
   CLI/frontend version skew) and `--fix` writes the discovered URL into
   `~/.whoami/config.json`. New `/api/version` route on the frontend.
-  (`cli/src/probe.ts`, `cli/src/commands/doctor.ts`,
+  (`cli/src/probe.ts`, `cli/src/api-client.ts`,
+  `cli/src/commands/doctor.ts`, `cli/src/index.ts`,
   `frontend/app/api/version/route.ts`.)
 - **Conflict-resolution schema** for disagreeing sources, addressing
   platform-review P1.5 (`core/src/family/conflicts.ts`,

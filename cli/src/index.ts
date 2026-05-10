@@ -417,7 +417,6 @@ async function main(): Promise<number> {
           fix: !!args.flags.fix,
           setServer,
           write,
-          writeErr: (s) => process.stderr.write(s),
         });
         return code;
       }

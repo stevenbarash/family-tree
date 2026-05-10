@@ -13,7 +13,6 @@ function fakeFs(paths: string[]): FakeFs {
 
 test('doctor: all green → exit 0, prints "ok" lines', async () => {
   let out = '';
-  let err = '';
   const code = await runDoctor({
     configuredUrl: 'http://localhost:3001',
     candidates: ['http://localhost:3001', 'http://localhost:3000'],
@@ -28,7 +27,6 @@ test('doctor: all green → exit 0, prints "ok" lines', async () => {
     fix: false,
     setServer: () => { throw new Error('setServer must not be called when --fix is off'); },
     write: (s) => { out += s; },
-    writeErr: (s) => { err += s; },
   });
   assert.equal(code, 0);
   assert.match(out, /server.*http:\/\/localhost:3001.*ok/i);
@@ -53,7 +51,6 @@ test('doctor: configured URL dead but other port alive → exit 1, suggests fix 
     fix: false,
     setServer: () => { throw new Error('--fix off'); },
     write: (s) => { out += s; },
-    writeErr: () => {},
   });
   assert.equal(code, 1);
   assert.match(out, /server.*http:\/\/localhost:3000.*unreachable/i);
@@ -77,7 +74,6 @@ test('doctor: nothing reachable → exit 1, suggests starting the frontend', asy
     fix: false,
     setServer: () => { throw new Error('--fix off'); },
     write: (s) => { out += s; },
-    writeErr: () => {},
   });
   assert.equal(code, 1);
   assert.match(out, /no wai server found|frontend.*not running|cd frontend.*npm run dev/i);
@@ -96,10 +92,32 @@ test('doctor: missing workspace dir → exit 1, names what is missing', async ()
     fix: false,
     setServer: () => { throw new Error('--fix off'); },
     write: (s) => { out += s; },
-    writeErr: () => {},
   });
   assert.equal(code, 1);
   assert.match(out, /workspace.*\/missing.*missing|not found/i);
+});
+
+test('doctor: --fix calls setServer with discovered URL, self-heals to exit 0', async () => {
+  let out = '';
+  const setServerCalls: string[] = [];
+  const code = await runDoctor({
+    configuredUrl: 'http://localhost:9999',
+    candidates: ['http://localhost:9999', 'http://localhost:3001'],
+    probeServers: async () => [
+      { url: 'http://localhost:9999', ok: false },
+      { url: 'http://localhost:3001', ok: true },
+    ],
+    fetchVersion: async () => ({ apiVersion: 'v2', version: '2.0.0-pre.0', startedAt: 'x' }),
+    cliVersion: '2.0.0-pre.0',
+    workspaceRoot: '/home/u/whoami',
+    fs: fakeFs(['/home/u/whoami', '/home/u/whoami/genealogy', '/home/u/whoami/pages']),
+    fix: true,
+    setServer: (url) => { setServerCalls.push(url); },
+    write: (s) => { out += s; },
+  });
+  assert.equal(code, 0, 'should self-heal to exit 0');
+  assert.deepEqual(setServerCalls, ['http://localhost:3001'], 'should write the discovered URL exactly once');
+  assert.match(out, /--fix:\s*saved server=http:\/\/localhost:3001/);
 });
 
 test('doctor: version skew between CLI and frontend → notes mismatch but does not exit non-zero', async () => {
@@ -115,7 +133,6 @@ test('doctor: version skew between CLI and frontend → notes mismatch but does 
     fix: false,
     setServer: () => { throw new Error('--fix off'); },
     write: (s) => { out += s; },
-    writeErr: () => {},
   });
   // Skew is informational, not failure — agents may run mismatched versions intentionally.
   assert.equal(code, 0);

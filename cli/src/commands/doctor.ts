@@ -17,7 +17,6 @@ export interface DoctorOptions {
   fix: boolean;
   setServer: (url: string) => void;
   write: (s: string) => void;
-  writeErr: (s: string) => void;
 }
 
 export async function runDoctor(opts: DoctorOptions): Promise<number> {
