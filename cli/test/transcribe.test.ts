@@ -70,3 +70,19 @@ test('transcribe: aborts with exit 7 when repo dirty', async () => {
   assert.equal(code, 7);
   assert.match(err, /uncommitted/);
 });
+
+test('transcribe: aborts with exit 5 when transcriber fails', async () => {
+  const { reads, deps } = fakeIo();
+  reads['/in/voice.m4a'] = new Uint8Array([0]);
+  const failingTranscriber: Transcriber = {
+    transcribe: async () => { throw new Error('API timeout'); },
+  };
+  let err = '';
+  const code = await runTranscribe({
+    rootDir: '/repo', slug: 'aidele', audioPath: '/in/voice.m4a', lang: 'auto',
+    ...deps, transcriber: failingTranscriber,
+    write: () => {}, writeErr: (s) => { err += s; },
+  });
+  assert.equal(code, 5);
+  assert.match(err, /API failure/);
+});

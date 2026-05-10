@@ -39,6 +39,7 @@ export async function runTranscribe(opts: TranscribeOptions): Promise<number> {
 
   let result;
   try {
+    // TS 5.x types ArrayBuffer.slice as ArrayBuffer | SharedArrayBuffer; Buffer always yields ArrayBuffer.
     const audioBuffer = audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength) as ArrayBuffer;
     result = await opts.transcriber.transcribe({
       audio: audioBuffer,
