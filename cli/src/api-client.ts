@@ -175,9 +175,18 @@ export class ApiClient {
     let parsed: unknown = undefined;
     try { parsed = text ? JSON.parse(text) : undefined; } catch { /* keep as text */ }
     if (!res.ok) {
-      const detail = parsed && typeof parsed === 'object' && 'error' in parsed
-        ? String((parsed as { error: unknown }).error)
-        : text || undefined;
+      // The route emits `{ error: '<code>', detail?: '<human-readable>' }`.
+      // The error code alone is too terse for users (e.g. `HTTP 500: sync-failed`
+      // tells you nothing about WHY); when detail is present, include it too.
+      let detail: string | undefined;
+      if (parsed && typeof parsed === 'object') {
+        const obj = parsed as Record<string, unknown>;
+        const errorCode = 'error' in obj ? String(obj.error) : undefined;
+        const detailMsg = 'detail' in obj ? String(obj.detail) : undefined;
+        if (errorCode && detailMsg) detail = `${errorCode}: ${detailMsg}`;
+        else detail = errorCode ?? detailMsg;
+      }
+      if (detail === undefined) detail = text || undefined;
       if (res.status === 404) throw new NotFound(404, detail);
       if (res.status === 400) throw new BadRequest(400, detail);
       throw new ServerError(res.status, detail);

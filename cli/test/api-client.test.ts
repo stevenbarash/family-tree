@@ -131,6 +131,49 @@ test('ApiClient.migrate POSTs to /api/migrate with the body', async () => {
   );
 });
 
+test('ApiClient: 5xx with both error code and detail surfaces both in message', async () => {
+  await withServer(
+    (_req, res) => {
+      res.statusCode = 500;
+      res.setHeader('content-type', 'application/json');
+      res.end('{"error":"sync-failed","detail":"nothing to commit on working tree"}');
+    },
+    async (base) => {
+      const c = new ApiClient(base);
+      await assert.rejects(
+        () => c.syncGedcom('x.ged', 'note'),
+        (err: Error) => {
+          // Should include both the code (so callers can grep) AND the human-readable
+          // detail (so users know what actually went wrong).
+          assert.match(err.message, /sync-failed/);
+          assert.match(err.message, /nothing to commit on working tree/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
+test('ApiClient: 5xx with only error code (no detail) keeps existing format', async () => {
+  await withServer(
+    (_req, res) => {
+      res.statusCode = 500;
+      res.setHeader('content-type', 'application/json');
+      res.end('{"error":"server-error"}');
+    },
+    async (base) => {
+      const c = new ApiClient(base);
+      await assert.rejects(
+        () => c.syncGedcom('x.ged', 'note'),
+        (err: Error) => {
+          assert.match(err.message, /server-error/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
 test('ApiClient: connection refused throws ConnectionError with hint', async () => {
   // Get a free port, then close so nothing listens.
   const dead = await new Promise<string>((resolve) => {
