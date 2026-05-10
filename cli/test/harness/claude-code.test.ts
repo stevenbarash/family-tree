@@ -8,9 +8,13 @@ function fakeSpawn(stdoutText: string, stderrText = '', code = 0) {
   };
 }
 
+function makeFakeReader(skillContent = 'SKILL', templateContent = 'TEMPLATE'): (path: string) => string | null {
+  return (p: string) => p.endsWith('SKILL.md') ? skillContent : (p.endsWith('.md') ? templateContent : null);
+}
+
 test('claude-code adapter: parses successful JSON response', async () => {
   const spawn = fakeSpawn(JSON.stringify({ result: '{"questions":["q1","q2"]}' }));
-  const a = claudeCodeAdapter({ spawn });
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
   const res = await a.invoke<unknown, { questions: string[] }>({
     skill: 'writing-articles',
     template: 'interview',
@@ -25,7 +29,7 @@ test('claude-code adapter: parses successful JSON response', async () => {
 
 test('claude-code adapter: returns ok=false on non-zero exit', async () => {
   const spawn = fakeSpawn('', 'something broke', 2);
-  const a = claudeCodeAdapter({ spawn });
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
   const res = await a.invoke({
     skill: 'writing-articles', template: 'interview', context: {}, outputSchema: {},
   });
@@ -38,7 +42,7 @@ test('claude-code adapter: returns ok=false on non-zero exit', async () => {
 
 test('claude-code adapter: returns ok=false when result fails outputSchema', async () => {
   const spawn = fakeSpawn(JSON.stringify({ result: '{"unrelated":1}' }));
-  const a = claudeCodeAdapter({ spawn });
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
   const res = await a.invoke({
     skill: 'writing-articles', template: 'interview', context: {},
     outputSchema: { type: 'object', required: ['questions'] },
@@ -46,6 +50,59 @@ test('claude-code adapter: returns ok=false when result fails outputSchema', asy
   assert.equal(res.ok, false);
   if (!res.ok) {
     assert.match(res.error, /schema/);
+    assert.equal(res.retryable, false);
+  }
+});
+
+test('claude-code adapter: passes concatenated skill+template content as --append-system-prompt', async () => {
+  let appendedPrompt = '';
+  const spawn = async (_cmd: string, args: string[], _stdin: string): Promise<{ stdout: string; stderr: string; code: number }> => {
+    const i = args.indexOf('--append-system-prompt');
+    appendedPrompt = args[i + 1] ?? '';
+    return { stdout: JSON.stringify({ result: '{"questions":[]}' }), stderr: '', code: 0 };
+  };
+  const a = claudeCodeAdapter({
+    spawn,
+    skillsDir: '/skills',
+    readSkillFile: makeFakeReader('SKILL CONTENT', 'TEMPLATE CONTENT'),
+  });
+  await a.invoke({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object', required: ['questions'] },
+  });
+  assert.match(appendedPrompt, /SKILL CONTENT/);
+  assert.match(appendedPrompt, /TEMPLATE CONTENT/);
+  assert.match(appendedPrompt, /---/);
+});
+
+test('claude-code adapter: returns ok=false when skill file is missing', async () => {
+  const a = claudeCodeAdapter({
+    spawn: async () => ({ stdout: '', stderr: '', code: 0 }),
+    skillsDir: '/skills',
+    readSkillFile: () => null,
+  });
+  const res = await a.invoke({
+    skill: 'writing-articles', template: 'interview', context: {}, outputSchema: {},
+  });
+  assert.equal(res.ok, false);
+  if (!res.ok) {
+    assert.match(res.error, /skill not found/);
+    assert.equal(res.retryable, false);
+  }
+});
+
+test('claude-code adapter: returns ok=false when template file is missing', async () => {
+  const a = claudeCodeAdapter({
+    spawn: async () => ({ stdout: '', stderr: '', code: 0 }),
+    skillsDir: '/skills',
+    readSkillFile: (p) => p.endsWith('SKILL.md') ? 'skill' : null,
+  });
+  const res = await a.invoke({
+    skill: 'writing-articles', template: 'interview', context: {}, outputSchema: {},
+  });
+  assert.equal(res.ok, false);
+  if (!res.ok) {
+    assert.match(res.error, /template not found/);
     assert.equal(res.retryable, false);
   }
 });

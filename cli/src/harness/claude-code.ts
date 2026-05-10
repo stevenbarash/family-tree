@@ -1,3 +1,4 @@
+import { dirname, join } from 'node:path';
 import type { HarnessAdapter, HarnessRequest, HarnessResponse } from './types.js';
 
 type SpawnFn = (cmd: string, args: string[], stdin: string) => Promise<{ stdout: string; stderr: string; code: number }>;
@@ -5,31 +6,43 @@ type SpawnFn = (cmd: string, args: string[], stdin: string) => Promise<{ stdout:
 export interface ClaudeCodeOptions {
   spawn?: SpawnFn;
   binary?: string;
+  /**
+   * Root directory containing skill bundles (one folder per skill).
+   * Required to resolve `<skillsDir>/<skill>/SKILL.md` and
+   * `<skillsDir>/<skill>/prompt-templates/<template>.md`. Defaults to
+   * `plugins/whoami/skills` resolved relative to the bundled CLI.
+   */
+  skillsDir?: string;
+  /** Optional hook for tests; default reads from the filesystem. */
+  readSkillFile?: (path: string) => string | null;
 }
 
 export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter {
   const spawn = opts.spawn ?? defaultSpawn;
   const binary = opts.binary ?? 'claude';
+  const skillsDir = opts.skillsDir
+    ?? process.env.WHOAMI_SKILLS_DIR
+    ?? defaultSkillsDir();
+  const readFile = opts.readSkillFile ?? defaultReadSkillFile;
+
   return {
     async invoke<T, R>(req: HarnessRequest<T>): Promise<HarnessResponse<R>> {
-      const stdin = JSON.stringify({
-        skill: req.skill,
-        template: req.template,
-        context: req.context,
-      });
-      // TODO(plan-2): Resolve and append template content to the system prompt.
-      // Currently we pass `req.skill` literally (e.g. 'writing-articles') to
-      // `--append-system-prompt`, which is not interpreted as a skill name —
-      // Claude Code appends the literal string. The template name is in stdin
-      // as part of the JSON payload, but the prompt-templates/<template>.md
-      // file is never read. This works in Plan 1 because the only template
-      // (`interview`) is small enough that the model can infer its job from
-      // the request shape, but Plan 2 (which adds four more templates) must
-      // teach the adapter to read SKILL.md + prompt-templates/<template>.md
-      // and concatenate them into the appended system prompt. Track the
-      // design decision (paths injected vs. resolved by adapter) in the
-      // Plan 2 design pass.
-      const args = ['--print', '--output-format', 'json', '--append-system-prompt', req.skill];
+      const skillPath = join(skillsDir, req.skill, 'SKILL.md');
+      const templatePath = join(skillsDir, req.skill, 'prompt-templates', `${req.template}.md`);
+
+      const skillContent = readFile(skillPath);
+      if (skillContent === null) {
+        return { ok: false, error: `harness: skill not found at ${skillPath}`, retryable: false };
+      }
+      const templateContent = readFile(templatePath);
+      if (templateContent === null) {
+        return { ok: false, error: `harness: template not found at ${templatePath}`, retryable: false };
+      }
+
+      const systemPrompt = `${skillContent}\n\n---\n\n${templateContent}`;
+      const stdin = JSON.stringify({ skill: req.skill, template: req.template, context: req.context });
+      const args = ['--print', '--output-format', 'json', '--append-system-prompt', systemPrompt];
+
       let proc: { stdout: string; stderr: string; code: number };
       try {
         proc = await spawn(binary, args, stdin);
@@ -61,6 +74,27 @@ export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter 
       return { ok: true, result: parsed as R };
     },
   };
+}
+
+/**
+ * Resolve the skills directory relative to the running binary.
+ * In the bundled CJS case, process.argv[1] = <repo>/cli/dist/wai.cjs;
+ * two levels up from cli/dist/ lands at the repo root, then we descend
+ * into plugins/whoami/skills/.
+ * For non-standard layouts, set WHOAMI_SKILLS_DIR to override.
+ */
+function defaultSkillsDir(): string {
+  const binaryDir = dirname(process.argv[1]);
+  return join(binaryDir, '..', '..', 'plugins', 'whoami', 'skills');
+}
+
+function defaultReadSkillFile(path: string): string | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('node:fs').readFileSync(path, 'utf8');
+  } catch {
+    return null;
+  }
 }
 
 /**
