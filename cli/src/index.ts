@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
+import { execSync } from 'node:child_process';
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
 import { toSlug } from './slug.js';
@@ -25,6 +26,8 @@ import { runCheck } from './commands/check.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
+import { runNarrative } from './commands/narrative.js';
+import type { NarrativeMode } from './commands/narrative.js';
 import { probeServers, commonServerCandidates } from './probe.js';
 import { loadRepoState } from '@core/checks/load.ts';
 import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
@@ -34,6 +37,8 @@ import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
 import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import { detectPlacesDrift } from '@core/checks/places-drift.ts';
 import type { FindingCategory } from '@core/checks/types.ts';
+
+function shellEscape(s: string): string { return `'${s.replace(/'/g, "'\\''")}'`; }
 
 const VERSION = '2.0.0-pre.0';
 
@@ -89,6 +94,9 @@ Quality:
         [--force]               Overwrite existing files
         [--hook-only]           Just the pre-commit hook
         [--ci-only]             Just the CI workflow
+  narrative <slug>             Edit or create pages/<slug>.narrative.md
+                                 --file F to ingest an existing file
+                                 --print to write current contents to stdout
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -370,6 +378,36 @@ async function main(): Promise<number> {
             const { execFileSync } = require('node:child_process');
             execFileSync('git', ['-C', root, 'config', '--local', key, value], { stdio: 'inherit' });
           },
+          write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return code;
+      }
+      case 'narrative': {
+        const slug = args.positional[0];
+        if (!slug) {
+          process.stderr.write('narrative: slug required\n');
+          return 2;
+        }
+        const printFlag = !!args.flags.print;
+        const fileFlag = typeof args.flags.file === 'string' ? args.flags.file : undefined;
+        const mode: NarrativeMode = printFlag ? 'print' : (fileFlag !== undefined ? 'ingest' : 'edit');
+        const rootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const code = await runNarrative({
+          rootDir,
+          slug,
+          mode,
+          ingestPath: fileFlag,
+          readFile: (p) => existsSync(p) ? readFileSync(p, 'utf8') : null,
+          writeFile: (p, c) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
+          exists: existsSync,
+          editInEditor: async (initial) => editInEditor(initial),
+          gitAdd: (paths) => { execSync(`git -C ${shellEscape(rootDir)} add ${paths.map(shellEscape).join(' ')}`); },
+          gitCommit: (msg) => { execSync(`git -C ${shellEscape(rootDir)} commit -m ${shellEscape(msg)}`); },
+          gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(rootDir)} status --porcelain`).toString().trim().length > 0,
+          now: () => new Date().toISOString().slice(0, 10),
           write,
           writeErr: (s) => process.stderr.write(s),
         });
