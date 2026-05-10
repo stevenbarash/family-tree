@@ -26,8 +26,10 @@ export class ServerError extends ApiError {}
 export class ConnectionError extends ApiError {
   constructor(message: string) {
     // status 0: not an HTTP error, but reuses the ApiError surface so the
-    // catch block in index.ts formats it the same way.
+    // catch block in index.ts formats it the same way. Override .message so
+    // the user-facing output skips the "HTTP 0:" prefix that ApiError adds.
     super(0, message);
+    this.message = message;
   }
 }
 

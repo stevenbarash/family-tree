@@ -148,6 +148,9 @@ test('ApiClient: connection refused throws ConnectionError with hint', async () 
       assert.ok(err instanceof ConnectionError, `expected ConnectionError, got ${err.constructor.name}`);
       assert.match(err.message, new RegExp(dead));
       assert.match(err.message, /not responding|unreachable/i);
+      // The user-facing message should not start with "HTTP 0:" — that's
+      // an ApiError implementation detail, not something to leak to the CLI.
+      assert.doesNotMatch(err.message, /^HTTP\s+0/);
       return true;
     },
   );
