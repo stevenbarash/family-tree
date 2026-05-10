@@ -9,7 +9,7 @@ import { probeServers, commonServerCandidates } from './probe.js';
 
 export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult, RedlinkEntry };
 
-export type NoteSummary = Note;
+export type NoteSummary = Omit<Note, 'kind'> & { kind: NoteKind };
 
 export type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
 
