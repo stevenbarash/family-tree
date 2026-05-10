@@ -65,6 +65,38 @@ export async function runTranscribe(opts: TranscribeOptions): Promise<number> {
   return 0;
 }
 
+export interface TranscribeDirOptions {
+  rootDir: string;
+  slug: string;
+  dirPath: string;
+  lang: Lang;
+  listAudio: (dir: string) => string[];
+  runOne: (audioPath: string) => Promise<number>;
+  writeFile: (path: string, content: string) => void;
+  write: (s: string) => void;
+  writeErr: (s: string) => void;
+}
+
+export async function runTranscribeDir(opts: TranscribeDirOptions): Promise<number> {
+  const audios = opts.listAudio(opts.dirPath);
+  const runId = `tr-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const failed: { path: string; code: number }[] = [];
+  let ok = 0;
+  for (const a of audios) {
+    const code = await opts.runOne(a);
+    if (code === 0) ok += 1; else failed.push({ path: a, code });
+  }
+  if (failed.length > 0) {
+    const failedPath = `${opts.rootDir}/data/transcribe-runs/${runId}-failed.txt`;
+    const lines = failed.map(f => `${f.path}\texit=${f.code}`);
+    opts.writeFile(failedPath, lines.join('\n') + '\n');
+    opts.write(`transcribe: ${ok} transcribed, ${failed.length} failed (see ${failedPath})\n`);
+    return 5;
+  }
+  opts.write(`transcribe: ${ok} transcribed\n`);
+  return 0;
+}
+
 function formatTranscriptNote(text: string, meta: { audio: string; speaker?: string; date?: string; lang: string }): string {
   const lines: string[] = [];
   lines.push(`Transcript of \`${meta.audio}\`${meta.speaker ? ` (speaker: ${meta.speaker})` : ''}${meta.date ? ` recorded ${meta.date}` : ''}, lang=${meta.lang}:`);

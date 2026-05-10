@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { ApiClient } from './api-client.js';
@@ -28,7 +28,7 @@ import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
 import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
-import { runTranscribe } from './commands/transcribe.js';
+import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
 import { runInterview } from './commands/interview.js';
 import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
@@ -105,6 +105,7 @@ Quality:
                                  research note on <slug>.talk
                                  --lang en|ru|he|auto (default: auto)
                                  --speaker NAME, --date YYYY-MM-DD
+  transcribe <slug> --dir D    Batch-transcribe every audio file in D
   interview <slug>             Generate Q&A questions via the harness;
                                  captures answers as kind=interview notes
                                  --questions N (default: 8)
@@ -431,9 +432,8 @@ async function main(): Promise<number> {
       }
       case 'transcribe': {
         const slug = args.positional[0];
-        const audioPath = args.positional[1];
-        if (!slug || !audioPath) {
-          process.stderr.write('transcribe: usage — wai transcribe <slug> <audio>\n');
+        if (!slug) {
+          process.stderr.write('transcribe: usage — wai transcribe <slug> <audio> | wai transcribe <slug> --dir <path>\n');
           return 2;
         }
         const apiKey = process.env.OPENAI_API_KEY;
@@ -453,28 +453,57 @@ async function main(): Promise<number> {
         const rootDir = process.env.WHOAMI_ROOT
           ? resolve(process.env.WHOAMI_ROOT)
           : resolve(process.env.HOME!, 'whoami');
-        const code = await runTranscribe({
+
+        const dirPath = typeof args.flags.dir === 'string' ? args.flags.dir : undefined;
+        const audioPath = args.positional[1];
+
+        if (dirPath && audioPath) {
+          process.stderr.write('transcribe: pass either an audio path OR --dir, not both\n');
+          return 2;
+        }
+        if (!dirPath && !audioPath) {
+          process.stderr.write('transcribe: usage — wai transcribe <slug> <audio> | wai transcribe <slug> --dir <path>\n');
+          return 2;
+        }
+
+        const perFileDeps = {
           rootDir,
           slug,
-          audioPath,
           lang: langArg as ValidLang,
           speaker: speakerArg,
           date: dateArg,
-          readFileBinary: (p) => existsSync(p) ? readFileSync(p) : null,
-          writeFileBinary: (p, b) => { writeFileSync(p, b); },
-          mkdirP: (p) => mkdirSync(p, { recursive: true }),
-          gitAdd: (paths) => { execSync(`git -C ${shellEscape(rootDir)} add ${paths.map(shellEscape).join(' ')}`); },
-          gitCommit: (msg) => { execSync(`git -C ${shellEscape(rootDir)} commit -m ${shellEscape(msg)}`); },
+          readFileBinary: (p: string) => existsSync(p) ? readFileSync(p) : null,
+          writeFileBinary: (p: string, b: Uint8Array) => { writeFileSync(p, b); },
+          mkdirP: (p: string) => mkdirSync(p, { recursive: true }),
+          gitAdd: (paths: string[]) => { execSync(`git -C ${shellEscape(rootDir)} add ${paths.map(shellEscape).join(' ')}`); },
+          gitCommit: (msg: string) => { execSync(`git -C ${shellEscape(rootDir)} commit -m ${shellEscape(msg)}`); },
           gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(rootDir)} status --porcelain`).toString().trim().length > 0,
-          appendNote: async (s, text, o) => {
+          appendNote: async (s: string, text: string, o: { kind: 'transcript' }) => {
             const c = new ApiClient(getServer());
             await c.note(s, text, { kind: o.kind });
           },
           transcriber: whisperTranscriber({ apiKey }),
           now: () => new Date().toISOString().slice(0, 10),
-          write: (s) => process.stdout.write(s),
-          writeErr: (s) => process.stderr.write(s),
-        });
+          write: (s: string) => process.stdout.write(s),
+          writeErr: (s: string) => process.stderr.write(s),
+        };
+
+        if (dirPath) {
+          const code = await runTranscribeDir({
+            rootDir,
+            slug,
+            dirPath,
+            lang: langArg as ValidLang,
+            listAudio: (d: string) => readdirSync(d).filter(f => /\.(m4a|mp3|wav|aac|flac)$/i.test(f)).map(f => join(d, f)),
+            runOne: async (ap: string) => runTranscribe({ ...perFileDeps, audioPath: ap, write: () => {}, writeErr: () => {} }),
+            writeFile: (p: string, c: string) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
+            write: (s: string) => process.stdout.write(s),
+            writeErr: (s: string) => process.stderr.write(s),
+          });
+          return code;
+        }
+
+        const code = await runTranscribe({ ...perFileDeps, audioPath: audioPath! });
         return code;
       }
       case 'interview': {

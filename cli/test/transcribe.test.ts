@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runTranscribe } from '../src/commands/transcribe.js';
+import { runTranscribe, runTranscribeDir } from '../src/commands/transcribe.js';
 import type { Transcriber } from '../src/transcriber.js';
 
 function fakeIo() {
@@ -85,4 +85,50 @@ test('transcribe: aborts with exit 5 when transcriber fails', async () => {
   });
   assert.equal(code, 5);
   assert.match(err, /API failure/);
+});
+
+test('transcribe --dir: processes every audio file; commits each', async () => {
+  const { reads, commits, deps } = fakeIo();
+  reads['/in/a.m4a'] = new Uint8Array([1]);
+  reads['/in/b.m4a'] = new Uint8Array([2]);
+  const writes: Record<string, string | Uint8Array> = {};
+  let out = '';
+  const code = await runTranscribeDir({
+    rootDir: '/repo', slug: 'aidele', dirPath: '/in', lang: 'auto',
+    listAudio: () => ['/in/a.m4a', '/in/b.m4a'],
+    runOne: async (audioPath) => {
+      // delegate to runTranscribe with the same fake deps
+      return runTranscribe({
+        rootDir: '/repo', slug: 'aidele', audioPath, lang: 'auto',
+        ...deps, write: () => {}, writeErr: () => {},
+      });
+    },
+    writeFile: (p, c) => { writes[p] = c; },
+    write: (s) => { out += s; }, writeErr: () => {},
+  });
+  assert.equal(code, 0);
+  assert.equal(commits.length, 2);
+  assert.match(out, /2 transcribed/);
+});
+
+test('transcribe --dir: failures journaled, command exits 5', async () => {
+  const { reads, deps } = fakeIo();
+  reads['/in/a.m4a'] = new Uint8Array([1]);
+  // /in/b.m4a missing on purpose
+  const writes: Record<string, string | Uint8Array> = {};
+  let out = '';
+  const code = await runTranscribeDir({
+    rootDir: '/repo', slug: 'aidele', dirPath: '/in', lang: 'auto',
+    listAudio: () => ['/in/a.m4a', '/in/b.m4a'],
+    runOne: async (audioPath) => runTranscribe({
+      rootDir: '/repo', slug: 'aidele', audioPath, lang: 'auto',
+      ...deps, write: () => {}, writeErr: () => {},
+    }),
+    writeFile: (p, c) => { writes[p] = c; },
+    write: (s) => { out += s; }, writeErr: () => {},
+  });
+  assert.equal(code, 5);
+  const failedPath = Object.keys(writes).find(p => p.includes('transcribe-runs') && p.endsWith('-failed.txt'));
+  assert(failedPath, 'expected -failed.txt to be written');
+  assert.match(writes[failedPath!] as string, /b\.m4a/);
 });
