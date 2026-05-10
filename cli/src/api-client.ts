@@ -5,6 +5,7 @@ import type { ReciteEntry } from '@core/gedcom/types.ts';
 import type { SearchResult } from '@core/search/types.ts';
 import type { RedlinkEntry } from '@core/pages/redlinks.ts';
 import { parseResearchNotes, type Note } from '@core/pages/research-notes.ts';
+import { probeServers, commonServerCandidates } from './probe.js';
 
 export type { Page, PageMeta, MigrateReport, SyncResult, ReciteEntry, SearchResult, RedlinkEntry };
 
@@ -22,6 +23,13 @@ export class ApiError extends Error {
 export class NotFound extends ApiError {}
 export class BadRequest extends ApiError {}
 export class ServerError extends ApiError {}
+export class ConnectionError extends ApiError {
+  constructor(message: string) {
+    // status 0: not an HTTP error, but reuses the ApiError surface so the
+    // catch block in index.ts formats it the same way.
+    super(0, message);
+  }
+}
 
 export interface MigrateOptions {
   page?: string;
@@ -29,8 +37,19 @@ export interface MigrateOptions {
   force?: boolean;
 }
 
+export interface ApiClientOptions {
+  /**
+   * Extra URLs to include when probing on connection failure. Tests use this
+   * to inject a known-alive port without touching real network defaults.
+   */
+  extraCandidates?: string[];
+}
+
 export class ApiClient {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly options: ApiClientOptions = {},
+  ) {}
 
   async healthz(): Promise<{ status: string; started: string }> {
     return this.json('GET', '/api/healthz');
@@ -138,11 +157,18 @@ export class ApiClient {
   }
 
   private async json<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+    } catch (err) {
+      // Network-level failure (ECONNREFUSED, DNS, etc.). Probe well-known ports
+      // for an alive wai server and surface the suggestion in the error message.
+      throw await this.buildConnectionError(err as Error);
+    }
     const text = await res.text();
     let parsed: unknown = undefined;
     try { parsed = text ? JSON.parse(text) : undefined; } catch { /* keep as text */ }
@@ -155,5 +181,28 @@ export class ApiClient {
       throw new ServerError(res.status, detail);
     }
     return parsed as T;
+  }
+
+  private async buildConnectionError(cause: Error): Promise<ConnectionError> {
+    const candidates = commonServerCandidates(this.baseUrl);
+    const extras = (this.options.extraCandidates ?? []).filter(u => !candidates.includes(u));
+    // extras first so callers (especially tests) can inject known-alive URLs that
+    // take precedence over the well-known default ports.
+    const all = [...extras, ...candidates];
+    const results = await probeServers(all);
+    const alive = results.filter(r => r.ok && r.url !== this.baseUrl.replace(/\/$/, ''));
+    if (alive.length > 0) {
+      const url = alive[0]!.url;
+      return new ConnectionError(
+        `server at ${this.baseUrl} is not responding (${cause.message}). ` +
+        `Found a wai server at ${url} — run \`wai config server ${url}\` ` +
+        `or \`wai doctor --fix\` to switch.`,
+      );
+    }
+    return new ConnectionError(
+      `server at ${this.baseUrl} is not responding (${cause.message}). ` +
+      `Is the frontend running? (cd frontend && npm run dev). ` +
+      `Run \`wai doctor\` for diagnostics.`,
+    );
   }
 }

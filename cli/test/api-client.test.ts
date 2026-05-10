@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { ApiClient, NotFound, BadRequest } from '../src/api-client.js';
+import { ApiClient, NotFound, BadRequest, ConnectionError } from '../src/api-client.js';
 
 function withServer<T>(handler: (req: any, res: any) => void, fn: (base: string) => Promise<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -129,4 +129,63 @@ test('ApiClient.migrate POSTs to /api/migrate with the body', async () => {
       assert.deepEqual(JSON.parse(receivedBody), { dryRun: true });
     },
   );
+});
+
+test('ApiClient: connection refused throws ConnectionError with hint', async () => {
+  // Get a free port, then close so nothing listens.
+  const dead = await new Promise<string>((resolve) => {
+    const s = createServer(() => {});
+    s.listen(0, '127.0.0.1', () => {
+      const addr = s.address();
+      const port = typeof addr === 'object' && addr ? addr.port : 0;
+      s.close(() => resolve(`http://127.0.0.1:${port}`));
+    });
+  });
+  const c = new ApiClient(dead);
+  await assert.rejects(
+    () => c.healthz(),
+    (err: Error) => {
+      assert.ok(err instanceof ConnectionError, `expected ConnectionError, got ${err.constructor.name}`);
+      assert.match(err.message, new RegExp(dead));
+      assert.match(err.message, /not responding|unreachable/i);
+      return true;
+    },
+  );
+});
+
+test('ApiClient: connection error suggests an alive candidate when one is found', async () => {
+  // Stand up an "alive" server on one port, point the client at a different (closed) port.
+  const alive = await new Promise<{ url: string; close: () => void }>((resolve) => {
+    const s = createServer((req, res) => {
+      if (req.url === '/api/healthz') {
+        res.setHeader('content-type', 'application/json');
+        res.end('{"status":"ok","started":"x"}');
+      } else { res.statusCode = 404; res.end(); }
+    });
+    s.listen(0, '127.0.0.1', () => {
+      const addr = s.address();
+      const port = typeof addr === 'object' && addr ? addr.port : 0;
+      resolve({ url: `http://127.0.0.1:${port}`, close: () => s.close() });
+    });
+  });
+  const dead = await new Promise<string>((resolve) => {
+    const s = createServer(() => {});
+    s.listen(0, '127.0.0.1', () => {
+      const addr = s.address();
+      const port = typeof addr === 'object' && addr ? addr.port : 0;
+      s.close(() => resolve(`http://127.0.0.1:${port}`));
+    });
+  });
+  try {
+    const c = new ApiClient(dead, { extraCandidates: [alive.url] });
+    await assert.rejects(
+      () => c.healthz(),
+      (err: Error) => {
+        assert.ok(err instanceof ConnectionError);
+        assert.match(err.message, new RegExp(alive.url));
+        assert.match(err.message, /wai config server/);
+        return true;
+      },
+    );
+  } finally { alive.close(); }
 });
