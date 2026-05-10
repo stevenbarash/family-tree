@@ -24,6 +24,8 @@ import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
+import { runDoctor } from './commands/doctor.js';
+import { probeServers, commonServerCandidates } from './probe.js';
 import { loadRepoState } from '@core/checks/load.ts';
 import { loadPageCorrectionsWithSource } from '@core/corrections/load.ts';
 import { detectFormatDrift } from '@core/checks/format-drift.ts';
@@ -96,6 +98,12 @@ Migrations:
                               Apply pending schema migrations to all pages.
                               Use after pulling a code update that bumps
                               CURRENT_SCHEMA_VERSION.
+
+Diagnostics:
+  doctor                      Diagnose dev-env: server reachability, workspace,
+                                versions. Exit 1 on problems.
+        [--fix]                 Auto-correct safe issues (e.g. update server URL
+                                to a discovered alive port)
 
 Server:
   healthz                     Ping the API
@@ -386,6 +394,30 @@ async function main(): Promise<number> {
           dryRun: !!args.flags['dry-run'],
           force: !!args.flags.force,
           json: !!args.flags.json,
+        });
+        return code;
+      }
+      case 'doctor': {
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const configuredUrl = getServer();
+        const code = await runDoctor({
+          configuredUrl,
+          candidates: commonServerCandidates(configuredUrl),
+          probeServers,
+          fetchVersion: async (url) => {
+            const res = await fetch(`${url}/api/version`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json() as Promise<{ apiVersion: string; version: string; startedAt: string }>;
+          },
+          cliVersion: VERSION,
+          workspaceRoot: root,
+          fs: { exists: (p) => existsSync(p) },
+          fix: !!args.flags.fix,
+          setServer,
+          write,
+          writeErr: (s) => process.stderr.write(s),
         });
         return code;
       }
