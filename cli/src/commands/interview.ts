@@ -75,6 +75,7 @@ function renderQAs(slug: string, questions: Question[]): string {
 }
 
 export function parseAnswers(text: string): { question: string; answer: string }[] {
+  text = text.replace(/\r\n/g, '\n'); // normalize Windows line endings
   const out: { question: string; answer: string }[] = [];
   // Match: ### <question>\n[optional rationale line\n]\n<answer>\n<content>\n</answer>
   const re = /^### (.+?)\n(?:\*Why[^\n]*\*\n)?\n<answer>\n([\s\S]*?)\n<\/answer>/gm;

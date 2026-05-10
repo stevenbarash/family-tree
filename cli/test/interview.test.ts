@@ -77,3 +77,20 @@ test('interview: returns exit 6 when harness fails', async () => {
   });
   assert.equal(code, 6);
 });
+
+test('interview: parses answers with CRLF line endings', async () => {
+  const calls: Calls = { notes: [] };
+  const harness = fakeHarness([{ text: 'Q?' }]);
+  const code = await runInterview({
+    slug: 'aidele', maxQuestions: 8, harness,
+    editInEditor: async (initial) => {
+      // Simulate Windows editor returning CRLF line endings.
+      const crlf = initial.replace(/\n/g, '\r\n').replace(/<answer>\r\n\r\n<\/answer>/, '<answer>\r\nan answer with crlf\r\n</answer>');
+      return crlf;
+    },
+    ...baseDeps(calls), write: () => {}, writeErr: () => {},
+  });
+  assert.equal(code, 0);
+  assert.equal(calls.notes.length, 1);
+  assert.match(calls.notes[0]!.text, /an answer with crlf/);
+});
