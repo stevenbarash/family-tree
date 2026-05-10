@@ -118,6 +118,19 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Fixed
 
+- **`wai sync-gedcom --force` no longer 500s when the deriver output
+  is byte-identical.** After a deriver-code update that doesn't move
+  the bits (or a re-run after a successful sync), `git commit` was
+  failing with "no changes added to commit" and the route returned
+  `HTTP 500: sync-failed`. Sync now detects the empty-staging case
+  before invoking commit and returns `{ kind: 'no-op', reason:
+  'no-output-changes' }`. (`core/src/gedcom/sync.ts`.)
+- **CLI surfaces server-side `detail` field in error messages.** The
+  frontend's `errorResponse` has been emitting useful `detail` strings
+  for a while; the CLI was dropping them, so `wai sync-gedcom` printed
+  `HTTP 500: sync-failed` instead of `HTTP 500: sync-failed: nothing
+  to commit on working tree`. Same papercut applied to every API
+  command. (`cli/src/api-client.ts`.)
 - **Note edit-history:** byline spacing and dead empty-events branch
   in note history reconstruction (`1e1ac7b`).
 
