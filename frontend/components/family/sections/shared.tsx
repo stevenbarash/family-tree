@@ -121,7 +121,7 @@ export function GenerationHeader({
       <h4 className="flex-1 truncate font-display text-[0.78rem] uppercase tracking-[0.16em] text-muted-foreground">
         {heading}
       </h4>
-      {count !== undefined && count !== null ? (
+      {count != null ? (
         <span className="font-mono text-[0.62rem] tabular-nums text-muted-foreground/70">
           {count}
         </span>

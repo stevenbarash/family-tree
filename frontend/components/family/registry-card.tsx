@@ -11,7 +11,7 @@ interface RegistryCardProps {
 export function RegistryCard({ className, style, children }: RegistryCardProps) {
   return (
     <Card
-      className={cn('gap-0 overflow-hidden p-0 py-0 shadow-none ring-foreground/12', className)}
+      className={cn('gap-0 overflow-hidden p-0 shadow-none ring-foreground/12', className)}
       style={style}
     >
       {children}
