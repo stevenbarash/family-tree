@@ -32,6 +32,7 @@ import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
 import { runInterview } from './commands/interview.js';
 import { runAuthor, runAuthorCohort } from './commands/author.js';
 import { runRevert, type RevertMode } from './commands/revert.js';
+import { runHistory } from './commands/history.js';
 import { parseSelector, resolveCohort } from './commands/author/cohort.js';
 import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
@@ -133,6 +134,11 @@ Quality:
   revert --last                Undo most recent pipeline activity, any slug
   revert <slug> --list         Show runs for slug with summaries
   revert <slug> --dry-run      Show what would be reverted; no commits
+  history <slug>               Show pipeline-relevant commits for a page
+                                 --json (machine-readable output)
+                                 --no-pipeline (exclude pipeline commits)
+                                 --pipeline-only (default)
+  history --recent [N]         Last N pipeline commits across all slugs (default 50)
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -768,6 +774,33 @@ async function main(): Promise<number> {
           writeErr: (s) => process.stderr.write(s),
         });
         return revertCode;
+      }
+      case 'history': {
+        const historyRootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+
+        const slug = args.positional[0];
+        const recent = args.flags.recent === true || typeof args.flags.recent === 'string';
+        const format = args.flags.json === true ? 'json' : 'table';
+        const filter = args.flags['no-pipeline'] === true ? 'no-pipeline' : 'pipeline-only';
+        const recentLimit = recent
+          ? (typeof args.flags.recent === 'string' ? parseInt(args.flags.recent, 10) : 50)
+          : undefined;
+
+        const historyCode = await runHistory({
+          rootDir: historyRootDir,
+          slug,
+          format,
+          filter,
+          recent: recentLimit,
+          gitLog: (root, gitArgs) => execSync(
+            `git -C ${shellEscape(root)} log ${gitArgs.map(shellEscape).join(' ')}`,
+          ).toString(),
+          write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return historyCode;
       }
       case 'export': {
         const root = process.env.WHOAMI_ROOT
