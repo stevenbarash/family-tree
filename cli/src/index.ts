@@ -41,6 +41,7 @@ import { detectDataDrift } from '@core/checks/data-drift.ts';
 import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
 import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import { detectPlacesDrift } from '@core/checks/places-drift.ts';
+import { detectConsistencyDrift } from '@core/checks/consistency-drift.ts';
 import type { FindingCategory } from '@core/checks/types.ts';
 
 function shellEscape(s: string): string { return `'${s.replace(/'/g, "'\\''")}'`; }
@@ -86,11 +87,13 @@ GEDCOM:
   recite --apply              Advance pointers in pages
 
 Quality:
-  check                       Run all drift detectors. Exit 1 if findings.
-        [--fix]                 Apply safe auto-fixes (format, schema)
-        [--only A,B]            Only run detectors for categories (format,data,schema,coverage)
-        [--fail-on A,B]         Exit 1 only on findings in these categories
-        [--json]                Machine-readable output
+  check                        Run drift detectors against $WHOAMI_ROOT
+        [--fix]                  Apply safe auto-fixes (format, schema)
+        [--only A,B]             Only run detectors for categories
+        [--fail-on A,B]          Exit 1 only on findings in these categories
+        [--json]                 Machine-readable output
+                                 Categories: format, data, schema, coverage, consistency
+                                 Default set: format, data, schema, coverage (NOT consistency)
   promote-corrections         Promote a frontmatter correction to the GEDCOM.
         --record I...           Record id whose corrections to promote
         [--apply]               Write changes (default: dry-run)
@@ -336,11 +339,13 @@ async function main(): Promise<number> {
           if (typeof v !== 'string') return null;
           return v.split(',').map(s => s.trim()) as FindingCategory[];
         };
+        const onlyList = parseList(args.flags.only);
+        const includeConsistency = onlyList?.includes('consistency') ?? false;
         const code = await runCheck({
           rootDir: root,
           json: !!args.flags.json,
           fix: !!args.flags.fix,
-          only: parseList(args.flags.only),
+          only: onlyList,
           failOn: parseList(args.flags['fail-on']),
           loadState: loadRepoState,
           detectors: [
@@ -349,6 +354,7 @@ async function main(): Promise<number> {
             detectSchemaDrift,
             detectCoverageDrift,
             detectPlacesDrift,
+            ...(includeConsistency ? [detectConsistencyDrift] : []),
           ],
           write,
           writeErr: (s) => process.stderr.write(s),

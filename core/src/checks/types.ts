@@ -22,7 +22,7 @@ export interface RepoState {
   placesCoords: ReadonlyArray<PlaceCoord>;
 }
 
-export type FindingCategory = 'format' | 'data' | 'schema' | 'coverage';
+export type FindingCategory = 'format' | 'data' | 'schema' | 'coverage' | 'consistency';
 export type Severity = 'error' | 'warn' | 'info';
 
 export interface Fix {

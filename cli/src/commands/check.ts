@@ -22,6 +22,11 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
     findings = findings.filter(f => keep.has(f.category));
   }
 
+  if (opts.fix && opts.only?.includes('consistency')) {
+    opts.writeErr(`check --fix --only consistency: consistency findings are never auto-fixed; drop --fix or change --only\n`);
+    return 2;
+  }
+
   if (opts.fix) {
     // Group fixes by file. We patch by line number, and fixes don't add or
     // remove lines, so simple index assignment is safe.
@@ -81,7 +86,7 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
     arr.push(f);
     byCat.set(f.category, arr);
   }
-  for (const cat of (['format', 'data', 'schema', 'coverage'] as const)) {
+  for (const cat of (['format', 'data', 'schema', 'coverage', 'consistency'] as const)) {
     const arr = byCat.get(cat) ?? [];
     if (arr.length === 0) continue;
     const fixable = arr.filter(f => f.fix).length;
