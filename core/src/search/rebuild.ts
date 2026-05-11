@@ -17,6 +17,7 @@ export async function rebuildSearchIndex(idx: SearchIndex, cfg: RebuildConfig): 
   for (const entry of readdirSync(cfg.pagesDir)) {
     if (entry.startsWith('_')) continue;
     if (!entry.endsWith('.md')) continue;
+    if (entry.endsWith('.narrative.md')) continue; // authoring input only
     const slug = basename(entry, '.md');
     const raw = readFileSync(join(cfg.pagesDir, entry), 'utf-8');
     let page;

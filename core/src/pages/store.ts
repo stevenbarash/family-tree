@@ -105,6 +105,7 @@ export function createPageStore(cfg: PageStoreConfig): PageStore {
       for (const entry of readdirSync(cfg.pagesDir, { withFileTypes: true })) {
         if (entry.isDirectory()) continue;
         if (!entry.name.endsWith('.md')) continue;
+        if (entry.name.endsWith('.narrative.md')) continue; // authoring input only
         const isTalk = entry.name.endsWith('.talk.md');
         const slug = isTalk
           ? basename(entry.name, '.talk.md') + '.talk'
