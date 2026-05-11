@@ -23,6 +23,48 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`runDetectors` helper** *(2026-05-11)* extracted from
+  `wai check` into `cli/src/commands/check/run-detectors.ts`. Runs
+  the requested detectors against a `RepoState`, optionally applies
+  format/schema fixes and reloads, returns structured
+  `{ findings, fixedCount }`. Shared between the standalone `wai
+  check` command and the author orchestrator's Phase 6 verify
+  wiring. The author's verify phase now actually surfaces consistency
+  findings against the live data repo instead of a no-op stub.
+
+### Fixed
+
+- **Pipeline-run trailers actually land in commit messages** *(2026-05-11)*.
+  Phase commits go through the frontend API (`client.write`,
+  `client.note`), which commits server-side using the `summary`
+  argument as the commit message. The orchestrator was producing
+  trailer commits via a separate `maybeCommit` call that always
+  found a clean working tree (API already committed) and silently
+  did nothing — so trailers never landed and `wai history`/`wai
+  revert`'s `--grep` filters found nothing. The fix bakes
+  `pipeline-run`/`phase`/`slug` trailers into the API's `summary`
+  argument for phases 3/4/5/7. Phase 2 (research) writes N notes
+  via `client.note` and then emits a single `git commit
+  --allow-empty` marker commit carrying the trailer. Phase 6
+  (verify) writes directly to disk via `runDetectors` and commits
+  with explicit paths via a focused `commitDirectChanges` helper.
+- **`wai author` Phase 6 verify no longer a no-op** *(2026-05-11)*.
+  The verify phase is now wired to the real detector pipeline via
+  the extracted `runDetectors` helper. Surfaces the 39 real
+  consistency findings (and counting) the existing data already has.
+
+### Changed
+
+- **Web research is performed by the harness, not the orchestrator**
+  *(2026-05-11)*. Phase 2 used to take `webSearch`/`webFetch`
+  callbacks that defaulted to no-ops. The `research-questions`
+  prompt template now instructs the harness to use its own
+  `WebSearch`/`WebFetch` tools and return structured `claims` with
+  source URLs. `webSearch`/`webFetch` fields removed from
+  `AuthorOptions`. The reliable-source allowlist (Yad Vashem,
+  JewishGen, archive.org, etc.) moved from JS code into the prompt
+  where the model evaluates it.
+
 - **`wai author --cohort`** *(2026-05-11)*. Batch mode for the
   article pipeline. v1 selectors: `missing` (all derived records
   without a page) and `file:<path>` (one slug per line; `#` inline
@@ -50,14 +92,17 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 - **`wai author <slug>`** *(2026-05-11)*. Single-slug article-authoring
   orchestrator. Drives seven phases (gather → research → outline →
   draft person → draft episodes → verify → log) via the harness
-  adapter, with one commit per phase to `$WHOAMI_ROOT`. Flags:
-  `--no-web`, `--skip-episodes`, `--resume`, `--dry-run`, `--branch`.
-  Pre-flight checks reject non-git repos (exit 8), uncommitted
-  changes (7), unreachable frontend (14), unsupported
-  `WHOAMI_HARNESS` (11). Refuses to fabricate when no usable evidence
-  exists (exit 4). v1 ships with `webSearch`/`webFetch` defaulting
-  to no-ops; the runCheck wiring inside the verify phase is a stub
-  pending a callable TypeScript surface for `wai check`.
+  adapter, with the pipeline-run trailer baked into each phase's
+  commit message in `$WHOAMI_ROOT`. Flags: `--no-web`,
+  `--skip-episodes`, `--resume`, `--dry-run`, `--branch`. Pre-flight
+  checks reject non-git repos (exit 8), uncommitted changes (7),
+  unreachable frontend (14), unsupported `WHOAMI_HARNESS` (11).
+  Refuses to fabricate when no usable evidence exists (exit 4). Web
+  research is performed by the harness using its own WebSearch/
+  WebFetch tools; the orchestrator no longer takes injected
+  `webSearch`/`webFetch` deps. Phase 6 (verify) runs the real
+  `runDetectors` against the data repo and exits 5 when consistency
+  findings remain after format/schema auto-fix.
 - **`wai check --include consistency`** *(2026-05-11)*. Fifth detector
   category. v1 covers orphaned footnotes (referenced not defined or
   vice versa), bibliography↔inline cite-vault mismatches, and
