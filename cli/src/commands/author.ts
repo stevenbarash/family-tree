@@ -127,12 +127,19 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
     });
   }
 
-  // Helper: commit if git shows uncommitted changes.
-  function maybeCommit(subject: string, trailer: string): void {
-    if (opts.gitHasUncommittedChanges()) {
-      opts.gitAdd([opts.rootDir]);
-      opts.gitCommit(subject, trailer);
+  // Helper: build a commit summary that embeds the trailer in the body.
+  // The API server uses the summary as the git commit message, so the trailer
+  // ends up in the commit body where `git log --grep` can find it.
+  function commitSummary(subject: string, trailer: string): string {
+    return `${subject}\n\n${trailer}`;
+  }
+
+  // Helper: commit direct (non-API) changes — used only by phase 6.
+  function commitDirectChanges(paths: string[], subject: string, trailer: string): void {
+    if (paths.length > 0) {
+      opts.gitAdd(paths);
     }
+    opts.gitCommit(subject, trailer);
   }
 
   const gatherDeps = {
@@ -205,7 +212,10 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
         ...drawer.inputs,
         ...(result.sourcesQueried > 0 ? (['web'] as const) : []),
       ];
-      maybeCommit(
+      // Marker commit so `wai history` / `wai revert` can find the run.
+      // Uses --allow-empty because client.note() already committed each note via
+      // the API server; the working tree is clean when we arrive here.
+      opts.gitCommit(
         `research(${opts.slug}): ${result.sourcesQueried} sources, ${result.candidateClaims.length} candidate claims drafted`,
         makeTrailer(2, inputsWithWeb, sourcesCount),
       );
@@ -230,13 +240,16 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
     const newTalkBody = existingTalkBody
       ? `${existingTalkBody.trimEnd()}\n\n${outlineText}`
       : outlineText;
-    await opts.client.write(talkSlug, newTalkBody, `outline plan for ${opts.slug}`);
+    await opts.client.write(
+      talkSlug,
+      newTalkBody,
+      commitSummary(
+        `outline(${opts.slug}): person + ${plan.episodes.length} episode(s)`,
+        makeTrailer(3, drawer.inputs),
+      ),
+    );
 
     completedPhases++;
-    maybeCommit(
-      `outline(${opts.slug}): person + ${plan.episodes.length} episode(s)`,
-      makeTrailer(3, drawer.inputs),
-    );
   }
 
   // Ensure plan is populated even when resuming past phase 3.
@@ -250,13 +263,13 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
     const personResult = await draftPersonFn(plan, drawer, opts.harness);
 
     // write() is idempotent — creates the page if absent, overwrites if present.
-    await opts.client.write(opts.slug, personResult.body, `draft: person page for ${opts.slug}`);
+    await opts.client.write(
+      opts.slug,
+      personResult.body,
+      commitSummary(`draft(${opts.slug}): person page`, makeTrailer(4, drawer.inputs)),
+    );
 
     completedPhases++;
-    maybeCommit(
-      `draft(${opts.slug}): person page`,
-      makeTrailer(4, drawer.inputs),
-    );
   }
 
   // ── Phase 5: draft episodes ──────────────────────────────────────────────
@@ -266,13 +279,16 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       const epResult = await draftEpisodeFn(episode, drawer, plan, opts.harness);
 
       // write() is idempotent — creates or overwrites.
-      await opts.client.write(episode.slug, epResult.body, `draft: episode ${episode.slug}`);
+      await opts.client.write(
+        episode.slug,
+        epResult.body,
+        commitSummary(
+          `draft(${opts.slug}): episode ${episode.slug}`,
+          makeTrailer(5, drawer.inputs),
+        ),
+      );
 
       episodeSlugs.push(episode.slug);
-      maybeCommit(
-        `draft(${opts.slug}): episode ${episode.slug}`,
-        makeTrailer(5, drawer.inputs),
-      );
     }
     completedPhases++;
   } else if (startPhase <= 5 && opts.skipEpisodes) {
@@ -296,7 +312,11 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
 
     completedPhases++;
     if (verifyResult.fixesApplied > 0) {
-      maybeCommit(
+      // Phase 6 writes directly to disk (not through the API server), so we
+      // must stage and commit manually. The verify result reports how many
+      // fixes were applied; stage the root dir and commit with the trailer.
+      commitDirectChanges(
+        [opts.rootDir],
         `verify(${opts.slug}): ${verifyResult.fixesApplied} fixes applied`,
         makeTrailer(6, drawer.inputs),
       );
@@ -321,13 +341,16 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       // Talk page absent — start fresh.
     }
     const newTalkBody = talkBody ? `${talkBody.trimEnd()}\n\n${logText}` : logText;
-    await opts.client.write(talkSlug, newTalkBody, `log: pipeline run ${runId}`);
+    await opts.client.write(
+      talkSlug,
+      newTalkBody,
+      commitSummary(
+        `log(${opts.slug}): pipeline complete (run ${runId})`,
+        makeTrailer(7, drawer.inputs),
+      ),
+    );
 
     completedPhases++;
-    maybeCommit(
-      `log(${opts.slug}): pipeline complete (run ${runId})`,
-      makeTrailer(7, drawer.inputs),
-    );
   }
 
   return 0;

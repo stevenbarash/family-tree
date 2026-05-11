@@ -629,7 +629,7 @@ async function main(): Promise<number> {
           exists: existsSync,
           gitLog: (root: string, grep: string) => execSync(`git -C ${shellEscape(root)} log --all --format='%B%n' --grep ${shellEscape(grep)}`).toString(),
           gitAdd: (paths: string[]) => { execSync(`git -C ${shellEscape(authorRootDir)} add ${paths.map(shellEscape).join(' ')}`); },
-          gitCommit: (subject: string, body: string) => { execSync(`git -C ${shellEscape(authorRootDir)} commit -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
+          gitCommit: (subject: string, body: string) => { execSync(`git -C ${shellEscape(authorRootDir)} commit --allow-empty -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
           gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(authorRootDir)} status --porcelain`).toString().trim().length > 0,
           gitIsRepo: () => existsSync(join(authorRootDir, '.git')),
           healthz: async () => { try { await authorClient.healthz(); return true; } catch { return false; } },

@@ -231,44 +231,83 @@ test('author: exits 5 when verify is blocked', async () => {
   assert.match(err, /verify blocked/);
 });
 
-test('author: produces commit for phases with changes', async () => {
-  const commits: string[] = [];
-  // Pre-flight calls gitHasUncommittedChanges once (must return false to pass).
-  // After that, maybeCommit calls it — return true so commits are triggered.
-  let callCount = 0;
-  const code = await runAuthor(fakeOpts({
-    gitHasUncommittedChanges: () => { callCount++; return callCount > 1; },
-    gitCommit: (subject) => { commits.push(subject); },
-  }));
+test('author: client.write summaries contain pipeline trailer for phases 3, 4, 7', async () => {
+  // Phases 3 (outline), 4 (draft person), and 7 (log) commit via client.write.
+  // The summary passed to client.write must embed the pipeline trailer so git
+  // log --grep can find the commit.
+  const writeArgs: Array<{ slug: string; summary: string }> = [];
+  const client = fakeClient({
+    write: async (slug, _body, summary) => {
+      writeArgs.push({ slug, summary: summary ?? '' });
+      return { ok: true };
+    },
+  });
+  const code = await runAuthor(fakeOpts({ client }));
   assert.equal(code, 0);
-  // At least one commit should have been produced
-  assert.ok(commits.length > 0, 'expected at least one commit');
+
+  // Phase 3: outline commit to talk page
+  const outlineWrite = writeArgs.find(w => w.slug === 'aidele.talk' && w.summary.startsWith('outline(aidele):'));
+  assert.ok(outlineWrite !== undefined, `expected outline write, got: ${JSON.stringify(writeArgs.map(w => w.slug + '|' + w.summary.slice(0, 60)))}`);
+  assert.match(outlineWrite.summary, /pipeline-run:/, 'outline summary must contain pipeline-run trailer');
+  assert.match(outlineWrite.summary, /phase: 3/, 'outline summary must contain phase: 3');
+  assert.match(outlineWrite.summary, /slug: aidele/, 'outline summary must contain slug: aidele');
+
+  // Phase 4: draft-person commit
+  const draftPersonWrite = writeArgs.find(w => w.slug === 'aidele' && w.summary.startsWith('draft(aidele): person page'));
+  assert.ok(draftPersonWrite !== undefined, `expected draft-person write, got: ${JSON.stringify(writeArgs.map(w => w.slug + '|' + w.summary.slice(0, 60)))}`);
+  assert.match(draftPersonWrite.summary, /pipeline-run:/, 'draft-person summary must contain pipeline-run trailer');
+  assert.match(draftPersonWrite.summary, /phase: 4/, 'draft-person summary must contain phase: 4');
+
+  // Phase 7: log commit to talk page
+  const logWrite = writeArgs.find(w => w.slug === 'aidele.talk' && w.summary.startsWith('log(aidele): pipeline complete'));
+  assert.ok(logWrite !== undefined, `expected log write, got: ${JSON.stringify(writeArgs.map(w => w.slug + '|' + w.summary.slice(0, 60)))}`);
+  assert.match(logWrite.summary, /pipeline-run:/, 'log summary must contain pipeline-run trailer');
+  assert.match(logWrite.summary, /phase: 7/, 'log summary must contain phase: 7');
 });
 
-test('author: commit for draft person page contains slug', async () => {
-  const commits: string[] = [];
-  // First call is pre-flight (return false); subsequent calls are in maybeCommit (return true).
-  let callCount = 0;
+test('author: draft episode summaries contain pipeline trailer (phase 5)', async () => {
+  const writeArgs: Array<{ slug: string; summary: string }> = [];
+  const client = fakeClient({
+    write: async (slug, _body, summary) => {
+      writeArgs.push({ slug, summary: summary ?? '' });
+      return { ok: true };
+    },
+  });
   const code = await runAuthor(fakeOpts({
-    gitHasUncommittedChanges: () => { callCount++; return callCount > 1; },
-    gitCommit: (subject) => { commits.push(subject); },
+    client,
+    _outline: async () => planWithEpisodes,
   }));
   assert.equal(code, 0);
-  const personCommit = commits.find(s => s.includes('draft(aidele): person page'));
-  assert.ok(personCommit !== undefined, `expected person page commit, got: ${JSON.stringify(commits)}`);
+
+  for (const ep of ['aidele-ep1', 'aidele-ep2']) {
+    const epWrite = writeArgs.find(w => w.slug === ep);
+    assert.ok(epWrite !== undefined, `expected write for episode ${ep}`);
+    assert.match(epWrite.summary, /pipeline-run:/, `episode ${ep} summary must contain pipeline-run trailer`);
+    assert.match(epWrite.summary, /phase: 5/, `episode ${ep} summary must contain phase: 5`);
+  }
 });
 
-test('author: commit for log phase contains run id pattern', async () => {
-  const commits: string[] = [];
-  // First call is pre-flight (return false); subsequent calls are in maybeCommit (return true).
-  let callCount = 0;
+test('author: phase 2 fires gitCommit with trailer (marker commit)', async () => {
+  const commits: Array<{ subject: string; body: string }> = [];
+  const fakeResearchResult = {
+    candidateClaims: [{ text: 'Born 1890', url: 'https://example.com', gap: 'birthdate' }],
+    unreliableDropped: 0,
+    sourcesQueried: 1,
+    refuseToFabricate: false,
+  };
   const code = await runAuthor(fakeOpts({
-    gitHasUncommittedChanges: () => { callCount++; return callCount > 1; },
-    gitCommit: (subject) => { commits.push(subject); },
+    noWeb: false,
+    _gather: async () => ({ ...emptyDrawer, derived: { record: 'I1', raw: 'name: Aidele' }, inputs: ['derived'] }),
+    _research: async () => fakeResearchResult,
+    gitCommit: (subject, body) => { commits.push({ subject, body }); },
   }));
   assert.equal(code, 0);
-  const logCommit = commits.find(s => s.startsWith('log(aidele): pipeline complete'));
-  assert.ok(logCommit !== undefined, `expected log commit, got: ${JSON.stringify(commits)}`);
+
+  const researchCommit = commits.find(c => c.subject.startsWith('research(aidele):'));
+  assert.ok(researchCommit !== undefined, `expected research marker commit, got: ${JSON.stringify(commits.map(c => c.subject))}`);
+  assert.match(researchCommit.body, /pipeline-run:/, 'research marker commit body must contain pipeline-run trailer');
+  assert.match(researchCommit.body, /phase: 2/, 'research marker commit body must contain phase: 2');
+  assert.match(researchCommit.body, /slug: aidele/, 'research marker commit body must contain slug: aidele');
 });
 
 test('author: returns 0 on full happy-path run', async () => {
