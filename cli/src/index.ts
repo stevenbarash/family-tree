@@ -30,6 +30,7 @@ import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
 import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
 import { runInterview } from './commands/interview.js';
+import { runAuthor } from './commands/author.js';
 import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
 import { probeServers, commonServerCandidates } from './probe.js';
@@ -109,6 +110,12 @@ Quality:
   interview <slug>             Generate Q&A questions via the harness;
                                  captures answers as kind=interview notes
                                  --questions N (default: 8)
+  author <slug>                Generate the article for <slug>
+                                 --no-web (skip web research)
+                                 --skip-episodes (only the person hub)
+                                 --resume (continue from last commit)
+                                 --dry-run (print plan; no commits)
+                                 --branch <name> (commit on a new branch)
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -560,6 +567,59 @@ async function main(): Promise<number> {
           writeErr: (s) => process.stderr.write(s),
         });
         return interviewCode;
+      }
+      case 'author': {
+        const slug = args.positional[0];
+        if (!slug) {
+          process.stderr.write('author: slug required\n');
+          return 2;
+        }
+        const resume = !!args.flags.resume;
+        const noWeb = !!args.flags['no-web'];
+        const skipEpisodes = !!args.flags['skip-episodes'];
+        const dryRun = !!args.flags['dry-run'];
+        const branch = typeof args.flags.branch === 'string' ? args.flags.branch : undefined;
+
+        let authorHarness;
+        try {
+          authorHarness = selectHarness(process.env.WHOAMI_HARNESS as 'claude-code' | 'codex' | 'opencode' | undefined);
+        } catch (e) {
+          if (e instanceof HarnessUnsupportedError) {
+            process.stderr.write(`author: ${e.message}\n`);
+            return 11;
+          }
+          throw e;
+        }
+
+        const authorRootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const authorClient = new ApiClient(getServer());
+
+        const authorCode = await runAuthor({
+          rootDir: authorRootDir,
+          slug,
+          resume,
+          noWeb,
+          skipEpisodes,
+          dryRun,
+          branch,
+          harness: authorHarness,
+          client: authorClient,
+          readFile: (p) => existsSync(p) ? readFileSync(p, 'utf8') : null,
+          writeFile: (p, c) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
+          exists: existsSync,
+          gitLog: (root, grep) => execSync(`git -C ${shellEscape(root)} log --all --format='%B%n' --grep ${shellEscape(grep)}`).toString(),
+          gitAdd: (paths) => { execSync(`git -C ${shellEscape(authorRootDir)} add ${paths.map(shellEscape).join(' ')}`); },
+          gitCommit: (subject, body) => { execSync(`git -C ${shellEscape(authorRootDir)} commit -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
+          gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(authorRootDir)} status --porcelain`).toString().trim().length > 0,
+          gitIsRepo: () => existsSync(join(authorRootDir, '.git')),
+          healthz: async () => { try { await authorClient.healthz(); return true; } catch { return false; } },
+          now: () => new Date().toISOString().slice(0, 10),
+          write: (s) => process.stdout.write(s),
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return authorCode;
       }
       case 'export': {
         const root = process.env.WHOAMI_ROOT
