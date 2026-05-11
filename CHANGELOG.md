@@ -23,6 +23,30 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai author --cohort`** *(2026-05-11)*. Batch mode for the
+  article pipeline. v1 selectors: `missing` (all derived records
+  without a page) and `file:<path>` (one slug per line; `#` inline
+  comments dropped). Writes per-run journal at
+  `data/author-runs/<run-id>.jsonl` and `<run-id>-failed.txt` for
+  one-command retry. `--resume-run <run-id>` skips completed slugs
+  and picks up partial ones at their last completed phase via the
+  existing pipeline-run trailer. >25 slugs prompts for `--yes`;
+  >100 hard-requires `--yes`. `--parallel N` is parsed but ignored
+  in v1 (sequential only; worker-pool optimization deferred).
+  `--order chronological|alphabetical|file`.
+- **`wai revert`** *(2026-05-11)*. Wiki-style undo built on `git
+  revert` filtered by the `pipeline-run` trailer. Modes:
+  `wai revert <slug>` (most recent run), `--run <uuid>` (specific
+  run), `--phase <p>` (single phase: research/outline/draft/verify/
+  log; `draft` matches phases 4 and 5), `wai revert --last` (most
+  recent pipeline activity, any slug), `--list` (show runs for slug
+  with summaries), `--dry-run`. Produces a single
+  `revert(<slug>): <what>` commit per invocation.
+- **`wai history <slug>`** *(2026-05-11)*. Render the
+  pipeline-related commit log for a page as a markdown table by
+  default or JSON via `--json`. Filters: `--no-pipeline` (manual
+  edits only), `--pipeline-only` (default). `wai history --recent N`
+  shows the last N pipeline commits across all slugs (default 50).
 - **`wai author <slug>`** *(2026-05-11)*. Single-slug article-authoring
   orchestrator. Drives seven phases (gather → research → outline →
   draft person → draft episodes → verify → log) via the harness
