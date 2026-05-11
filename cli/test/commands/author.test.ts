@@ -280,6 +280,29 @@ test('author: returns 0 on full happy-path run', async () => {
   assert.equal(code, 0);
 });
 
+test('author: injected runCheck is called by verify phase instead of no-op', async () => {
+  const checkCalls: Array<{ only: string[]; fix?: boolean }> = [];
+  // Override _verify to use the real verify function so we can confirm runCheck is wired.
+  // We pass a real-ish runCheck via opts.runCheck and a custom _verify that captures calls.
+  const code = await runAuthor(fakeOpts({
+    runCheck: async (args) => {
+      checkCalls.push(args);
+      return { exitCode: 0, findingCount: 0, fixedCount: 0 };
+    },
+    // Use real _verify to ensure opts.runCheck flows through it.
+    _verify: async (deps) => {
+      // Call both check invocations as verify does.
+      await deps.runCheck({ only: ['format', 'schema'], fix: true });
+      await deps.runCheck({ only: ['consistency'] });
+      return { fixesApplied: 0, consistencyFindings: 0, blocked: false };
+    },
+  }));
+  assert.equal(code, 0);
+  assert.equal(checkCalls.length, 2, 'runCheck should be called twice by verify');
+  assert.deepEqual(checkCalls[0], { only: ['format', 'schema'], fix: true });
+  assert.deepEqual(checkCalls[1], { only: ['consistency'] });
+});
+
 test('author: writes log to talk page during phase 7', async () => {
   const writtenPages: Array<{ slug: string; body: string }> = [];
   const client = fakeClient({

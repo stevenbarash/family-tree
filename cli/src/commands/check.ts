@@ -1,4 +1,5 @@
-import type { Detector, Finding, FindingCategory, Fix, RepoState } from '@core/checks/types.ts';
+import type { Detector, Finding, FindingCategory, RepoState } from '@core/checks/types.ts';
+import { runDetectors } from './check/run-detectors.js';
 
 export interface CheckOptions {
   rootDir: string;
@@ -15,12 +16,6 @@ export interface CheckOptions {
 
 export async function runCheck(opts: CheckOptions): Promise<number> {
   const state = await opts.loadState(opts.rootDir);
-  let findings: Finding[] = [];
-  for (const det of opts.detectors) findings.push(...det(state));
-  if (opts.only) {
-    const keep = new Set(opts.only);
-    findings = findings.filter(f => keep.has(f.category));
-  }
 
   if (opts.fix && opts.only?.includes('consistency')) {
     opts.writeErr(`check --fix --only consistency: consistency findings are never auto-fixed; drop --fix or change --only\n`);
@@ -28,52 +23,29 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
   }
 
   if (opts.fix) {
-    // Group fixes by file. We patch by line number, and fixes don't add or
-    // remove lines, so simple index assignment is safe.
-    const fixesByFile = new Map<string, Fix[]>();
-    for (const f of findings) {
-      if (!f.fix) continue;
-      const arr = fixesByFile.get(f.fix.file) ?? [];
-      arr.push(f.fix);
-      fixesByFile.set(f.fix.file, arr);
-    }
-
-    let applied = 0;
-    for (const [file, fixes] of fixesByFile) {
-      // Pages use `text` (frontmatter included) so line numbers from detectors
-      // refer to the full file. The GEDCOM is the only non-page file we touch.
-      const sourceText = file === state.gedcomPath
-        ? state.gedcomText
-        : (state.pages.find(p => p.path === file)?.text ?? '');
-      const lines = sourceText.split('\n');
-      let fileApplied = 0;
-      for (const fix of fixes) {
-        const idx = fix.lineNumber - 1;
-        if (lines[idx] !== fix.oldLine) {
-          opts.writeErr(`skipping fix at ${file}:${fix.lineNumber} — line content changed since detection\n`);
-          continue;
-        }
-        lines[idx] = fix.newLine;
-        fileApplied += 1;
-      }
-      if (fileApplied > 0) {
-        opts.writeFile(file, lines.join('\n'));
-        applied += fileApplied;
-      }
-    }
-    opts.write(`${applied} fix${applied === 1 ? '' : 'es'} applied.\n`);
-
-    // Re-run detectors against the fresh state (caller's loadState should
-    // re-read disk OR return updated in-memory state).
-    const fresh = await opts.loadState(opts.rootDir);
-    let remaining: Finding[] = [];
-    for (const det of opts.detectors) remaining.push(...det(fresh));
-    if (opts.only) {
-      const keep = new Set(opts.only);
-      remaining = remaining.filter(f => keep.has(f.category));
-    }
-    return remaining.length === 0 ? 0 : 1;
+    const result = await runDetectors({
+      state,
+      detectors: opts.detectors,
+      only: opts.only,
+      fix: true,
+      writeFile: opts.writeFile,
+      writeErr: opts.writeErr,
+      reload: () => opts.loadState(opts.rootDir),
+    });
+    opts.write(`${result.fixedCount} fix${result.fixedCount === 1 ? '' : 'es'} applied.\n`);
+    return result.findings.length === 0 ? 0 : 1;
   }
+
+  // No-fix path: run detectors, collect and filter findings.
+  const { findings } = await runDetectors({
+    state,
+    detectors: opts.detectors,
+    only: opts.only,
+    fix: false,
+    writeFile: opts.writeFile,
+    writeErr: opts.writeErr,
+    reload: () => opts.loadState(opts.rootDir),
+  });
 
   if (opts.json) {
     opts.write(JSON.stringify({ findings }, null, 2));

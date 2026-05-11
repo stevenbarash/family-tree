@@ -43,6 +43,12 @@ export interface AuthorOptions {
   webSearch?: (query: string) => Promise<ReadonlyArray<{ title: string; url: string; snippet: string }>>;
   webFetch?: (url: string) => Promise<string | null>;
   /**
+   * Injectable consistency-check runner for Phase 6. When provided, the verify
+   * phase calls it to apply format/schema fixes and check for consistency
+   * findings. When omitted, the no-op default is used (always passes, no fixes).
+   */
+  runCheck?: (args: { only: string[]; fix?: boolean }) => Promise<{ exitCode: number; findingCount: number; fixedCount: number }>;
+  /**
    * Injectable phase implementations for testing. When omitted, the real
    * implementations from ./author/* are used.
    */
@@ -276,16 +282,9 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
   // ── Phase 6: verify ──────────────────────────────────────────────────────
   if (startPhase <= 6) {
     opts.write(`[6/7] verify\n`);
+    const noOpRunCheck = async (_args: { only: string[]; fix?: boolean }) => ({ exitCode: 0, findingCount: 0, fixedCount: 0 });
     const verifyResult = await verifyFn({
-      runCheck: async (args) => {
-        // v1: shell out via gitAdd/gitCommit pattern is not available here;
-        // runCheck wraps the existing `wai check` machinery which is invoked
-        // standalone. For now, delegate to a no-op that always passes.
-        // A follow-on task wires the real `check` runner once the CLI
-        // surface exposes it as a callable function.
-        void args;
-        return { exitCode: 0, findingCount: 0, fixedCount: 0 };
-      },
+      runCheck: opts.runCheck ?? noOpRunCheck,
     });
 
     if (verifyResult.blocked) {

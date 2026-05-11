@@ -45,7 +45,8 @@ import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
 import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import { detectPlacesDrift } from '@core/checks/places-drift.ts';
 import { detectConsistencyDrift } from '@core/checks/consistency-drift.ts';
-import type { FindingCategory } from '@core/checks/types.ts';
+import type { Detector, FindingCategory } from '@core/checks/types.ts';
+import { runDetectors } from './commands/check/run-detectors.js';
 
 function shellEscape(s: string): string { return `'${s.replace(/'/g, "'\\''")}'`; }
 
@@ -635,6 +636,32 @@ async function main(): Promise<number> {
           now: () => new Date().toISOString().slice(0, 10),
           write: (s: string) => process.stdout.write(s),
           writeErr: (s: string) => process.stderr.write(s),
+          runCheck: async (checkArgs: { only: string[]; fix?: boolean }) => {
+            const detectorMap: Record<string, Detector> = {
+              format: detectFormatDrift,
+              data: detectDataDrift,
+              schema: detectSchemaDrift,
+              coverage: detectCoverageDrift,
+              consistency: detectConsistencyDrift,
+            };
+            const requested = checkArgs.only as FindingCategory[];
+            const selected = requested.map(c => detectorMap[c]).filter((d): d is Detector => d !== undefined);
+            const checkState = await loadRepoState(authorRootDir);
+            const result = await runDetectors({
+              state: checkState,
+              detectors: selected,
+              only: requested,
+              fix: !!checkArgs.fix,
+              writeFile: (file, content) => writeFileSync(file, content),
+              writeErr: (s) => process.stderr.write(s),
+              reload: () => loadRepoState(authorRootDir),
+            });
+            return {
+              exitCode: result.findings.length > 0 && !checkArgs.fix ? 1 : 0,
+              findingCount: result.findings.length,
+              fixedCount: result.fixedCount,
+            };
+          },
         });
 
         const cohortRaw = typeof args.flags.cohort === 'string' ? args.flags.cohort : undefined;
