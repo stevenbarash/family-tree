@@ -1,4 +1,5 @@
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import type { HarnessAdapter, HarnessRequest, HarnessResponse } from './types.js';
 
 type SpawnFn = (cmd: string, args: string[], stdin: string) => Promise<{ stdout: string; stderr: string; code: number }>;
@@ -91,8 +92,7 @@ function defaultSkillsDir(): string {
 
 function defaultReadSkillFile(path: string): string | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('node:fs').readFileSync(path, 'utf8');
+    return readFileSync(path, 'utf8');
   } catch {
     return null;
   }
