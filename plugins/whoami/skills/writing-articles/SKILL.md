@@ -31,8 +31,8 @@ The harness adapter calls this skill with one of five templates:
 - `interview` — used by `wai interview`; emit Q&A questions tailored
   to gaps in the evidence drawer.
 
-In Plan 1 only the `interview` template is implemented. Other
-templates land in Plan 2 alongside `wai author`.
+All five templates are implemented. The harness adapter resolves
+`prompt-templates/<template>.md` automatically when invoked.
 
 ## Three-stream weaving rule
 
