@@ -23,6 +23,47 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai author <slug>`** *(2026-05-11)*. Single-slug article-authoring
+  orchestrator. Drives seven phases (gather → research → outline →
+  draft person → draft episodes → verify → log) via the harness
+  adapter, with one commit per phase to `$WHOAMI_ROOT`. Flags:
+  `--no-web`, `--skip-episodes`, `--resume`, `--dry-run`, `--branch`.
+  Pre-flight checks reject non-git repos (exit 8), uncommitted
+  changes (7), unreachable frontend (14), unsupported
+  `WHOAMI_HARNESS` (11). Refuses to fabricate when no usable evidence
+  exists (exit 4). v1 ships with `webSearch`/`webFetch` defaulting
+  to no-ops; the runCheck wiring inside the verify phase is a stub
+  pending a callable TypeScript surface for `wai check`.
+- **`wai check --include consistency`** *(2026-05-11)*. Fifth detector
+  category. v1 covers orphaned footnotes (referenced not defined or
+  vice versa), bibliography↔inline cite-vault mismatches, and
+  GEDCOM↔page infobox mismatches (born/died/birthplace differing
+  from derived YAML and no `corrections:` entry). Self-contradiction
+  within a page, cross-page contradictions, and footnote↔claim
+  mismatches deferred (`TODO(consistency-v2)` markers in the
+  detector). Smoke against the current data repo surfaced 39 real
+  findings, most of them GEDCOM birthplace mismatches.
+- **Renderer + search filter** *(2026-05-11)*: `pages/<slug>.narrative.md`
+  is excluded from `core/src/pages/store.ts:list()` and from
+  `core/src/search/rebuild.ts`. The narrative file is an authoring
+  input only; it never appears at a URL or in search results.
+- **Four prompt templates** added to `writing-articles`:
+  `research-questions`, `outline`, `draft-person`, `draft-episode`.
+  Together with the `interview` template from Plan 1, all five
+  templates referenced by the harness contract are now implemented.
+  Smoke verified the harness adapter loads each at ~4–5 KB of
+  prepended system-prompt content.
+- **Harness adapter — template routing** *(2026-05-11)*: the adapter
+  now reads `<skillsDir>/<skill>/SKILL.md` plus
+  `prompt-templates/<template>.md` from disk and concatenates them
+  via `--append-system-prompt`. Resolves the Plan 1 limitation that
+  was passing the literal skill-name string. Fence-stripping handles
+  Claude's ```json-wrapped JSON responses.
+- **Pipeline-run trailers** *(2026-05-11)*: every phase commit
+  carries a structured trailer (`pipeline-run`, `phase`, `slug`,
+  `inputs`, optional `sources`, `fabrication-guard`). `--resume`
+  reads the trailer from `git log` to skip already-completed phases;
+  cold-start (no prior trailer) is treated as a fresh run.
 - **`wai narrative <slug>`** *(2026-05-10)*. Edit, ingest (`--file F`),
   or print (`--print`) the per-slug family-narrative file at
   `pages/<slug>.narrative.md`. Each save commits in `$WHOAMI_ROOT`.
