@@ -1,6 +1,6 @@
 import type { HarnessAdapter } from '../harness/types.js';
 import type { ApiClient } from '../api-client.js';
-import { newRunId, findResumePoint, formatTrailer, TOTAL_PHASES, type CommitTrailer } from './author/pipeline-run.js';
+import { newRunId, findResumePoint, formatTrailer, TOTAL_PHASES, PHASE, type CommitTrailer } from './author/pipeline-run.js';
 import { gather, type EvidenceDrawer } from './author/gather.js';
 import { research, formatResearchNote } from './author/research.js';
 import { outline, formatOutlineForTalk, type OutlinePlan } from './author/outline.js';
@@ -201,7 +201,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       // the API server; the working tree is clean when we arrive here.
       opts.gitCommit(
         `research(${opts.slug}): ${result.sourcesQueried} sources, ${result.candidateClaims.length} candidate claims drafted`,
-        makeTrailer(2, inputsWithWeb, sourcesCount),
+        makeTrailer(PHASE.research, inputsWithWeb, sourcesCount),
       );
     }
   }
@@ -229,7 +229,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       newTalkBody,
       commitSummary(
         `outline(${opts.slug}): person + ${plan.episodes.length} episode(s)`,
-        makeTrailer(3, drawer.inputs),
+        makeTrailer(PHASE.outline, drawer.inputs),
       ),
     );
 
@@ -250,7 +250,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
     await opts.client.write(
       opts.slug,
       personResult.body,
-      commitSummary(`draft(${opts.slug}): person page`, makeTrailer(4, drawer.inputs)),
+      commitSummary(`draft(${opts.slug}): person page`, makeTrailer(PHASE.draftPerson, drawer.inputs)),
     );
 
     completedPhases++;
@@ -268,7 +268,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
         epResult.body,
         commitSummary(
           `draft(${opts.slug}): episode ${episode.slug}`,
-          makeTrailer(5, drawer.inputs),
+          makeTrailer(PHASE.draftEpisode, drawer.inputs),
         ),
       );
 
@@ -302,7 +302,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       commitDirectChanges(
         [opts.rootDir],
         `verify(${opts.slug}): ${verifyResult.fixesApplied} fixes applied`,
-        makeTrailer(6, drawer.inputs),
+        makeTrailer(PHASE.verify, drawer.inputs),
       );
     }
   }
@@ -330,7 +330,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       newTalkBody,
       commitSummary(
         `log(${opts.slug}): pipeline complete (run ${runId})`,
-        makeTrailer(7, drawer.inputs),
+        makeTrailer(PHASE.log, drawer.inputs),
       ),
     );
 

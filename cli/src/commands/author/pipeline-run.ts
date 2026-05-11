@@ -13,6 +13,18 @@ export function newRunId(): string {
   return randomUUID();
 }
 
+export const PHASE = {
+  gather: 1,
+  research: 2,
+  outline: 3,
+  draftPerson: 4,
+  draftEpisode: 5,
+  verify: 6,
+  log: 7,
+} as const;
+
+export type PhaseNumber = typeof PHASE[keyof typeof PHASE];
+
 export const TOTAL_PHASES = 7;
 
 export function phaseNumberToName(n: number): string {
