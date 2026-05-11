@@ -19,6 +19,8 @@
  * "draft" matches both 4 and 5.
  */
 
+import { phaseNumberToName } from './author/pipeline-run.js';
+
 export type RevertMode =
   | { kind: 'slug-latest'; slug: string }
   | { kind: 'slug-run'; slug: string; runId: string }
@@ -267,14 +269,3 @@ function doList(slug: string, blocks: LogBlock[], write: (s: string) => void): n
   return 0;
 }
 
-function phaseNumberToName(n: number): string {
-  switch (n) {
-    case 2: return 'research';
-    case 3: return 'outline';
-    case 4: return 'draft';
-    case 5: return 'draft-ep';
-    case 6: return 'verify';
-    case 7: return 'log';
-    default: return `phase-${n}`;
-  }
-}

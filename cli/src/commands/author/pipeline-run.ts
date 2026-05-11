@@ -13,6 +13,21 @@ export function newRunId(): string {
   return randomUUID();
 }
 
+export const TOTAL_PHASES = 7;
+
+export function phaseNumberToName(n: number): string {
+  switch (n) {
+    case 1: return 'gather';
+    case 2: return 'research';
+    case 3: return 'outline';
+    case 4: return 'draft';
+    case 5: return 'draft-ep';
+    case 6: return 'verify';
+    case 7: return 'log';
+    default: return `phase-${n}`;
+  }
+}
+
 export function formatTrailer(t: CommitTrailer): string {
   const lines = [
     `pipeline-run: ${t.pipelineRun}`,

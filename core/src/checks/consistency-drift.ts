@@ -137,8 +137,16 @@ function detectGedcomMismatch(page: LoadedPage, state: RepoState): Finding[] {
   return findings;
 }
 
+const INFOBOX_FIELD_REGEXES: Record<string, RegExp> = {
+  born: /^born:\s*"?([^"\n]+)"?$/m,
+  died: /^died:\s*"?([^"\n]+)"?$/m,
+  birthplace: /^birthplace:\s*"?([^"\n]+)"?$/m,
+};
+
 function extractInfoboxField(infobox: string, key: string): string | null {
-  const m = infobox.match(new RegExp(`^${key}:\\s*"?([^"\\n]+)"?$`, 'm'));
+  const re = INFOBOX_FIELD_REGEXES[key];
+  if (!re) return null;
+  const m = infobox.match(re);
   return m ? m[1]!.trim() : null;
 }
 

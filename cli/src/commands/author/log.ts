@@ -1,3 +1,5 @@
+import { TOTAL_PHASES } from './pipeline-run.js';
+
 export interface LogSummary {
   phases: number;
   episodes: number;
@@ -9,7 +11,7 @@ export function formatAgentLog(slug: string, runId: string, summary: LogSummary,
     '## Agent log',
     '',
     `### ${now} — pipeline run ${runId}`,
-    `- Phases completed: ${summary.phases}/7`,
+    `- Phases completed: ${summary.phases}/${TOTAL_PHASES}`,
     `- Episodes drafted: ${summary.episodes}`,
     `- Sources cited: ${summary.sources}`,
     '',

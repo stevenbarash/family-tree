@@ -1,6 +1,6 @@
 import type { HarnessAdapter } from '../harness/types.js';
 import type { ApiClient } from '../api-client.js';
-import { newRunId, findResumePoint, formatTrailer, type CommitTrailer } from './author/pipeline-run.js';
+import { newRunId, findResumePoint, formatTrailer, TOTAL_PHASES, type CommitTrailer } from './author/pipeline-run.js';
 import { gather, type EvidenceDrawer } from './author/gather.js';
 import { research, formatResearchNote } from './author/research.js';
 import { outline, formatOutlineForTalk, type OutlinePlan } from './author/outline.js';
@@ -90,7 +90,7 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
   }
 
   if (opts.dryRun) {
-    opts.write(`author --dry-run: would run phases ${startPhase}..7 for ${opts.slug} (run ${runId})\n`);
+    opts.write(`author --dry-run: would run phases ${startPhase}..${TOTAL_PHASES} for ${opts.slug} (run ${runId})\n`);
     return 0;
   }
 
@@ -129,60 +129,40 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
     }
   }
 
+  const gatherDeps = {
+    rootDir: opts.rootDir,
+    readFile: opts.readFile,
+    readPage: async (slug: string) => {
+      try {
+        const page = await opts.client.read(slug);
+        return { frontmatter: page.meta as unknown as Record<string, unknown>, body: page.body };
+      } catch {
+        return null;
+      }
+    },
+    readTalk: async (slug: string) => {
+      try {
+        const talkSlug = `${slug}.talk`;
+        const page = await opts.client.read(talkSlug);
+        const notes = await opts.client.listNotes(slug);
+        return { body: page.body, notes };
+      } catch {
+        return null;
+      }
+    },
+  };
+
   // ── Phase 1: gather ──────────────────────────────────────────────────────
   if (startPhase <= 1) {
     opts.write(`[1/7] gather\n`);
-    drawer = await gatherFn(opts.slug, {
-      rootDir: opts.rootDir,
-      readFile: opts.readFile,
-      readPage: async (slug) => {
-        try {
-          const page = await opts.client.read(slug);
-          // Page.meta is the frontmatter object; expose it as-is to gather.
-          return { frontmatter: page.meta as unknown as Record<string, unknown>, body: page.body };
-        } catch {
-          return null;
-        }
-      },
-      readTalk: async (slug) => {
-        try {
-          const talkSlug = `${slug}.talk`;
-          const page = await opts.client.read(talkSlug);
-          const notes = await opts.client.listNotes(slug);
-          return { body: page.body, notes };
-        } catch {
-          return null;
-        }
-      },
-    });
+    drawer = await gatherFn(opts.slug, gatherDeps);
     completedPhases++;
     // Phase 1 produces no commit.
   }
 
   // Ensure drawer is populated even if we resumed past phase 1.
   if (!drawer) {
-    drawer = await gatherFn(opts.slug, {
-      rootDir: opts.rootDir,
-      readFile: opts.readFile,
-      readPage: async (slug) => {
-        try {
-          const page = await opts.client.read(slug);
-          return { frontmatter: page.meta as unknown as Record<string, unknown>, body: page.body };
-        } catch {
-          return null;
-        }
-      },
-      readTalk: async (slug) => {
-        try {
-          const talkSlug = `${slug}.talk`;
-          const page = await opts.client.read(talkSlug);
-          const notes = await opts.client.listNotes(slug);
-          return { body: page.body, notes };
-        } catch {
-          return null;
-        }
-      },
-    });
+    drawer = await gatherFn(opts.slug, gatherDeps);
   }
 
   // ── Phase 2: research ────────────────────────────────────────────────────
@@ -283,12 +263,12 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
       await opts.client.write(episode.slug, epResult.body, `draft: episode ${episode.slug}`);
 
       episodeSlugs.push(episode.slug);
-      completedPhases++;
       maybeCommit(
         `draft(${opts.slug}): episode ${episode.slug}`,
         makeTrailer(5, drawer.inputs),
       );
     }
+    completedPhases++;
   } else if (startPhase <= 5 && opts.skipEpisodes) {
     opts.write(`[5/7] draft (episodes) — skipped (--skip-episodes)\n`);
   }

@@ -12,7 +12,7 @@ import type { PageMeta } from '../../src/pages/types.ts';
 function page(slug: string, opts: {
   body?: string;
   record?: string;
-  corrections?: Array<{ field: string; value: string }>;
+  corrections?: Array<{ field: 'birth.date' | 'birth.place' | 'death.date' | 'death.place' | 'name'; value: string; source: string }>;
 } = {}): LoadedPage {
   const meta: PageMeta = {
     schemaVersion: 1,
@@ -202,7 +202,7 @@ test('consistency-drift: GEDCOM mismatch covered by corrections entry → no fin
     ':::',
   ].join('\n');
   const derived = new Map([['I1', derivedRec('I1', { birthDate: '5 Mar 1882' })]]);
-  const corrections = [{ field: 'birth.date', value: '1 Jan 1880' }];
+  const corrections = [{ field: 'birth.date' as const, value: '1 Jan 1880', source: 'family confirmation' }];
   const findings = detectConsistencyDrift(makeState({
     pages: [page('alice', { body, record: 'I1', corrections })],
     derived,

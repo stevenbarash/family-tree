@@ -17,6 +17,7 @@
  */
 
 import { parseLogBlocks, type LogBlock } from './revert.js';
+import { phaseNumberToName } from './author/pipeline-run.js';
 
 export interface HistoryOptions {
   rootDir: string;
@@ -100,21 +101,10 @@ function renderTable(commits: ReadonlyArray<HistoryCommit>): string {
   for (const c of commits) {
     const sha = c.sha.slice(0, 7);
     const run = c.runId ? c.runId.slice(0, 6) : '------';
-    const phase = c.phase !== null ? phaseName(c.phase).padEnd(8) : '(none)  ';
+    const phase = c.phase !== null ? phaseNumberToName(c.phase).padEnd(8) : '(none)  ';
     const slug = (c.slug ?? '-').padEnd(20).slice(0, 20);
     rows.push(`${sha}  ${run}  ${phase}  ${slug} ${c.subject}`);
   }
   return rows.join('\n');
 }
 
-function phaseName(n: number): string {
-  switch (n) {
-    case 2: return 'research';
-    case 3: return 'outline';
-    case 4: return 'draft';
-    case 5: return 'draft-ep';
-    case 6: return 'verify';
-    case 7: return 'log';
-    default: return `phase-${n}`;
-  }
-}
