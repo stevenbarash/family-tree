@@ -31,6 +31,7 @@ import type { NarrativeMode } from './commands/narrative.js';
 import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
 import { runInterview } from './commands/interview.js';
 import { runAuthor, runAuthorCohort } from './commands/author.js';
+import { runRevert, type RevertMode } from './commands/revert.js';
 import { parseSelector, resolveCohort } from './commands/author/cohort.js';
 import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
@@ -126,6 +127,12 @@ Quality:
                                  --order chronological|alphabetical|file
                                  --resume-run <run-id>
                                  --yes (skip the >25 confirmation prompt)
+  revert <slug>                Undo most recent pipeline run for slug
+  revert <slug> --run <uuid>   Undo a specific run
+  revert <slug> --phase <p>    Undo just phase p (research|outline|draft|verify|log)
+  revert --last                Undo most recent pipeline activity, any slug
+  revert <slug> --list         Show runs for slug with summaries
+  revert <slug> --dry-run      Show what would be reverted; no commits
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -707,6 +714,60 @@ async function main(): Promise<number> {
 
         const authorCode = await runAuthor(makeRunAuthorOpts(slug, resume));
         return authorCode;
+      }
+      case 'revert': {
+        const revertRootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+
+        const runFlag = typeof args.flags.run === 'string' ? args.flags.run : undefined;
+        const phaseFlag = typeof args.flags.phase === 'string' ? args.flags.phase : undefined;
+        const lastFlag = !!args.flags.last;
+        const listFlag = !!args.flags.list;
+        const dryRunFlag = !!args.flags['dry-run'];
+
+        // Validate mutually exclusive flags
+        const modeFlagCount = [runFlag, phaseFlag, lastFlag, listFlag].filter(Boolean).length;
+        if (modeFlagCount > 1) {
+          process.stderr.write('revert: --run, --phase, --last, and --list are mutually exclusive\n');
+          return 2;
+        }
+
+        let revertMode: RevertMode;
+        if (lastFlag) {
+          revertMode = { kind: 'last' };
+        } else {
+          const revertSlug = args.positional[0];
+          if (!revertSlug) {
+            process.stderr.write('revert: slug required (or use --last)\n');
+            return 2;
+          }
+          if (listFlag) {
+            revertMode = { kind: 'list', slug: revertSlug };
+          } else if (runFlag) {
+            revertMode = { kind: 'slug-run', slug: revertSlug, runId: runFlag };
+          } else if (phaseFlag) {
+            revertMode = { kind: 'slug-phase', slug: revertSlug, phase: phaseFlag };
+          } else {
+            revertMode = { kind: 'slug-latest', slug: revertSlug };
+          }
+        }
+
+        const revertCode = await runRevert(revertMode, {
+          rootDir: revertRootDir,
+          gitLog: (root, gitArgs) => execSync(
+            `git -C ${shellEscape(root)} log ${gitArgs.map(shellEscape).join(' ')}`,
+          ).toString(),
+          gitRevert: (root, shas, message) => {
+            execSync(
+              `git -C ${shellEscape(root)} revert --no-commit ${shas.map(shellEscape).join(' ')} && git -C ${shellEscape(root)} commit -m ${shellEscape(message)}`,
+            );
+          },
+          dryRun: dryRunFlag,
+          write,
+          writeErr: (s) => process.stderr.write(s),
+        });
+        return revertCode;
       }
       case 'export': {
         const root = process.env.WHOAMI_ROOT
