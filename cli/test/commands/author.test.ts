@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runAuthor, type AuthorOptions } from '../../src/commands/author.js';
+import { runAuthor, runAuthorCohort, type AuthorOptions } from '../../src/commands/author.js';
 import type { EvidenceDrawer } from '../../src/commands/author/gather.js';
 import type { OutlinePlan } from '../../src/commands/author/outline.js';
 import type { ResearchResult } from '../../src/commands/author/research.js';
@@ -289,4 +289,125 @@ test('author: writes log to talk page during phase 7', async () => {
   assert.equal(code, 0);
   const talkWrite = writtenPages.find(p => p.slug === 'aidele.talk' && p.body.includes('Agent log'));
   assert.ok(talkWrite !== undefined, 'expected agent log written to talk page');
+});
+
+// ── runAuthorCohort tests ─────────────────────────────────────────────────────
+
+test('cohort: runs each slug; reports success', async () => {
+  const written: Record<string, string> = {};
+  const journalContent: string[] = [];
+  let out = '';
+  const code = await runAuthorCohort({
+    slugs: ['aidele', 'kelman-ayzman'],
+    parallel: 1,
+    order: 'file',
+    runOne: async () => 0,
+    journal: {
+      rootDir: '/repo',
+      appendFile: (p, c) => { journalContent.push(c); written[p] = (written[p] ?? '') + c; },
+      mkdirP: () => {},
+    },
+    readFile: () => null,
+    writeFailedFile: (p, c) => { written[p] = c; },
+    rootDir: '/repo',
+    write: (s) => { out += s; },
+    writeErr: () => {},
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.equal(code, 0);
+  assert.match(out, /2 succeeded/);
+  // Each slug: 1 started + 1 completed = 4 journal entries
+  assert.equal(journalContent.length, 4);
+});
+
+test('cohort: writes failed.txt on failure; returns 1', async () => {
+  const written: Record<string, string> = {};
+  let err = '';
+  const code = await runAuthorCohort({
+    slugs: ['ok-slug', 'bad-slug'],
+    parallel: 1,
+    order: 'file',
+    runOne: async (slug) => slug === 'bad-slug' ? 5 : 0,
+    journal: {
+      rootDir: '/repo',
+      appendFile: () => {},
+      mkdirP: () => {},
+    },
+    readFile: () => null,
+    writeFailedFile: (p, c) => { written[p] = c; },
+    rootDir: '/repo',
+    write: () => {},
+    writeErr: (s) => { err += s; },
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.equal(code, 1);
+  const failedPath = Object.keys(written).find(p => p.endsWith('-failed.txt'));
+  assert(failedPath, 'expected failed.txt');
+  assert.match(written[failedPath!] ?? '', /bad-slug.*exit=5/);
+  assert.match(err, /1 succeeded, 1 failed/);
+});
+
+test('cohort --resume: skips slugs already completed in the journal', async () => {
+  const runSlugs: string[] = [];
+  const code = await runAuthorCohort({
+    slugs: ['done-slug', 'todo-slug'],
+    parallel: 1,
+    order: 'file',
+    resumeRunId: 'r1',
+    runOne: async (slug) => { runSlugs.push(slug); return 0; },
+    journal: {
+      rootDir: '/repo',
+      appendFile: () => {},
+      mkdirP: () => {},
+    },
+    readFile: (p) => p.endsWith('r1.jsonl')
+      ? '{"ts":"t","runId":"r1","slug":"done-slug","status":"completed"}\n'
+      : null,
+    writeFailedFile: () => {},
+    rootDir: '/repo',
+    write: () => {},
+    writeErr: () => {},
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.equal(code, 0);
+  assert.deepEqual(runSlugs, ['todo-slug']);
+});
+
+test('cohort --resume: passes resume=true to runOne for partial slugs', async () => {
+  const calls: Array<{ slug: string; resume: boolean }> = [];
+  await runAuthorCohort({
+    slugs: ['partial-slug'],
+    parallel: 1,
+    order: 'file',
+    resumeRunId: 'r1',
+    runOne: async (slug, o) => { calls.push({ slug, resume: o.resume }); return 0; },
+    journal: { rootDir: '/repo', appendFile: () => {}, mkdirP: () => {} },
+    readFile: (p) => p.endsWith('r1.jsonl')
+      ? '{"ts":"t","runId":"r1","slug":"partial-slug","status":"started"}\n'
+      : null,
+    writeFailedFile: () => {},
+    rootDir: '/repo',
+    write: () => {},
+    writeErr: () => {},
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.deepEqual(calls, [{ slug: 'partial-slug', resume: true }]);
+});
+
+test('cohort: --parallel >1 emits warning to writeErr', async () => {
+  let err = '';
+  await runAuthorCohort({
+    slugs: ['a'],
+    parallel: 3,
+    order: 'file',
+    runOne: async () => 0,
+    journal: { rootDir: '/repo', appendFile: () => {}, mkdirP: () => {} },
+    readFile: () => null,
+    writeFailedFile: () => {},
+    rootDir: '/repo',
+    write: () => {},
+    writeErr: (s) => { err += s; },
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.match(err, /--parallel 3 ignored/);
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { ApiClient } from './api-client.js';
@@ -30,7 +30,8 @@ import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
 import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
 import { runInterview } from './commands/interview.js';
-import { runAuthor } from './commands/author.js';
+import { runAuthor, runAuthorCohort } from './commands/author.js';
+import { parseSelector, resolveCohort } from './commands/author/cohort.js';
 import { selectHarness, HarnessUnsupportedError } from './harness/index.js';
 import { whisperTranscriber } from './transcriber.js';
 import { probeServers, commonServerCandidates } from './probe.js';
@@ -119,6 +120,12 @@ Quality:
                                  --resume (continue from last commit)
                                  --dry-run (print plan; no commits)
                                  --branch <name> (commit on a new branch)
+  author --cohort missing      Run author for every derived record without a page
+  author --cohort file:F.txt   Run author for slugs listed in F (one per line)
+                                 --parallel N (v1: ignored, always sequential)
+                                 --order chronological|alphabetical|file
+                                 --resume-run <run-id>
+                                 --yes (skip the >25 confirmation prompt)
 
 Search:
   rebuild-search              Rebuild the search index from disk
@@ -575,16 +582,9 @@ async function main(): Promise<number> {
         return interviewCode;
       }
       case 'author': {
-        const slug = args.positional[0];
-        if (!slug) {
-          process.stderr.write('author: slug required\n');
-          return 2;
-        }
-        const resume = !!args.flags.resume;
-        const noWeb = !!args.flags['no-web'];
-        const skipEpisodes = !!args.flags['skip-episodes'];
-        const dryRun = !!args.flags['dry-run'];
-        const branch = typeof args.flags.branch === 'string' ? args.flags.branch : undefined;
+        const authorRootDir = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
 
         let authorHarness;
         try {
@@ -597,34 +597,115 @@ async function main(): Promise<number> {
           throw e;
         }
 
-        const authorRootDir = process.env.WHOAMI_ROOT
-          ? resolve(process.env.WHOAMI_ROOT)
-          : resolve(process.env.HOME!, 'whoami');
         const authorClient = new ApiClient(getServer());
 
-        const authorCode = await runAuthor({
+        // Shared runAuthor wiring for both single-slug and cohort paths.
+        const makeRunAuthorOpts = (slug: string, resume: boolean) => ({
           rootDir: authorRootDir,
           slug,
           resume,
-          noWeb,
-          skipEpisodes,
-          dryRun,
-          branch,
+          noWeb: !!args.flags['no-web'],
+          skipEpisodes: !!args.flags['skip-episodes'],
+          dryRun: !!args.flags['dry-run'],
+          branch: typeof args.flags.branch === 'string' ? args.flags.branch : undefined,
           harness: authorHarness,
           client: authorClient,
-          readFile: (p) => existsSync(p) ? readFileSync(p, 'utf8') : null,
-          writeFile: (p, c) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
+          readFile: (p: string) => existsSync(p) ? readFileSync(p, 'utf8') : null,
+          writeFile: (p: string, c: string) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
           exists: existsSync,
-          gitLog: (root, grep) => execSync(`git -C ${shellEscape(root)} log --all --format='%B%n' --grep ${shellEscape(grep)}`).toString(),
-          gitAdd: (paths) => { execSync(`git -C ${shellEscape(authorRootDir)} add ${paths.map(shellEscape).join(' ')}`); },
-          gitCommit: (subject, body) => { execSync(`git -C ${shellEscape(authorRootDir)} commit -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
+          gitLog: (root: string, grep: string) => execSync(`git -C ${shellEscape(root)} log --all --format='%B%n' --grep ${shellEscape(grep)}`).toString(),
+          gitAdd: (paths: string[]) => { execSync(`git -C ${shellEscape(authorRootDir)} add ${paths.map(shellEscape).join(' ')}`); },
+          gitCommit: (subject: string, body: string) => { execSync(`git -C ${shellEscape(authorRootDir)} commit -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
           gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(authorRootDir)} status --porcelain`).toString().trim().length > 0,
           gitIsRepo: () => existsSync(join(authorRootDir, '.git')),
           healthz: async () => { try { await authorClient.healthz(); return true; } catch { return false; } },
           now: () => new Date().toISOString().slice(0, 10),
-          write: (s) => process.stdout.write(s),
-          writeErr: (s) => process.stderr.write(s),
+          write: (s: string) => process.stdout.write(s),
+          writeErr: (s: string) => process.stderr.write(s),
         });
+
+        const cohortRaw = typeof args.flags.cohort === 'string' ? args.flags.cohort : undefined;
+        if (cohortRaw) {
+          const selector = parseSelector(cohortRaw);
+          const slugs = await resolveCohort(selector, {
+            rootDir: authorRootDir,
+            listExistingPages: (root) => {
+              const pagesDir = join(root, 'pages');
+              if (!existsSync(pagesDir)) return [];
+              return readdirSync(pagesDir)
+                .filter(f => f.endsWith('.md') && !f.endsWith('.talk.md') && !f.endsWith('.narrative.md'))
+                .map(f => f.slice(0, -'.md'.length));
+            },
+            listDerivedSlugs: async (root) => {
+              const derivedDir = join(root, 'genealogy', 'derived');
+              if (!existsSync(derivedDir)) return [];
+              const results: string[] = [];
+              for (const file of readdirSync(derivedDir)) {
+                if (!file.endsWith('.yml')) continue;
+                const filePath = join(derivedDir, file);
+                const text = existsSync(filePath) ? readFileSync(filePath, 'utf8') : null;
+                if (!text) continue;
+                const nameMatch = text.match(/^name:\s*(.+)$/m);
+                if (!nameMatch) continue;
+                const name = nameMatch[1]!.trim();
+                if (!name) continue;
+                results.push(toSlug(name));
+              }
+              return results;
+            },
+            readFile: (p) => existsSync(p) ? readFileSync(p, 'utf8') : null,
+          });
+
+          if (slugs.length === 0) {
+            process.stdout.write('cohort: zero slugs resolved; nothing to do\n');
+            process.exit(0);
+          }
+
+          const yes = args.flags.yes === true || process.env.WHOAMI_AUTO === '1';
+          if (slugs.length > 100 && !yes) {
+            process.stderr.write(`cohort: ${slugs.length} slugs requires --yes\n`);
+            process.exit(2);
+          }
+          if (slugs.length > 25 && !yes) {
+            process.stderr.write(`cohort: ${slugs.length} slugs resolved; pass --yes to proceed\n`);
+            process.exit(2);
+          }
+
+          const parallel = typeof args.flags.parallel === 'string' ? parseInt(args.flags.parallel, 10) : 1;
+          const orderArg = typeof args.flags.order === 'string' ? args.flags.order : 'chronological';
+          const order = (orderArg === 'alphabetical' || orderArg === 'file' || orderArg === 'chronological') ? orderArg : 'chronological';
+          const resumeRunId = typeof args.flags['resume-run'] === 'string' ? args.flags['resume-run'] : undefined;
+
+          const cohortCode = await runAuthorCohort({
+            slugs,
+            parallel,
+            order,
+            resumeRunId,
+            runOne: async (slug, runOpts) => runAuthor(makeRunAuthorOpts(slug, runOpts.resume)),
+            journal: {
+              rootDir: authorRootDir,
+              appendFile: (p, c) => { mkdirSync(dirname(p), { recursive: true }); appendFileSync(p, c); },
+              mkdirP: (p) => mkdirSync(p, { recursive: true }),
+            },
+            readFile: (p) => existsSync(p) ? readFileSync(p, 'utf8') : null,
+            writeFailedFile: (p, c) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, c); },
+            rootDir: authorRootDir,
+            write: (s) => process.stdout.write(s),
+            writeErr: (s) => process.stderr.write(s),
+            now: () => new Date().toISOString(),
+          });
+          return cohortCode;
+        }
+
+        // Single-slug path (unchanged).
+        const slug = args.positional[0];
+        if (!slug) {
+          process.stderr.write('author: slug required\n');
+          return 2;
+        }
+        const resume = !!args.flags.resume;
+
+        const authorCode = await runAuthor(makeRunAuthorOpts(slug, resume));
         return authorCode;
       }
       case 'export': {

@@ -8,6 +8,7 @@ import { draftPerson } from './author/draft-person.js';
 import { draftEpisode } from './author/draft-episode.js';
 import { verify } from './author/verify.js';
 import { formatAgentLog } from './author/log.js';
+import { journalAppend, journalReadCompleted, journalReadStartedNotCompleted, type JournalDeps } from './author/cohort-journal.js';
 
 export interface AuthorOptions {
   rootDir: string;
@@ -351,4 +352,74 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
   }
 
   return 0;
+}
+
+export interface AuthorCohortOptions {
+  slugs: ReadonlyArray<string>;
+  parallel: number; // v1: ignored
+  order: 'chronological' | 'alphabetical' | 'file';
+  resumeRunId?: string;
+  /** Per-slug author runner; injected so tests can fake it. Defaults to runAuthor. */
+  runOne: (slug: string, opts: { resume: boolean }) => Promise<number>;
+  journal: JournalDeps;
+  readFile: (path: string) => string | null;
+  writeFailedFile: (path: string, content: string) => void;
+  rootDir: string;
+  write: (s: string) => void;
+  writeErr: (s: string) => void;
+  now: () => string;
+}
+
+export async function runAuthorCohort(opts: AuthorCohortOptions): Promise<number> {
+  const runId = opts.resumeRunId ?? newRunId();
+  const completed = opts.resumeRunId
+    ? journalReadCompleted(opts.resumeRunId, opts.rootDir, opts.readFile)
+    : new Set<string>();
+  const partial = opts.resumeRunId
+    ? journalReadStartedNotCompleted(opts.resumeRunId, opts.rootDir, opts.readFile)
+    : new Set<string>();
+
+  const ordered = orderSlugs(opts.slugs, opts.order);
+  const remaining = ordered.filter(s => !completed.has(s));
+
+  if (remaining.length === 0) {
+    opts.write(`cohort: nothing to do (all ${ordered.length} slugs already completed in run ${runId})\n`);
+    return 0;
+  }
+
+  if (opts.parallel > 1) {
+    opts.writeErr(`cohort: --parallel ${opts.parallel} ignored in v1 (sequential only)\n`);
+  }
+
+  const failed: { slug: string; code: number }[] = [];
+  let okCount = 0;
+  for (const slug of remaining) {
+    const isPartial = partial.has(slug);
+    journalAppend({ ts: opts.now(), runId, slug, status: 'started' }, opts.journal);
+    const code = await opts.runOne(slug, { resume: isPartial });
+    if (code === 0) {
+      journalAppend({ ts: opts.now(), runId, slug, status: 'completed' }, opts.journal);
+      okCount++;
+    } else {
+      journalAppend({ ts: opts.now(), runId, slug, status: 'failed', reason: `exit ${code}` }, opts.journal);
+      failed.push({ slug, code });
+    }
+  }
+
+  if (failed.length > 0) {
+    const failedPath = `${opts.rootDir}/data/author-runs/${runId}-failed.txt`;
+    const lines = failed.map(f => `${f.slug}\texit=${f.code}`);
+    opts.writeFailedFile(failedPath, lines.join('\n') + '\n');
+    opts.writeErr(`cohort: ${okCount} succeeded, ${failed.length} failed (run ${runId})\nRetry: wai author --cohort file:${failedPath}\n`);
+    return 1;
+  }
+  opts.write(`cohort: ${okCount} succeeded (run ${runId})\n`);
+  return 0;
+}
+
+function orderSlugs(slugs: ReadonlyArray<string>, order: AuthorCohortOptions['order']): ReadonlyArray<string> {
+  if (order === 'alphabetical') return [...slugs].sort();
+  if (order === 'file') return slugs;
+  // chronological: not yet wired to real birth-date data; fall back to file order
+  return slugs;
 }
