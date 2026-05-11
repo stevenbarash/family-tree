@@ -18,36 +18,36 @@ function fakeDrawer(over: Partial<EvidenceDrawer> = {}): EvidenceDrawer {
 
 function fakeDeps(over: Partial<ResearchDeps> = {}): ResearchDeps {
   return {
-    harness: { invoke: async () => ({ ok: true, result: { queries: [] } as never }) },
-    webSearch: async () => [],
-    webFetch: async () => null,
+    harness: { invoke: async () => ({ ok: true, result: { claims: [] } as never }) },
     client: {} as never,
     ...over,
   };
 }
 
-test('research: drops unreliable sources; keeps reliable ones', async () => {
+test('research: returns claims from harness result', async () => {
   const deps = fakeDeps({
-    harness: { invoke: async () => ({ ok: true, result: { queries: [{ text: 'Aidele Teofipol', gap: 'origin family' }] } as never }) },
-    webSearch: async () => [
-      { title: 'Random blog', url: 'https://randomblog.com/aidele', snippet: '...' },
-      { title: 'Yad Vashem entry', url: 'https://collections.yadvashem.org/...', snippet: '...' },
-      { title: 'Forum post', url: 'https://ancestryforum.example/...', snippet: '...' },
-    ],
-    webFetch: async () => 'page content',
+    harness: {
+      invoke: async () => ({
+        ok: true,
+        result: {
+          claims: [
+            { text: 'Aidele lived in Teofipol per 1928 census', url: 'https://collections.yadvashem.org/...', gap: 'origin family' },
+          ],
+        } as never,
+      }),
+    },
   });
   const out = await research(fakeDrawer({ derived: { record: 'I1', raw: 'name: Aidele' }, inputs: ['derived'] }), 12, deps);
   assert.equal(out.candidateClaims.length, 1);
   assert.equal(out.candidateClaims[0]!.url, 'https://collections.yadvashem.org/...');
-  assert.equal(out.unreliableDropped, 2);
+  assert.equal(out.candidateClaims[0]!.gap, 'origin family');
   assert.equal(out.sourcesQueried, 1);
   assert.equal(out.refuseToFabricate, false);
 });
 
 test('research: refuseToFabricate=true when zero claims AND no local evidence', async () => {
   const deps = fakeDeps({
-    harness: { invoke: async () => ({ ok: true, result: { queries: [{ text: 'q', gap: 'g' }] } as never }) },
-    webSearch: async () => [{ title: 't', url: 'https://random.com', snippet: 's' }],
+    harness: { invoke: async () => ({ ok: true, result: { claims: [] } as never }) },
   });
   const out = await research(fakeDrawer(), 12, deps);
   assert.equal(out.candidateClaims.length, 0);
@@ -56,12 +56,24 @@ test('research: refuseToFabricate=true when zero claims AND no local evidence', 
 
 test('research: refuseToFabricate=false when zero claims but derived data exists', async () => {
   const deps = fakeDeps({
-    harness: { invoke: async () => ({ ok: true, result: { queries: [{ text: 'q', gap: 'g' }] } as never }) },
-    webSearch: async () => [{ title: 't', url: 'https://random.com', snippet: 's' }],
+    harness: { invoke: async () => ({ ok: true, result: { claims: [] } as never }) },
   });
   const out = await research(fakeDrawer({ derived: { record: 'I1', raw: 'name: A' }, inputs: ['derived'] }), 12, deps);
   assert.equal(out.candidateClaims.length, 0);
   assert.equal(out.refuseToFabricate, false);
+});
+
+test('research: harness refuseToFabricate=true overrides local evidence check', async () => {
+  const deps = fakeDeps({
+    harness: {
+      invoke: async () => ({
+        ok: true,
+        result: { claims: [], refuseToFabricate: true } as never,
+      }),
+    },
+  });
+  const out = await research(fakeDrawer({ derived: { record: 'I1', raw: 'name: A' }, inputs: ['derived'] }), 12, deps);
+  assert.equal(out.refuseToFabricate, true);
 });
 
 test('research: harness failure throws', async () => {
@@ -71,25 +83,27 @@ test('research: harness failure throws', async () => {
   await assert.rejects(research(fakeDrawer(), 12, deps), /harness failed/);
 });
 
-test('research: caps queries at maxQueries', async () => {
-  const queries = Array.from({ length: 20 }, (_, i) => ({ text: `q${i}`, gap: `g${i}` }));
+test('research: caps claims at maxClaims', async () => {
+  const claims = Array.from({ length: 20 }, (_, i) => ({ text: `claim ${i}`, url: `https://example.com/${i}`, gap: `gap${i}` }));
   const deps = fakeDeps({
-    harness: { invoke: async () => ({ ok: true, result: { queries } as never }) },
-    webSearch: async () => [],
+    harness: { invoke: async () => ({ ok: true, result: { claims } as never }) },
   });
   const out = await research(fakeDrawer(), 5, deps);
+  assert.equal(out.candidateClaims.length, 5);
   assert.equal(out.sourcesQueried, 5);
 });
 
-test('research: drops fetched=null even when URL is reliable', async () => {
+test('research: sourcesQueried equals number of claims returned', async () => {
+  const claims = [
+    { text: 'claim 1', url: 'https://example.com/1', gap: 'gap1' },
+    { text: 'claim 2', url: 'https://example.com/2', gap: 'gap2' },
+    { text: 'claim 3', url: 'https://example.com/3', gap: 'gap3' },
+  ];
   const deps = fakeDeps({
-    harness: { invoke: async () => ({ ok: true, result: { queries: [{ text: 'q', gap: 'g' }] } as never }) },
-    webSearch: async () => [{ title: 't', url: 'https://collections.yadvashem.org/...', snippet: 's' }],
-    webFetch: async () => null,
+    harness: { invoke: async () => ({ ok: true, result: { claims } as never }) },
   });
   const out = await research(fakeDrawer(), 12, deps);
-  assert.equal(out.candidateClaims.length, 0);
-  assert.equal(out.unreliableDropped, 1);
+  assert.equal(out.sourcesQueried, 3);
 });
 
 test('formatResearchNote: includes text, gap, source URL, accessed date', () => {

@@ -34,15 +34,6 @@ export interface AuthorOptions {
   write: (s: string) => void;
   writeErr: (s: string) => void;
   /**
-   * Optional web search implementation. When omitted, the research phase
-   * runs with no-op functions that return empty results (noWeb-equivalent).
-   * Real implementations (harness tool calls or native HTTP) land in a
-   * follow-on task — the harness adapter doesn't yet expose a Tool surface
-   * for webSearch/webFetch.
-   */
-  webSearch?: (query: string) => Promise<ReadonlyArray<{ title: string; url: string; snippet: string }>>;
-  webFetch?: (url: string) => Promise<string | null>;
-  /**
    * Injectable consistency-check runner for Phase 6. When provided, the verify
    * phase calls it to apply format/schema fixes and check for consistency
    * findings. When omitted, the no-op default is used (always passes, no fixes).
@@ -182,20 +173,13 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
   if (startPhase <= 2) {
     opts.write(`[2/7] research\n`);
     if (!opts.noWeb) {
-      // Default to no-op functions when real implementations are not provided.
-      // Real webSearch/webFetch injection lands in a follow-on task once the
-      // harness adapter exposes a Tool surface for these.
-      const webSearch = opts.webSearch ?? (async () => []);
-      const webFetch = opts.webFetch ?? (async () => null);
       const result = await researchFn(drawer, 12, {
         harness: opts.harness,
-        webSearch,
-        webFetch,
         client: opts.client,
       });
 
       if (result.refuseToFabricate) {
-        opts.writeErr(`author: refusing to fabricate — no evidence found for ${opts.slug}\n`);
+        opts.writeErr(`author: refuse-to-fabricate — no usable evidence for ${opts.slug}\n`);
         return 4;
       }
 

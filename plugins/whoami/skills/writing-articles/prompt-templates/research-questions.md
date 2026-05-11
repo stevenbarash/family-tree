@@ -1,21 +1,24 @@
 ---
 name: research-questions
-description: Generate web search queries from gaps in the evidence drawer for a person.
+description: Perform web research for a person and return claims with sources.
 outputSchema:
   type: object
-  required: [queries]
+  required: [claims]
   properties:
-    queries:
+    claims:
       type: array
       items:
         type: object
-        required: [text, gap]
+        required: [text, url, gap]
         properties:
           text: { type: string }
+          url: { type: string }
           gap: { type: string }
+    refuseToFabricate:
+      type: boolean
 ---
 
-# Research-questions template
+# Research template
 
 You will be given the evidence drawer for one person:
 
@@ -23,21 +26,31 @@ You will be given the evidence drawer for one person:
 - `talk` — current `<slug>.talk.md` content (research notes, gap threads).
 - `narrative` — current `<slug>.narrative.md` content if present.
 
-Your job: generate 5–15 web search queries that could fill gaps in the
-record. Good queries:
+Your job: perform web research to fill gaps in the record, and return
+structured **claims** — each with the source URL and the gap it addresses.
 
-- Reach for events, places, occupations, communities, migrations,
-  political contexts that the GEDCOM hints at but doesn't elaborate.
-- Use specific names and dates where possible: "Yad Vashem Eidel
-  Ayzman Teofipol 1928 census" beats "Eidel Ayzman".
-- Prefer queries that hit the *reliable defaults* the project trusts:
-  Yad Vashem, JewishGen, archive.org, official municipal records,
-  peer-reviewed history, primary documents.
-- Don't repeat queries already discussed in the talk page.
-- Each query is paired with a `gap` field — a one-line description of
-  what the query is trying to answer. The orchestrator uses this when
-  recording the resulting research notes.
+## Procedure
 
-Cap at the limit specified in `context.maxQueries` (default 12).
+1. Identify 5-15 gaps in the record. Good gaps: events, places, occupations,
+   communities, migrations, political contexts that the GEDCOM hints at but
+   doesn't elaborate.
+2. For each gap, use the WebSearch tool to find candidate sources. Prefer
+   *reliable defaults*: Yad Vashem, JewishGen, archive.org, official municipal
+   records, peer-reviewed history, primary documents (census, ship manifests,
+   military records). Drop ancestry-forum results, blogs with no provenance,
+   speculative aggregators.
+3. For each reliable source, use the WebFetch tool to read it, then extract
+   one or more claims you can support with that source. Skip sources that
+   don't yield a citable claim.
+4. Build the `claims` array. Each entry:
+   - `text` — the claim, in one sentence.
+   - `url` — the source URL.
+   - `gap` — a short tag describing which gap this fills.
+5. If you cannot find any reliable sources for any gap AND the evidence
+   drawer is empty (no derived/talk/narrative), set `refuseToFabricate: true`
+   and return an empty claims array. The orchestrator will exit with a
+   refuse-to-fabricate code.
+
+Cap at `context.maxClaims` (default 12).
 
 Return JSON matching `outputSchema`.

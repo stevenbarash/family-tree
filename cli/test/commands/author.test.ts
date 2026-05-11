@@ -151,7 +151,7 @@ test('author: skips research phase when noWeb=true', async () => {
     noWeb: true,
     _research: async () => {
       researchCalled = true;
-      return { candidateClaims: [], unreliableDropped: 0, sourcesQueried: 0, refuseToFabricate: false };
+      return { candidateClaims: [], sourcesQueried: 0, refuseToFabricate: false };
     },
   }));
   assert.equal(code, 0);
@@ -162,7 +162,6 @@ test('author: runs research phase when noWeb=false and returns 0 on success', as
   let researchCalled = false;
   const fakeResearchResult: ResearchResult = {
     candidateClaims: [],
-    unreliableDropped: 0,
     sourcesQueried: 0,
     refuseToFabricate: false,
   };
@@ -181,14 +180,13 @@ test('author: exits 4 when research returns refuseToFabricate', async () => {
     noWeb: false,
     _research: async (): Promise<ResearchResult> => ({
       candidateClaims: [],
-      unreliableDropped: 0,
       sourcesQueried: 0,
       refuseToFabricate: true,
     }),
     writeErr: (s) => { err += s; },
   }));
   assert.equal(code, 4);
-  assert.match(err, /refusing to fabricate/);
+  assert.match(err, /refuse-to-fabricate/);
 });
 
 test('author: skips episodes when skipEpisodes=true', async () => {
@@ -291,7 +289,6 @@ test('author: phase 2 fires gitCommit with trailer (marker commit)', async () =>
   const commits: Array<{ subject: string; body: string }> = [];
   const fakeResearchResult = {
     candidateClaims: [{ text: 'Born 1890', url: 'https://example.com', gap: 'birthdate' }],
-    unreliableDropped: 0,
     sourcesQueried: 1,
     refuseToFabricate: false,
   };
