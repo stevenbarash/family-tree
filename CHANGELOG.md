@@ -23,6 +23,16 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Relationship-from-self strip on person pages** *(2026-05-16)*. Person
+  pages joined to a GEDCOM record now render a compact strip under the
+  title that names the subject's relationship to the configured
+  `SELF_RECORD` (e.g., "great-grandfather") with a clickable crumb chain
+  back through the connecting ancestors. Strip is suppressed on talk
+  pages, restricted pages, pages without a `gedcom.record`, and when the
+  target is `SELF_RECORD` itself. The relationship is computed
+  server-side from the cached derived-records map, so there's no extra
+  I/O per request.
+
 - **`runDetectors` helper** *(2026-05-11)* extracted from
   `wai check` into `cli/src/commands/check/run-detectors.ts`. Runs
   the requested detectors against a `RepoState`, optionally applies
