@@ -7,12 +7,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/data-repo-guard.sh",
-            "if": "Bash(git *)",
-            "timeout": 5
-          },
-          {
-            "type": "command",
             "command": ".claude/hooks/changelog-nudge.sh",
             "if": "Bash(git commit*)",
             "timeout": 5
