@@ -23,6 +23,15 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`findOnThisDay` almanac aggregator** *(2026-05-16)*. New pure
+  `core/src/family/on-this-day.ts` walks a derived-records map and
+  returns births, deaths, and marriages on a given `(month, day)`
+  sorted oldest-first. Marriages are deduped by FAM id, approximate
+  dates (`Abt`/`Bef`/`Aft`/`Bet`/`Cal`/`Est`) and partial dates are
+  excluded, and births of likely-living people (no recorded death AND
+  born within the living-window, default 80 years) are suppressed.
+  Feeds the upcoming home-page "this day in family history" ribbon.
+
 - **Relationship-from-self strip on person pages** *(2026-05-16)*. Person
   pages joined to a GEDCOM record now render a compact strip under the
   title that names the subject's relationship to the configured

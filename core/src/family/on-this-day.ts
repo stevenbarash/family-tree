@@ -1,3 +1,5 @@
+import type { DerivedRecord } from '../gedcom/types.ts';
+
 const FULL_DATE_RE = /^\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\s*$/;
 
 const MONTHS: Record<string, number> = {
@@ -34,4 +36,100 @@ export function extractFullDate(raw: string | null | undefined): { month: number
   const year = parseInt(m[3]!, 10);
   if (!month || day < 1 || day > 31 || year < 1 || year > 9999) return null;
   return { month, day, year };
+}
+
+export type TodayEventType = 'birth' | 'death' | 'marriage';
+
+export interface TodayEventPerson {
+  record: string;
+  name: string;
+}
+
+export interface TodayEvent {
+  type: TodayEventType;
+  year: number;
+  /** The subject of the event. For marriages, alphabetically-first spouse for deterministic ordering. */
+  primary: TodayEventPerson;
+  /** For marriages: the other spouse. Unset for birth/death. */
+  secondary?: TodayEventPerson;
+}
+
+export interface FindOnThisDayInput {
+  month: number; // 1-12
+  day: number;   // 1-31
+}
+
+export interface FindOnThisDayOptions {
+  /** Used for the "is this person likely living?" heuristic and the future-year guard. */
+  now: Date;
+  /** Suppress births of likely-living people born within this many years of `now`. Default 80. */
+  livingWindowYears?: number;
+}
+
+/**
+ * Pure: walk all derived records, find births/deaths/marriages that fall on
+ * the given calendar (month, day), and return them sorted by year ascending.
+ *
+ * Marriages are deduped by FAM id (the same FAM appears in both spouses'
+ * `marriages[]` arrays).
+ *
+ * Approximate dates (Abt/Bef/Aft/Bet/Cal/Est) and partial dates are
+ * silently excluded by `extractFullDate`.
+ *
+ * Births of likely-living people (no `death.date` AND born within
+ * `livingWindowYears` of `now`) are suppressed — even with the privacy
+ * gate disabled, the home-page ribbon shouldn't surface a living
+ * relative's birthday by default. Historical births with no recorded
+ * death (older than the window) surface normally.
+ */
+export function findOnThisDay(
+  records: ReadonlyMap<string, DerivedRecord>,
+  on: FindOnThisDayInput,
+  options: FindOnThisDayOptions,
+): TodayEvent[] {
+  const livingWindow = options.livingWindowYears ?? 80;
+  const nowYear = options.now.getUTCFullYear();
+  const livingCutoff = nowYear - livingWindow;
+  const out: TodayEvent[] = [];
+  const seenMarriageFams = new Set<string>();
+
+  for (const [, rec] of records) {
+    // Birth
+    const bd = extractFullDate(rec.birth?.date ?? null);
+    if (bd && bd.month === on.month && bd.day === on.day && bd.year <= nowYear) {
+      const isLikelyLiving = !rec.death?.date && bd.year > livingCutoff;
+      if (!isLikelyLiving) {
+        out.push({ type: 'birth', year: bd.year, primary: { record: rec.record, name: rec.name } });
+      }
+    }
+    // Death
+    const dd = extractFullDate(rec.death?.date ?? null);
+    if (dd && dd.month === on.month && dd.day === on.day && dd.year <= nowYear) {
+      out.push({ type: 'death', year: dd.year, primary: { record: rec.record, name: rec.name } });
+    }
+    // Marriages
+    for (const m of rec.marriages) {
+      if (seenMarriageFams.has(m.fam)) continue;
+      const md = extractFullDate(m.marriedDate);
+      if (!md || md.month !== on.month || md.day !== on.day || md.year > nowYear) continue;
+      seenMarriageFams.add(m.fam);
+      const spouse = m.spouse;
+      if (!spouse) {
+        // FAM without a recorded spouse — unusual, surface this side only.
+        out.push({ type: 'marriage', year: md.year, primary: { record: rec.record, name: rec.name } });
+        continue;
+      }
+      // Deterministic ordering: alphabetically-first name is primary so a
+      // second pass through the records map can't reorder the pair.
+      const here = { record: rec.record, name: rec.name };
+      const there = { record: spouse.record, name: spouse.name };
+      const [primary, secondary] = here.name.localeCompare(there.name) <= 0
+        ? [here, there]
+        : [there, here];
+      out.push({ type: 'marriage', year: md.year, primary, secondary });
+    }
+  }
+
+  out.sort((a, b) => a.year - b.year);
+  return out;
 }
