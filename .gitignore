@@ -7,3 +7,4 @@ dist/
 .worktrees/
 .superpowers/
 .claude/settings.local.json
+web/
