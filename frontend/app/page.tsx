@@ -3,6 +3,8 @@ import { getCachedList, getCachedSnapshots, getRecentlyRevised } from '@/lib/ser
 import { getFamilyTree } from '@/lib/family';
 import { GENEALOGY_DIR, PAGES_DIR, SELF_RECORD } from '@/lib/env';
 import { joinMeta } from '@/components/family/sections/shared';
+import { getEventsForToday } from '@/lib/on-this-day-view';
+import { OnThisDayRibbon } from '@/components/on-this-day-ribbon';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +29,11 @@ export default async function HomePage() {
     getRecentlyRevised(PAGES_DIR, RECENT_LIMIT),
     getCachedSnapshots(GENEALOGY_DIR),
   ]);
+
+  const now = new Date();
+  const todayEvents = getEventsForToday(live, now);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayLabel = `${monthNames[now.getUTCMonth()]} ${now.getUTCDate()}`;
 
   const latestSnap = snapshots[snapshots.length - 1];
   const snapAge = snapshotAgeDays(latestSnap?.date);
@@ -73,6 +80,8 @@ export default async function HomePage() {
           when you have changes to import.
         </div>
       ) : null}
+
+      <OnThisDayRibbon events={todayEvents} dayLabel={dayLabel} />
 
       {frontier.length > 0 ? (
         <section className="mb-10">
