@@ -61,3 +61,31 @@ test('computeRelationshipFromSelf: returns null when target record is missing fr
   });
   assert.equal(result, null);
 });
+
+test('computeRelationshipFromSelf: returns label, crumbs, and degree for a parent chain', () => {
+  // Self -> father -> father's father. Target is grandfather: degree 2.
+  const records = new Map<string, DerivedRecord>([
+    ['@I1@', rec('@I1@', 'Me', [{ record: '@I2@', role: 'father' }])],
+    ['@I2@', rec('@I2@', 'Dad', [{ record: '@I3@', role: 'father' }])],
+    ['@I3@', rec('@I3@', 'Grandpa')],
+  ]);
+  const result = computeRelationshipFromSelf({
+    selfRecord: '@I1@',
+    targetRecord: '@I3@',
+    records,
+    findSlug: (record) => (record === '@I3@' ? 'grandpa' : undefined),
+  });
+  assert.ok(result);
+  assert.match(result.label, /grandfather/i);
+  assert.equal(result.degree, 2);
+  // Crumbs walk self -> dad -> grandpa, in that order.
+  assert.deepEqual(
+    result.crumbs.map((c) => c.record),
+    ['@I1@', '@I2@', '@I3@'],
+  );
+  // Grandpa's slug came through; the in-between records had no page.
+  const last = result.crumbs[result.crumbs.length - 1];
+  assert.equal(last?.slug, 'grandpa');
+  const middle = result.crumbs[1];
+  assert.equal(middle?.slug, undefined);
+});
