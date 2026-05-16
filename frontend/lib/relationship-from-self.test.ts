@@ -7,12 +7,19 @@ function rec(record: string, name: string, parents: { record: string; role: 'fat
   return {
     record,
     name,
-    parents,
+    birth: null,
+    death: null,
+    parents: parents.map((p) => ({ ...p, name: p.record })),
     spouses: [],
     children: [],
-    siblings: [],
+    familyOfOrigin: [],
+    marriages: [],
+    residences: [],
+    occupations: [],
+    sources: [],
     media: [],
-  } as unknown as DerivedRecord;
+    privacy: { restricted: false, reason: 'none' },
+  };
 }
 
 test('computeRelationshipFromSelf: returns null when target equals self', () => {

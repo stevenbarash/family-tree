@@ -16,11 +16,11 @@ export interface RelationshipCrumb {
 }
 
 export interface RelationshipFromSelf {
-  /** Human-readable relationship label, e.g. "great-grandmother on your mother's side". */
+  /** Human-readable relationship label, e.g. "great-grandmother", "second cousin once removed". */
   label: string;
   /** Path of crumbs from self → LCA → target, both endpoints included. */
   crumbs: ReadonlyArray<RelationshipCrumb>;
-  /** Total path length (number of hops). Useful for emphasis: degree===1 is parent/child/spouse. */
+  /** Total path length (number of hops). degree===1 is parent or child. */
   degree: number;
 }
 
