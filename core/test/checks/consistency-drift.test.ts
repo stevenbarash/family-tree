@@ -336,3 +336,107 @@ test('sectionSlice: a literal "## Drafting plan" inside a fenced code block does
   ].join('\n');
   assert.equal(sectionSlice(body, 'Drafting plan'), '\nreal plan content\n');
 });
+
+// ---------------------------------------------------------------------------
+// detectTalkLivePageDrift tests (via the exported detector)
+// ---------------------------------------------------------------------------
+
+test('detectConsistencyDrift: flags quoted claim on talk page absent from live page', () => {
+  // The exact failure mode that escaped the Boris/Kelman mix-up.
+  const livePage = page('boris', {
+    body: 'Boris was awarded the Order of the Red Star and the medal "For the Capture of Berlin".',
+  });
+  const talkPage = page('boris.talk', {
+    body: [
+      '## Facts extracted',
+      '',
+      '- Decorations: Order of the Red Star and the medals "For Defense of Kyiv", "For the Capture of Berlin".',
+    ].join('\n'),
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage, talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  // "For the Capture of Berlin" is on both → no finding.
+  // "For Defense of Kyiv" is only on talk → one finding.
+  assert.equal(drift.length, 1);
+  assert.match(drift[0]!.message, /For Defense of Kyiv/);
+  assert.equal(drift[0]!.category, 'consistency');
+  assert.equal(drift[0]!.severity, 'warn');
+});
+
+test('detectConsistencyDrift: quoted phrase outside scoped sections is ignored', () => {
+  // Quoted phrase in the talk page's "Open editorial questions" section
+  // is NOT one of the scanned sections; should not trigger.
+  const livePage = page('boris', { body: 'plain body, no quotes' });
+  const talkPage = page('boris.talk', {
+    body: [
+      '## Open editorial questions',
+      '',
+      '::open',
+      'Should we cite "For Defense of Kyiv" here?',
+    ].join('\n'),
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage, talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  assert.equal(drift.length, 0);
+});
+
+test('detectConsistencyDrift: scans Facts extracted, Drafting plan, and Cross-references', () => {
+  const livePage = page('boris', { body: 'no quoted phrases here' });
+  const talkPage = page('boris.talk', {
+    body: [
+      '## Facts extracted',
+      '',
+      '- "fact-section claim"',
+      '',
+      '## Drafting plan',
+      '',
+      '- "drafting-section claim"',
+      '',
+      '## Cross-references',
+      '',
+      '- "cross-ref claim"',
+    ].join('\n'),
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage, talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  // All three quoted phrases are claimed on the talk page but absent from
+  // the live page, so each triggers a finding.
+  assert.equal(drift.length, 3);
+  const messages = drift.map(d => d.message).join('|');
+  assert.match(messages, /fact-section claim/);
+  assert.match(messages, /drafting-section claim/);
+  assert.match(messages, /cross-ref claim/);
+});
+
+test('detectConsistencyDrift: orphan talk page (no live page) is silently skipped', () => {
+  // A `.talk.md` that exists without a corresponding live page (e.g.,
+  // pre-creation working notes) shouldn't produce findings on every
+  // quoted phrase. It's just unmatched.
+  const talkPage = page('orphan.talk', {
+    body: '## Facts extracted\n\n- "something quoted"\n',
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  assert.equal(drift.length, 0);
+});
+
+test('detectConsistencyDrift: live page without a talk page produces no talk-drift findings', () => {
+  // Trivial: no talk page → nothing to compare.
+  const livePage = page('boris', { body: 'just a body with "a quoted phrase".' });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  assert.equal(drift.length, 0);
+});
+
+test('detectConsistencyDrift: finding location points at the talk page and line of the claim', () => {
+  const livePage = page('boris', { body: 'no match here' });
+  const talkPage = page('boris.talk', {
+    body: '## Facts extracted\n\n- normal line\n- claim line "For Defense of Kyiv"\n',
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage, talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0]!.location.file, talkPage.path);
+  // Line 4 of the talk body is the claim line.
+  assert.equal(drift[0]!.location.line, 4);
+});

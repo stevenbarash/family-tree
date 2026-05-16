@@ -2,7 +2,19 @@ import type { Detector, Finding, LoadedPage, RepoState } from './types.ts';
 
 export const detectConsistencyDrift: Detector = (state: RepoState): Finding[] => {
   const findings: Finding[] = [];
+  const livePages = new Map<string, LoadedPage>();
   for (const page of state.pages) {
+    if (!page.slug.endsWith('.talk')) livePages.set(page.slug, page);
+  }
+  for (const page of state.pages) {
+    if (page.slug.endsWith('.talk')) {
+      const liveSlug = page.slug.slice(0, -'.talk'.length);
+      const livePage = livePages.get(liveSlug);
+      if (livePage) {
+        findings.push(...detectTalkLivePageDrift(page, livePage));
+      }
+      continue;
+    }
     findings.push(...detectFootnoteOrphans(page));
     findings.push(...detectBibliographyMismatch(page));
     findings.push(...detectGedcomMismatch(page, state));
@@ -160,6 +172,52 @@ function extractInfoboxField(infobox: string, key: string): string | null {
 function valuesAgree(a: string, b: string): boolean {
   const n = (s: string) => s.trim().replace(/^"|"$/g, '').toLowerCase();
   return n(a) === n(b) || n(a).startsWith(n(b)) || n(b).startsWith(n(a));
+}
+
+const SCANNED_TALK_SECTIONS = ['Facts extracted', 'Drafting plan', 'Cross-references'] as const;
+
+/**
+ * Flag quoted claim phrases that appear in a talk page's research / drafting
+ * sections but don't appear (verbatim) on its live page. This is the
+ * specific failure mode that let the Boris/Kelman medal mix-up linger: the
+ * talk page's Facts extracted and Drafting plan sections asserted the
+ * "For Defense of Kyiv" medal as Boris's, the live page (after correction)
+ * doesn't, and nothing in the existing detectors compared the two surfaces.
+ *
+ * v1 scope is narrow on purpose: only double-quoted (`"…"`) and
+ * guillemet-quoted (`«…»`) phrases inside three named sections. Phrases
+ * elsewhere on the talk page (e.g., Open editorial questions) are scoped
+ * out — they're often hypotheticals being weighed, not active claims.
+ * Severity is `warn` because some legitimate skew exists (a quoted source
+ * phrase on the talk page may be paraphrased rather than quoted on the
+ * live page); the caller decides whether to `--fail-on consistency`.
+ */
+function detectTalkLivePageDrift(talkPage: LoadedPage, livePage: LoadedPage): Finding[] {
+  const findings: Finding[] = [];
+  const talkLines = talkPage.body.split('\n');
+  const seen = new Set<string>();
+  for (const section of SCANNED_TALK_SECTIONS) {
+    const slice = sectionSlice(talkPage.body, section);
+    if (!slice) continue;
+    for (const phrase of extractQuotedPhrases(slice)) {
+      if (seen.has(phrase)) continue;
+      seen.add(phrase);
+      if (livePage.body.includes(phrase)) continue;
+      // Find the talk-page line number that contains this phrase, for the
+      // finding location.
+      let line = 1;
+      for (let i = 0; i < talkLines.length; i++) {
+        if (talkLines[i]!.includes(phrase)) { line = i + 1; break; }
+      }
+      findings.push({
+        category: 'consistency',
+        severity: 'warn',
+        message: `${talkPage.slug}: talk page asserts "${phrase}" in ## ${section} but live page ${livePage.slug}.md doesn't mention it — talk page may be stale, or live page may be missing a claim that should be asserted`,
+        location: { file: talkPage.path, line },
+      });
+    }
+  }
+  return findings;
 }
 
 /**
