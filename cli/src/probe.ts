@@ -38,7 +38,7 @@ export async function probeServers(
  * Trailing slashes are stripped so equivalent URLs collapse.
  */
 export function commonServerCandidates(configuredUrl: string): string[] {
-  const norm = configuredUrl.replace(/\/$/, '');
+  const norm = configuredUrl.replace(/\/+$/, '');
   const out = [norm];
   for (const d of DEFAULT_CANDIDATES) {
     if (!out.includes(d)) out.push(d);

@@ -203,7 +203,7 @@ export class ApiClient {
     // take precedence over the well-known default ports.
     const all = [...extras, ...candidates];
     const results = await probeServers(all);
-    const alive = results.filter(r => r.ok && r.url !== this.baseUrl.replace(/\/$/, ''));
+    const alive = results.filter(r => r.ok && r.url !== this.baseUrl.replace(/\/+$/, ''));
     if (alive.length > 0) {
       const url = alive[0]!.url;
       return new ConnectionError(

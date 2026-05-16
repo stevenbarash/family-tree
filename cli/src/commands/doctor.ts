@@ -24,8 +24,8 @@ export async function runDoctor(opts: DoctorOptions): Promise<number> {
 
   // --- Server section ---
   const probes = await opts.probeServers(opts.candidates);
-  const configured = probes.find(p => p.url === opts.configuredUrl.replace(/\/$/, ''));
-  const otherAlive = probes.filter(p => p.ok && p.url !== opts.configuredUrl.replace(/\/$/, ''));
+  const configured = probes.find(p => p.url === opts.configuredUrl.replace(/\/+$/, ''));
+  const otherAlive = probes.filter(p => p.ok && p.url !== opts.configuredUrl.replace(/\/+$/, ''));
 
   if (configured?.ok) {
     opts.write(`server     ${opts.configuredUrl}  ok\n`);
