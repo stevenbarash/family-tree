@@ -10,7 +10,16 @@
  *   stay deterministic without injecting a clock or RNG.
  */
 
-export type NoteKind = 'human' | 'agent';
+// Mirrors NoteKind in cli/src/api-client.ts and the Zod enum in
+// frontend/app/api/notes/[slug]/route.ts. Adding a value here means
+// updating both of those too — and (critically) the parser below, which
+// otherwise silently narrows unknown kinds back to 'human' on read,
+// breaking any downstream filter that distinguishes them (see
+// cli/src/commands/author/gather.ts where transcript notes are picked
+// out by kind === 'transcript').
+export type NoteKind = 'human' | 'agent' | 'interview' | 'research' | 'transcript';
+
+const KNOWN_KINDS = new Set<NoteKind>(['human', 'agent', 'interview', 'research', 'transcript']);
 
 export interface Note {
   id: string;
@@ -138,7 +147,7 @@ export function parseResearchNotes(body: string): Note[] {
         date: currentDate,
         text,
         by: attrs.by ?? '(unknown)',
-        kind: (attrs.kind === 'agent' ? 'agent' : 'human'),
+        kind: (attrs.kind && KNOWN_KINDS.has(attrs.kind as NoteKind) ? attrs.kind as NoteKind : 'human'),
         createdAt: attrs.at ?? null,
         editedAt: attrs.editedAt ?? null,
         editedBy: attrs.editedBy ?? null,
@@ -385,7 +394,7 @@ function findBulletSpan(body: string, id: string): BulletSpan | null {
       attrs: {
         id: attrs.id,
         by: attrs.by ?? '(unknown)',
-        kind: (attrs.kind === 'agent' ? 'agent' : 'human'),
+        kind: (attrs.kind && KNOWN_KINDS.has(attrs.kind as NoteKind) ? attrs.kind as NoteKind : 'human'),
         at: attrs.at ?? '',
         editedAt: attrs.editedAt,
         editedBy: attrs.editedBy,

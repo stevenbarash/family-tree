@@ -8,7 +8,11 @@ import { DEFAULT_AUTHOR } from '@/lib/env';
 const NoteBody = z.object({
   note: z.string().min(1).max(5000),
   by: z.string().regex(/^[A-Za-z0-9._-]+$/).max(64).optional(),
-  kind: z.enum(['human', 'agent']).optional(),
+  // Must mirror NoteKind in cli/src/api-client.ts. Previously this accepted
+  // only human|agent, but the CLI's `wai note --kind` flag and the author
+  // pipeline's Phase 2 research path both emit other kinds; rejecting them
+  // here breaks the cohort pipeline with an opaque HTTP 400.
+  kind: z.enum(['human', 'agent', 'interview', 'research', 'transcript']).optional(),
 });
 
 /**

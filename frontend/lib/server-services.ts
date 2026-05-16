@@ -4,7 +4,7 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { readManifest } from '@core/gedcom/snapshots.ts';
 import type { SnapshotEntry } from '@core/gedcom/types.ts';
-import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType } from '@core/pages/index.ts';
+import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType, type NoteKind } from '@core/pages/index.ts';
 import { buildSlugIndex, type SlugIndex } from './wikilinks';
 import {
   createSearchIndex, loadSearchIndex, saveSearchIndex, rebuildSearchIndex,
@@ -329,7 +329,7 @@ async function withTalkLock<T>(talkSlug: string, fn: () => Promise<T>): Promise<
 export interface AppendNoteInput {
   text: string;
   by: string;
-  kind: 'human' | 'agent';
+  kind: NoteKind;
 }
 
 export interface AppendNoteResult {
@@ -488,7 +488,7 @@ export interface NoteView {
   id: string;
   date: string;
   by: string;
-  kind: 'human' | 'agent';
+  kind: NoteKind;
   createdAt: string | null;
   editedAt: string | null;
   editedBy: string | null;

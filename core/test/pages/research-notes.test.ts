@@ -59,6 +59,38 @@ test('appendResearchNote: agent kind round-trips into the trailer', () => {
   assert.match(out, /<!-- note id=n_test0001 by=editor-bot kind=agent at=/);
 });
 
+test('parseResearchNotes: preserves interview/research/transcript kinds on read', () => {
+  // Before the fix, the parser narrowed any kind other than 'agent' back to
+  // 'human'. The downstream effect was severe: notes written via `wai
+  // transcribe` (kind=transcript) round-tripped as 'human' on read, so
+  // gather.ts's `n.kind === 'transcript'` filter never matched and the
+  // author pipeline could never see transcript notes. Same for
+  // `wai interview` (kind=interview) and `wai author` Phase 2's research
+  // notes (kind=research). After the fix, all known kinds round-trip.
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- transcript line\n  <!-- note id=n_t by=steven kind=transcript at=2026-05-06T14:00:00Z -->\n' +
+    '- interview line\n  <!-- note id=n_i by=steven kind=interview at=2026-05-06T14:01:00Z -->\n' +
+    '- research line\n  <!-- note id=n_r by=agent kind=research at=2026-05-06T14:02:00Z -->\n';
+  const notes = parseResearchNotes(body);
+  assert.equal(notes.length, 3);
+  assert.equal(notes[0]!.kind, 'transcript');
+  assert.equal(notes[1]!.kind, 'interview');
+  assert.equal(notes[2]!.kind, 'research');
+});
+
+test('parseResearchNotes: unknown kind in trailer falls back to human', () => {
+  // Defensive: a stray or misspelled kind value (data drift, manual edit)
+  // shouldn't crash the parser or surface as the wrong known value — it
+  // falls back to 'human' so existing UI branches behave predictably.
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- weird note\n  <!-- note id=n_x by=steven kind=mystery at=2026-05-06T14:00:00Z -->\n';
+  const notes = parseResearchNotes(body);
+  assert.equal(notes.length, 1);
+  assert.equal(notes[0]!.kind, 'human');
+});
+
 test('appendResearchNote: derives date from createdAt UTC when no override', () => {
   const out = appendResearchNote('', fixed({ createdAt: '2026-05-06T03:14:00Z' }));
   assert.match(out, /### 2026-05-06\n/);

@@ -12,7 +12,12 @@ export interface NoteItemView {
   id: string;
   date: string;
   by: string;
-  kind: 'human' | 'agent';
+  // Must mirror NoteKind in @core/pages/research-notes. Adding a kind
+  // here only affects display — the current UI only branches on === 'agent';
+  // every other value renders without a kind annotation, which is the
+  // intentional fall-through for interview/research/transcript notes
+  // produced by `wai transcribe`, `wai interview`, and `wai author`.
+  kind: 'human' | 'agent' | 'interview' | 'research' | 'transcript';
   createdAt: string | null;
   editedAt: string | null;
   editedBy: string | null;
