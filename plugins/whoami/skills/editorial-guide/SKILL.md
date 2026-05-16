@@ -167,6 +167,23 @@ Additional fields: **type** (messages, photos, video, etc.), **timestamp** (date
 
 **Don't need citations**: Broadly sourced observations, information already attributed inline with a date, episode page content drawn from a defined set of voice notes listed at the top.
 
+### The `[?]` citation-needed marker
+
+When you know (or strongly believe) a fact but cannot cite a specific source — for instance, family-shared knowledge you've absorbed from talk-page context, or a claim where you'd need to consult records you don't have access to — **mark the claim with a trailing `[?]`** rather than fabricating a footnote.
+
+```markdown
+Veniamin lived with Boris and Galina in Brooklyn until his death.[?]
+Boris arrived in the United States in the mid-1980s.[?]
+```
+
+The marker is the model's escape hatch from the fabrication trap. Every factual sentence (one containing a date, year, place, or `[[wikilink]]` to a named entity) MUST end in **either** a footnote reference `[^id]` **or** the `[?]` marker. Inventing a footnote that points to a vague or unread source is forbidden — use `[?]` and let a reviewer either cite or remove the claim.
+
+The `wai check --include citation` detector enforces this. The author pipeline's verify phase blocks completion when any factual sentence on the current slug lacks a source.
+
+`[?]` claims are not the same as `::open` threads:
+- Use **`[?]`** for an *assertion you believe is true* but haven't sourced.
+- Use **`::open`** on the talk page for *gaps and questions* the data leaves open.
+
 ### Reusing footnotes
 
 A single footnote definition can be referenced multiple times in the body — just repeat the `[^id]` marker:
@@ -250,6 +267,36 @@ Without `--apply` the command is dry-run and prints the planned changes only.
 - **active** — page value differs from raw derived value (the overlay is doing real work).
 - **promotable** — page value matches raw derived value (correction is redundant; either drop it from the page or run `wai promote-corrections`).
 - **conflict** — two pages target the same `(record, field)` with different values. Hard error; resolve before merging.
+
+## Fact-correction discipline
+
+When you correct a factual error in any wiki page — a wrong date, medal, unit, name, place, relationship, source attribution — the correction has to be replicated everywhere the wrong claim lives. Wiki facts are graph-distributed: the same claim typically appears on the live page, the page's talk file (research notes and drafting plan), any episode page that derives from the same source extraction, the source page's "confirmed entries" summary, and cross-references on related people's pages.
+
+**The required workflow when fixing any factual error:**
+
+1. **List every variant of the wrong claim** before you touch the keyboard. Names, dates, units, medals, and place names typically have English + Russian + Ukrainian + sometimes Hebrew/Yiddish forms. The wrong claim may also appear in inverse framings ("Both brothers were decorated X") and in cite-vault note prose.
+
+2. **Grep the entire wiki** for every variant before editing any single file:
+
+   ```bash
+   grep -rn "<claim variant>" ~/whoami/pages/ ~/whoami/assets/sources/
+   ```
+
+   (or, once available, `wai grep-claims "<phrase>"` — see the CLI reference.)
+
+3. **Build a numbered audit list** — file path, line number, what's wrong, what it should be — before opening any editor. This makes scope visible and prevents the fix-one-ship-get-asked-to-fix-more pattern.
+
+4. **Fix all locations in one pass** so the wiki is internally consistent at every commit boundary. Cross-page links should match the corrected facts immediately, not after a follow-up.
+
+5. **Final grep** to confirm zero remaining hits — or only intentional hits inside correction-notes that cite the old claim to flag it as fixed.
+
+**Talk pages need fixing too.** Talk pages are research logs that feed future re-drafts of the live page; a stale fact in a talk page's *Facts extracted* or *Drafting plan* section becomes a re-injected stale fact on the next regeneration. When fixing a live page, fix its `.talk.md` companion in the same pass — typically by adding a top dated research note ("2026-MM-DD — correction note") that records what was wrong and why, then editing the affected lines inline with a brief `*[Corrected 2026-MM-DD from "<old>"]*` annotation so the audit trail is preserved.
+
+**Episode pages are derived content.** A `[[Person]] and the [[Event]]` episode page that was authored from the wrong source extraction propagates the same wrong claims into a narrative the reader will treat as authoritative. When fixing a person page, check `pages/<person>-and-*.md` for episode pages and reconcile them.
+
+**The discipline applies symmetrically to NEW facts.** When you add a fact (a newly-discovered birthplace, a confirmed military unit, a corrected death date), grep for everywhere that the *old* fact (or its absence) was asserted and propagate. Adding a fact to one page without updating the talk page's drafting plan leaves the wiki internally inconsistent.
+
+**Why this is its own section:** an editorial agent who skips the grep step ships internal contradictions. A reader cross-checking the wiki finds the live page says one thing, the talk page says another, the episode page asserts a third — and concludes the wiki can't be trusted as a coherent source. Internal consistency is editorial, not just hygienic.
 
 ## Genealogy data quality
 
