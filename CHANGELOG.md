@@ -55,40 +55,118 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   in `frontend/app/[slug]/page.tsx` limited to slugs the current page
   actually links to (so dense pages don't slow the request).
 
-- **"On this day" almanac ribbon on the home page** *(2026-05-16)*. Under
-  the index header, a compact ribbon now lists births, deaths, and
-  marriages from the family tree that fall on today's calendar date,
-  sorted oldest-first ("1928 — Mordechai Margolis died. 1946 — Boris
-  Ayzman was born."). Pulled from derived YAMLs at request time; ribbon
-  hides on empty days. Approximate dates (`Abt`/`Bef`/`Aft`/`Bet`/`Cal`/
-  `Est`) and partial dates are excluded; births of likely-living
-  relatives (no recorded death AND born within the last 80 years) are
-  suppressed even with the privacy gate disabled. Marriages dedupe by
-  FAM id so each wedding surfaces once. Names link to wiki pages when
-  one exists. New pure core function `findOnThisDay` in
-  `core/src/family/on-this-day.ts`; frontend view-join in
-  `frontend/lib/on-this-day-view.ts`; RSC `OnThisDayRibbon` component.
+- **`findOnThisDay` almanac aggregator** *(2026-05-16)*. New pure
+  `core/src/family/on-this-day.ts` walks a derived-records map and
+  returns births, deaths, and marriages on a given `(month, day)`
+  sorted oldest-first. Marriages are deduped by FAM id, approximate
+  dates (`Abt`/`Bef`/`Aft`/`Bet`/`Cal`/`Est`) and partial dates are
+  excluded, and births of likely-living people (no recorded death AND
+  born within the living-window, default 80 years) are suppressed.
+  Feeds the upcoming home-page "this day in family history" ribbon.
 
 - **Relationship-from-self strip on person pages** *(2026-05-16)*. Person
-  pages joined to a GEDCOM record now render a compact strip under the
-  title that names the subject's relationship to the configured
-  `SELF_RECORD` (e.g., "great-grandfather") with a clickable crumb chain
-  back through the connecting ancestors. Strip is suppressed on talk
-  pages, restricted pages, pages without a `gedcom.record`, and when the
-  target is `SELF_RECORD` itself. The relationship is computed
+  pages joined to a GEDCOM record now render a one-line subtitle under
+  the title naming the subject's relationship to the configured
+  `SELF_RECORD` (e.g., "Your great-grandfather."). Strip is suppressed
+  on talk pages, restricted pages, pages without a `gedcom.record`, and
+  when the target is `SELF_RECORD` itself. The relationship is computed
   server-side from the cached derived-records map, so there's no extra
-  I/O per request.
+  I/O per request. The wrapper (`frontend/lib/relationship-from-self.ts`)
+  already returns the full crumb chain from self → target with each
+  hop's slug resolved; rendering it as a hoverable trail of avatar
+  chips is a deferred follow-up.
 
-- **`runDetectors` helper** *(2026-05-11)* extracted from
-  `wai check` into `cli/src/commands/check/run-detectors.ts`. Runs
-  the requested detectors against a `RepoState`, optionally applies
-  format/schema fixes and reloads, returns structured
-  `{ findings, fixedCount }`. Shared between the standalone `wai
-  check` command and the author orchestrator's Phase 6 verify
-  wiring. The author's verify phase now actually surfaces consistency
-  findings against the live data repo instead of a no-op stub.
+- **`wai check --min-severity` flag** *(2026-05-15)* lets the exit code
+  ignore findings below a severity floor (`info|warn|error`). Display
+  and `--json` output still include every finding — only the exit code
+  filters — so info findings remain visible as cleanup signals without
+  blocking commits. Resolves the catch-22 between the editorial guide
+  (which says info findings are advisory) and the pre-commit hook
+  (which previously failed on any finding in `--fail-on` categories).
+  The data-repo's `.githooks/pre-commit` now invokes
+  `wai check --fail-on format,schema,data --min-severity warn`, so a
+  page with an info-severity active-correction finding commits cleanly
+  via both `git commit` and the wai API write path.
 
 ### Fixed
+
+- **Research-note kinds round-trip through the parser** *(2026-05-16)*.
+  `parseResearchNotes` narrowed any kind other than `'agent'` back to
+  `'human'` on read (a stale `(attrs.kind === 'agent' ? 'agent' :
+  'human')` conditional from when only those two kinds existed). The
+  recent route widening to accept `interview`/`research`/`transcript`
+  only fixed the write side: on read, every non-agent note came back as
+  `'human'`. The downstream impact was severe — `cli/src/commands/author/
+  gather.ts` filters notes by `n.kind === 'transcript'` to populate the
+  evidence drawer with transcripts; with kinds collapsed to `human`,
+  the filter never matched and `wai author` couldn't see any transcript
+  evidence. Same path for `wai interview` (kind=interview) and
+  `wai author` Phase 2 research notes (kind=research). Widened
+  `NoteKind` in `core/src/pages/research-notes.ts` to match the
+  CLI/route enums, taught the parser to preserve any known kind (with
+  unknown values still falling back to `'human'` defensively), and
+  widened the matching types in `frontend/lib/server-services.ts` and
+  `frontend/components/research-notes/note-item.tsx`. Also caught a
+  frontend typecheck regression that the route widening had silently
+  introduced (the route compiled but `appendNoteOnDisk` rejected the
+  wider kind). Covered by two new tests in
+  `core/test/pages/research-notes.test.ts`.
+
+- **Harness JSON extractor ignores quotes outside JSON depth** *(2026-05-16)*.
+  `extractFirstBalancedJson` (the brace-matching helper that locates
+  JSON in a model response) entered string-tracking mode on any `"`,
+  including quotes in preamble prose. A model response like
+  `I read "the docs and here it is: {"answer":42}` consumed the real
+  JSON's opening `{` as part of a phantom "string" because the
+  unmatched preamble `"` flipped `inString=true`. The extractor then
+  returned null, and `JSON.parse` failed on the raw prose with an
+  unhelpful "Unexpected token" pointing at the first letter of the
+  preamble. Fix: only enter string mode once `depth > 0`. Outside
+  depth, `"` is just text. Covered by a new test
+  (`unmatched quote in preamble does not swallow the real JSON`).
+
+- **`wai author` Phase 3/7 section finders skip code fences** *(2026-05-16)*.
+  `replaceOrAppendOutline` (Phase 3, outline) and `appendLogEntry`
+  (Phase 7, log) located their section headers (`## Drafting plan` /
+  `## Agent log`) with bare `indexOf(marker)`. Two failure modes:
+  (a) a literal `## Drafting plan` appearing mid-paragraph in a
+  research note matched as if it were the section header;
+  (b) the same marker appearing inside a fenced code block (e.g., a
+  research note quoting the prompt template verbatim) matched and the
+  splice corrupted the talk page — replacing fence contents or
+  inserting the new subsection inside a quoted template block, while
+  leaving the real section unchanged. Replaced both with a
+  line-scanning helper that tracks `inCode` state and only matches
+  the marker at the start of a non-fenced line. The
+  next-heading scan already used `\n## ` (the author had even left
+  a comment about line-anchoring) — this fix extends the same
+  discipline to the first lookup. Covered by two new tests
+  (`appendLogEntry: ... inside a code fence`, `replaceOrAppendOutline:
+  does not match ... inside a code fence`).
+
+- **`consistency-drift` bibliography mismatch detector is line-anchored**
+  *(2026-05-16)*. `detectBibliographyMismatch` used
+  `body.indexOf('## Bibliography')` to locate the section. A mid-prose
+  reference like "see ## Bibliography below" matched, so `bibSection`
+  started mid-paragraph and any body-prose `::cite-vault` directives
+  between the false match and the real `## Bibliography` were swept
+  into `bibKeys` — silently hiding "inline cite missing from
+  bibliography" findings (false negatives that the citation
+  housekeeping pass would never see). Anchored to line start with a
+  `body.startsWith` + `\n## Bibliography` fallback. Covered by a new
+  test (`a body mention of "## Bibliography" mid-prose is not treated
+  as the section`).
+
+- **CLI server-URL normalization strips all trailing slashes** *(2026-05-16)*.
+  The five sites that normalize a server URL (`probe.ts`, `config.ts` x2,
+  `api-client.ts`, `doctor.ts` x2) used `replace(/\/$/, '')`, which strips
+  only one trailing slash. A configured URL like `http://localhost:3001//`
+  reached `fetch` as `http://localhost:3001//api/healthz` and still
+  compared equal against the also-once-stripped `baseUrl` in
+  doctor/api-client, so the bug only surfaced as a malformed request URL.
+  Switched all five sites to `/\/+$/` so every trailing slash is dropped,
+  and updated the test that documented the bug to assert the corrected
+  behavior.
 
 - **`wai check` citation-drift detector no longer flags relation bullets or
   bibliography lines** *(2026-05-16)*. The detector previously treated every
@@ -98,19 +176,19 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   false-positive findings — and any one such finding blocked `wai author`'s
   Phase 6 verify. Six well-authored pages were stuck verify-blocked on
   bullets like `- [[Anna Rose Cherlin]] — wife` or bibliography entries
-  listing the very Yizkor books the rest of the page cited. The fix adds
-  two narrow exemptions to `core/src/checks/citation-drift.ts`:
+  listing the very Yizkor books the rest of the page cited. Fix adds two
+  narrow exemptions in `core/src/checks/citation-drift.ts`:
   (1) `BULLET_RELATION_RE` skips list items whose only content is a
   wikilink + optional short descriptor, IFF the descriptor contains no
   year, date, or second wikilink (so an actual claim smuggled into a
   descriptor — `- [[bob]] — emigrated in 1898` — still flags);
-  (2) `SKIPPABLE_H2` skips the body of `## Bibliography` and `## Further
-  reading` sections. `## See also` is NOT in SKIPPABLE_H2 because the
-  bullet rule already handles its common shape and section-skip would
-  let claims hidden in descriptors slip through. Empirical impact:
-  citation findings across the wiki dropped from 823 to 737 (−86 false
-  positives); 5 of 6 verify-blocked pages cleared. Covered by 6 new
-  tests in `core/test/checks/citation-drift.test.ts`.
+  (2) `SKIPPABLE_H2` skips the body of `## Bibliography` and
+  `## Further reading`. `## See also` is NOT in SKIPPABLE_H2 because the
+  bullet rule already handles its common shape and section-skip would let
+  claims hidden in descriptors slip through. Empirical impact: citation
+  findings across the wiki dropped 823 → 737 (−86 false positives); 5 of 6
+  verify-blocked pages cleared. Commit `0e1bf25`; covered by 6 new tests
+  in `core/test/checks/citation-drift.test.ts`.
 
 - **`wai author` drafts now cite the research-phase findings, not just GEDCOM**
   *(2026-05-16)*. The in-memory evidence drawer was populated once at Phase 1
@@ -125,7 +203,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   `candidateClaims.length > 0` so the noWeb path and zero-claims path stay
   single-gather. Empirical impact across 24 previously-language-thin slugs
   re-authored: 16 jumped from 1 footnote / GEDCOM-only to 8–25 footnotes
-  with non-English language markers (de, pl, he) in body prose.
+  with non-English language markers (de, pl, he) in body prose. Commit
+  `3e08f20`; covered by 5 new tests in `cli/test/commands/author.test.ts`.
 
 - **Page-write API summary cap raised from 200 to 1000 chars**
   *(2026-05-16)*. The page-write endpoint (`PUT
@@ -138,7 +217,92 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   reached 221 chars and the route returned HTTP 400: bad-request at
   Phase 3 (outline). Five slugs were stuck on this and couldn't be
   authored. Raising the cap to 1000 unblocks them and leaves headroom
-  for additional trailer fields.
+  for additional trailer fields. Commit `85e10ef`.
+
+- **Real-CLI integration tests for harness tool restriction** *(2026-05-15)*.
+  New `cli/test/integration/harness.integration.test.ts` exercises the
+  actual `claude` binary contract — three tests: (a) `claude --help`
+  mentions `--tools` (cheap rename guard), (b) `--tools ""` actually
+  blocks Write in the sub-model (verified by checking that a tmp
+  sentinel file is NOT created after a prompt asking for one), (c)
+  `--tools "WebSearch,WebFetch"` is an allowlist (sub-model still
+  can't Write). Skipped by default; run with `WAI_INTEGRATION_TESTS=1`.
+  Catches the regression class where claude itself renames the flag
+  or changes its semantics — the existing unit tests (with fakeSpawn)
+  would silently keep passing, hiding the failure.
+- **`wai author` Phase 7 (log) is idempotent on retry** *(2026-05-15)*.
+  Phase 7 used to unconditionally append `## Agent log\n\n### <date> ...`
+  to the talk page. A second pipeline run on the same slug produced a
+  second `## Agent log` header instead of a new dated subsection inside
+  the existing section. Now the new `appendLogEntry` helper in `log.ts`
+  detects an existing `## Agent log` section, splices the run's new
+  `### <date> — pipeline run <id>` subsection into it, and only creates
+  a fresh section header when there isn't one yet. Each run still gets
+  its own dated subsection as visible history.
+- **Stale-bundle warning at `wai` startup** *(2026-05-15)*. New
+  `cli/src/bundle-freshness.ts`: at every `wai` invocation we compare
+  `cli/dist/wai.cjs` mtime to the newest `.ts` mtime in `cli/src/`; if
+  src is newer, stderr gets one line ("`wai: bundle is stale (src newer
+  by 5m); run npm run build in cli/`"). Catches the regression class
+  where a fix lands in source but isn't compiled — the same class of
+  bug that hides regressions in plain sight because the old code keeps
+  running. Skips silently when `cli/src/` isn't alongside the bundle
+  (npm-installed deployments) and only runs in the bundled-CLI case
+  (`process.argv[1]` ending in `.cjs`).
+- **Harness adapter caches templates per author run** *(2026-05-15)*.
+  The adapter previously re-read `SKILL.md` and the prompt-template
+  file from disk on every phase invocation. A mid-pipeline edit
+  (in-progress refactor, editor auto-save) would have different phases
+  see different instructions. The adapter now caches the
+  `(skill, template)` → content pair the first time each is seen and
+  reuses the snapshot for subsequent invocations within the same
+  adapter (one author run). Different pairs are read independently.
+- **Harness sub-claude tool access restricted to template needs** *(2026-05-15)*.
+  The harness adapter invokes `claude --print` for each pipeline phase. It
+  previously inherited the full default tool set, so the sub-model could
+  call `Write`/`Edit`/`Bash`/`Skill`/etc. directly — bypassing the
+  orchestrator's intended flow. Observed in the boris-ayzman Phase 4 run
+  in this session: when the sub-model emitted conversational prose around
+  the JSON, page content had already been written via the `Write` tool,
+  leaving both a parse error and a half-modified page on disk. The
+  adapter now passes `--tools <list>` per (skill, template): the
+  `research-questions` template gets `WebSearch,WebFetch` (which it
+  legitimately needs to gather sources) and every other template gets
+  `""` (all tools disabled). Unknown skill/template combos also default
+  to `""`, so adding a new template can never silently inherit dangerous
+  capabilities.
+- **`wai author` Phase 3 (outline) is idempotent on retry** *(2026-05-15)*.
+  Phase 3 used to unconditionally append the outline text to the talk
+  page, so a second run on the same slug — without `--resume`, or after
+  a downstream failure — left two near-identical `## Drafting plan`
+  sections in the talk body (this happened twice on boris-ayzman in
+  this session and had to be cleaned up by hand). The phase now uses a
+  new `replaceOrAppendOutline` helper in `outline.ts` that detects an
+  existing `## Drafting plan` section and replaces it in place, while
+  preserving research notes above and any later sections (Agent log,
+  open threads) below.
+- **Harness adapter tolerates JSON preamble/trailing text** *(2026-05-15)*.
+  Some model invocations emit a brief conversational preamble
+  ("Draft writing follows:", "Here is the JSON:") or trailing text
+  ("Done!") around the JSON payload, which made `JSON.parse` abort
+  mid-pipeline. The adapter previously only stripped markdown code
+  fences; it now extracts the first balanced `{...}` or `[...]` from
+  the response with a string-aware brace counter that ignores braces
+  inside JSON string literals. If no JSON-like structure is present
+  (refusal text, error message), the original error surface is
+  preserved. This is what kept the `wai author boris-ayzman` Phase 4
+  / draft-person call working through completion in this session;
+  prior runs aborted at the orchestrator-level parse failure.
+- **`runDetectors` helper** *(2026-05-11)* extracted from
+  `wai check` into `cli/src/commands/check/run-detectors.ts`. Runs
+  the requested detectors against a `RepoState`, optionally applies
+  format/schema fixes and reloads, returns structured
+  `{ findings, fixedCount }`. Shared between the standalone `wai
+  check` command and the author orchestrator's Phase 6 verify
+  wiring. The author's verify phase now actually surfaces consistency
+  findings against the live data repo instead of a no-op stub.
+
+### Fixed
 
 - **Pipeline-run trailers actually land in commit messages** *(2026-05-11)*.
   Phase commits go through the frontend API (`client.write`,
@@ -160,6 +324,16 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   consistency findings (and counting) the existing data already has.
 
 ### Changed
+
+- **Privacy gate disabled by default** *(2026-05-16)*. New
+  `PRIVACY_GATE_ENABLED` flag in `frontend/lib/env.ts` (reads
+  `WHOAMI_PRIVACY_GATE`, default off). When off, the page render and
+  search API both stop filtering on `derived.privacy.restricted` —
+  restricted records render as normal pages and surface in search
+  regardless of `--include-living`. All gate code stays in place;
+  setting `WHOAMI_PRIVACY_GATE=on` (or flipping the default back to
+  `true`) restores the prior behavior. Same posture as auth being
+  out of scope while Tailscale ACLs are the access layer.
 
 - **Web research is performed by the harness, not the orchestrator**
   *(2026-05-11)*. Phase 2 used to take `webSearch`/`webFetch`
