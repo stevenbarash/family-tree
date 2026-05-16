@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractLeadSentence } from './page-card-data';
+import { extractLeadSentence, buildHoverDataBySlug } from './page-card-data';
+import type { PageMetaSummary } from '@core/pages/index.ts';
+import type { DerivedRecord } from '@core/gedcom/types.ts';
 
 test('extractLeadSentence: returns the first non-blank prose line', () => {
   const body = 'Abby Rickelman was a milliner who arrived in Brooklyn in 1898.\n\nMore text here.';
@@ -50,4 +52,90 @@ test('extractLeadSentence: returns null when nothing prose-like is found', () =>
 test('extractLeadSentence: handles a list item as a lead (treat as prose, strip the bullet)', () => {
   const body = '- One thing happened.\n- Then another.';
   assert.equal(extractLeadSentence(body), 'One thing happened.');
+});
+
+function pmSummary(over: Partial<PageMetaSummary> & { slug: string; title: string }): PageMetaSummary {
+  return {
+    type: 'person',
+    categories: [],
+    aliases: [],
+    isTalk: false,
+    isArchived: false,
+    ...over,
+  };
+}
+
+function dRecord(over: Partial<DerivedRecord> & { record: string; name: string }): DerivedRecord {
+  return {
+    birth: null,
+    death: null,
+    parents: [],
+    spouses: [],
+    children: [],
+    familyOfOrigin: [],
+    marriages: [],
+    residences: [],
+    occupations: [],
+    sources: [],
+    media: [],
+    privacy: { restricted: false, reason: 'none' },
+    ...over,
+  };
+}
+
+test('buildHoverDataBySlug: produces entries with title, lead, portrait, and dates', () => {
+  const list: PageMetaSummary[] = [
+    pmSummary({ slug: 'abby', title: 'Abby Rickelman', gedcomRecord: '@I1@', portrait: 'abby.jpg' }),
+  ];
+  const derived = new Map<string, DerivedRecord>([
+    ['@I1@', dRecord({ record: '@I1@', name: 'Abby Rickelman', birth: { date: '1 Jan 1880', place: null }, death: { date: '5 Mar 1955', place: null } })],
+  ]);
+  const bodies = new Map<string, string>([
+    ['abby', 'Abby Rickelman was a milliner who arrived in Brooklyn in 1898.'],
+  ]);
+  const cards = buildHoverDataBySlug(list, derived, bodies);
+  const abby = cards.get('abby');
+  assert.ok(abby);
+  assert.equal(abby.title, 'Abby Rickelman');
+  assert.equal(abby.lead, 'Abby Rickelman was a milliner who arrived in Brooklyn in 1898.');
+  assert.equal(abby.portrait, 'abby.jpg');
+  assert.equal(abby.born, '1880');
+  assert.equal(abby.died, '1955');
+});
+
+test('buildHoverDataBySlug: skips talk and archived pages', () => {
+  const list: PageMetaSummary[] = [
+    pmSummary({ slug: 'abby.talk', title: 'Talk: Abby', isTalk: true }),
+    pmSummary({ slug: 'abby-old', title: 'Abby (archived)', isArchived: true }),
+    pmSummary({ slug: 'abby', title: 'Abby' }),
+  ];
+  const cards = buildHoverDataBySlug(list, new Map(), new Map());
+  assert.equal(cards.size, 1);
+  assert.ok(cards.has('abby'));
+});
+
+test('buildHoverDataBySlug: lead is null when no body is provided for the slug', () => {
+  const list: PageMetaSummary[] = [pmSummary({ slug: 'abby', title: 'Abby' })];
+  const cards = buildHoverDataBySlug(list, new Map(), new Map());
+  assert.equal(cards.get('abby')?.lead, null);
+});
+
+test('buildHoverDataBySlug: dates omitted when no derived record is joined', () => {
+  const list: PageMetaSummary[] = [pmSummary({ slug: 'someplace', title: 'A Place', type: 'meta' })];
+  const cards = buildHoverDataBySlug(list, new Map(), new Map());
+  const e = cards.get('someplace');
+  assert.ok(e);
+  assert.equal(e.born, undefined);
+  assert.equal(e.died, undefined);
+});
+
+test('buildHoverDataBySlug: living person (birth, no death) renders as "1990–"', () => {
+  const list: PageMetaSummary[] = [pmSummary({ slug: 'boris', title: 'Boris', gedcomRecord: '@I1@' })];
+  const derived = new Map<string, DerivedRecord>([
+    ['@I1@', dRecord({ record: '@I1@', name: 'Boris', birth: { date: '15 Jun 1990', place: null }, death: { date: null, place: null } })],
+  ]);
+  const cards = buildHoverDataBySlug(list, derived, new Map());
+  const boris = cards.get('boris');
+  assert.equal(boris?.born, '1990');
+  assert.equal(boris?.died, undefined);
 });

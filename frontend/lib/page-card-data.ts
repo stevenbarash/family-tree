@@ -1,3 +1,7 @@
+import type { PageMetaSummary } from '@core/pages/index.ts';
+import type { DerivedRecord } from '@core/gedcom/types.ts';
+import { parseGedcomYear } from '@core/family/dates.ts';
+
 const MAX_LEAD = 160;
 
 /**
@@ -42,6 +46,56 @@ export function extractLeadSentence(body: string): string | null {
     return clean.length > MAX_LEAD ? `${clean.slice(0, MAX_LEAD)}…` : clean;
   }
   return null;
+}
+
+export interface HoverCardData {
+  title: string;
+  /** One-line prose preview; null if no body is available for the slug. */
+  lead: string | null;
+  /** Portrait filename relative to `/portraits/`, if the page has one. */
+  portrait?: string;
+  /** Birth year as a string, e.g. "1880". Omitted when unknown. */
+  born?: string;
+  /** Death year as a string. Omitted when unknown or person is living. */
+  died?: string;
+}
+
+/**
+ * Build the precomputed hover-card map keyed by wiki slug. The map is
+ * threaded into `renderMarkdown` so the renderer can swap any matched
+ * internal anchor for a `<WikilinkHoverCard>` without a client-side fetch.
+ *
+ * Skips talk and archived pages — they're not link targets in practice and
+ * shouldn't preview alongside live pages.
+ *
+ * @param list Live page summaries from `getCachedList().list`.
+ * @param derivedByRecord Cached derived-records map (from `getCachedDerivedRecords()`).
+ * @param bodiesBySlug Pre-read page bodies, slug → markdown body. Caller decides
+ *   the scope (typically just the pages linked from the current page; fetching
+ *   every page body is too expensive for the request path).
+ */
+export function buildHoverDataBySlug(
+  list: ReadonlyArray<PageMetaSummary>,
+  derivedByRecord: ReadonlyMap<string, DerivedRecord>,
+  bodiesBySlug: ReadonlyMap<string, string>,
+): Map<string, HoverCardData> {
+  const out = new Map<string, HoverCardData>();
+  for (const p of list) {
+    if (p.isTalk || p.isArchived) continue;
+    const body = bodiesBySlug.get(p.slug);
+    const lead = body ? extractLeadSentence(body) : null;
+    const card: HoverCardData = { title: p.title, lead };
+    if (p.portrait) card.portrait = p.portrait;
+    if (p.gedcomRecord) {
+      const d = derivedByRecord.get(p.gedcomRecord);
+      const birthYear = parseGedcomYear(d?.birth?.date ?? null);
+      const deathYear = parseGedcomYear(d?.death?.date ?? null);
+      if (birthYear) card.born = String(birthYear.year);
+      if (deathYear) card.died = String(deathYear.year);
+    }
+    out.set(p.slug, card);
+  }
+  return out;
 }
 
 function stripInlineMarkup(s: string): string {
