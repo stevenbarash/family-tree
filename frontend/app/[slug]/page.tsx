@@ -11,11 +11,14 @@ import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
-import { GENEALOGY_DIR, WHOAMI_ROOT } from '@/lib/env';
+import { GENEALOGY_DIR, SELF_RECORD, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
 import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
+import { getCachedDerivedRecords } from '@/lib/family';
+import { computeRelationshipFromSelf } from '@/lib/relationship-from-self';
+import { RelationshipStrip } from '@/components/relationship-strip';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,12 +57,39 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
     ? getCachedSnapshots(GENEALOGY_DIR)
     : Promise.resolve([]);
 
-  const [{ index }, derived, talkBody, snapshots] = await Promise.all([
+  const [{ list, index }, derived, talkBody, snapshots] = await Promise.all([
     indexPromise,
     derivedPromise,
     talkBodyPromise,
     snapshotsPromise,
   ]);
+
+  // Compute the relationship from the configured SELF_RECORD to this
+  // page's subject, when the page is joined to a GEDCOM record. Skip
+  // entirely for talk pages, restricted pages, or pages without a
+  // gedcom.record — the conditions are folded into the render guard
+  // below; here we just keep the compute cheap when it's unused.
+  const targetRecord = page.meta.gedcom?.record ?? null;
+  const relationship =
+    targetRecord && !isTalkSlug(slug)
+      ? (() => {
+          // Build record → slug once from the page list. PageMetaSummary
+          // carries a flat `gedcomRecord` field; the SlugIndex (keyed by
+          // canonical title) can't answer this question on its own.
+          const recordToSlug = new Map<string, string>();
+          for (const p of list) {
+            if (p.gedcomRecord && !p.isTalk && !p.isArchived) {
+              recordToSlug.set(p.gedcomRecord, p.slug);
+            }
+          }
+          return computeRelationshipFromSelf({
+            selfRecord: SELF_RECORD,
+            targetRecord,
+            records: getCachedDerivedRecords(),
+            findSlug: (record) => recordToSlug.get(record),
+          });
+        })()
+      : null;
 
   // Privacy gate: if the joined record is flagged restricted, render only
   // the redacted minimum. Skip the body render so directives like
@@ -94,6 +124,9 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         <h1 className="text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
           {page.meta.title}
         </h1>
+        {!isRestricted && relationship ? (
+          <RelationshipStrip relationship={relationship} />
+        ) : null}
         {!isRestricted && page.meta.categories.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {page.meta.categories.map(category => (
