@@ -34,6 +34,34 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Fixed
 
+- **`wai author` drafts now cite the research-phase findings, not just GEDCOM**
+  *(2026-05-16)*. The in-memory evidence drawer was populated once at Phase 1
+  and never refreshed, so Phases 3 (outline), 4 (draft-person), and 5
+  (draft-episode) passed a stale drawer (`researchNotes: []`) to the harness
+  even after Phase 2 had written candidate-claim notes to the talk page via
+  the API. The result: every authored page cited only `[^gedcom]` regardless
+  of how many Yizkor / Pinkas Hakehillot / JewishGen URLs Phase 2 had
+  gathered. The bug masked itself on `--resume` past Phase 1 because the
+  fallback re-gathered fresh and picked up the prior run's notes. Fix:
+  re-gather after Phase 2 commits its notes, conditional on
+  `candidateClaims.length > 0` so the noWeb path and zero-claims path stay
+  single-gather. Empirical impact across 24 previously-language-thin slugs
+  re-authored: 16 jumped from 1 footnote / GEDCOM-only to 8–25 footnotes
+  with non-English language markers (de, pl, he) in body prose.
+
+- **Page-write API summary cap raised from 200 to 1000 chars**
+  *(2026-05-16)*. The page-write endpoint (`PUT
+  /api/pages/[slug]`) Zod-validated `summary.max(200)`. `wai author`
+  passes both the conventional commit subject AND the pipeline trailer
+  (UUID + phase + slug + inputs + sources + guard, ~150 chars on its own)
+  as the `summary` field so the trailer ends up in the commit body. For
+  slugs with long compound names like
+  `mordechai-kalwaryiski-margolis` (30 chars), the combined summary
+  reached 221 chars and the route returned HTTP 400: bad-request at
+  Phase 3 (outline). Five slugs were stuck on this and couldn't be
+  authored. Raising the cap to 1000 unblocks them and leaves headroom
+  for additional trailer fields.
+
 - **Pipeline-run trailers actually land in commit messages** *(2026-05-11)*.
   Phase commits go through the frontend API (`client.write`,
   `client.note`), which commits server-side using the `summary`

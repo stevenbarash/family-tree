@@ -11,7 +11,15 @@ import { errorResponse, routeError } from '@/lib/api-errors';
 
 const PutBody = z.object({
   body: z.string(),
-  summary: z.string().min(1).max(200),
+  // `summary` carries both the conventional commit subject AND, for `wai
+  // author` pipeline writes, the multi-line pipeline trailer that ends up in
+  // the commit body. The trailer alone is ~150 chars (UUID + phase + slug +
+  // inputs + sources + guard); subjects with long compound slugs like
+  // `mordechai-kalwaryiski-margolis` pushed the combined summary past the
+  // prior 200-char limit, causing HTTP 400 on every outline-phase write for
+  // those subjects. 1000 covers all current trailer shapes with plenty of
+  // headroom for additional trailer fields.
+  summary: z.string().min(1).max(1000),
 });
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
