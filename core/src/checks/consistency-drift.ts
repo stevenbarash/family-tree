@@ -185,3 +185,40 @@ export function extractQuotedPhrases(body: string): string[] {
   }
   return out;
 }
+
+/**
+ * Return the text contents of the named `## Heading` section, ending at
+ * the next `## ` heading (or end-of-body). Returns `""` if the section
+ * isn't present. Match is on the exact heading text (case-sensitive).
+ * Code-fence aware: a literal "## Name" inside a fenced block does not
+ * count as the section header — mirrors the discipline in the Phase 3/7
+ * outline finders in `cli/src/commands/author/{outline,log}.ts`.
+ */
+export function sectionSlice(body: string, headingText: string): string {
+  const marker = `## ${headingText}`;
+  const lines = body.split('\n');
+  let inCode = false;
+  let startLine = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const trimmedStart = line.trimStart();
+    if (trimmedStart.startsWith('```')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    if (startLine === -1) {
+      if (line === marker) startLine = i;
+    } else if (line.startsWith('## ')) {
+      // End of the section.
+      return wrap(lines.slice(startLine + 1, i).join('\n'));
+    }
+  }
+  if (startLine === -1) return '';
+  return wrap(lines.slice(startLine + 1).join('\n'));
+}
+
+function wrap(inner: string): string {
+  const trimmed = inner.replace(/^\n+/, '').replace(/\n+$/, '');
+  return '\n' + trimmed + '\n';
+}

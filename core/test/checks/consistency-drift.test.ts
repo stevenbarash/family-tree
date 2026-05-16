@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectConsistencyDrift, extractQuotedPhrases } from '../../src/checks/consistency-drift.ts';
+import { detectConsistencyDrift, extractQuotedPhrases, sectionSlice } from '../../src/checks/consistency-drift.ts';
 import type { RepoState, LoadedPage } from '../../src/checks/types.ts';
 import type { DerivedRecord } from '../../src/gedcom/types.ts';
 import type { PageMeta } from '../../src/pages/types.ts';
@@ -286,4 +286,53 @@ test('extractQuotedPhrases: trims whitespace inside quotes', () => {
 
 test('extractQuotedPhrases: returns empty array for empty body', () => {
   assert.deepEqual(extractQuotedPhrases(''), []);
+});
+
+// ---------------------------------------------------------------------------
+// sectionSlice tests
+// ---------------------------------------------------------------------------
+
+test('sectionSlice: returns content of named H2 section, ending at next H2', () => {
+  const body = '## A\n\nfirst\n\n## B\n\nsecond\n\n## C\n\nthird\n';
+  assert.equal(sectionSlice(body, 'B'), '\nsecond\n');
+});
+
+test('sectionSlice: returns content from H2 to end-of-body when no next H2', () => {
+  const body = '## A\n\nfirst\n\n## B\n\nsecond and last\n';
+  assert.equal(sectionSlice(body, 'B'), '\nsecond and last\n');
+});
+
+test('sectionSlice: returns empty string when section not found', () => {
+  const body = '## A\n\nfirst\n';
+  assert.equal(sectionSlice(body, 'B'), '');
+});
+
+test('sectionSlice: H3 inside the H2 is included in the slice', () => {
+  const body = '## A\n\n### A.1\n\nnested\n\n## B\n\nb\n';
+  assert.equal(sectionSlice(body, 'A'), '\n### A.1\n\nnested\n');
+});
+
+test('sectionSlice: name match is case-sensitive on the heading text', () => {
+  const body = '## Drafting plan\n\np\n\n## Other\n\no\n';
+  assert.equal(sectionSlice(body, 'drafting plan'), '');
+  assert.equal(sectionSlice(body, 'Drafting plan'), '\np\n');
+});
+
+test('sectionSlice: a literal "## Drafting plan" inside a fenced code block does not match', () => {
+  // Mirror the line-anchoring + code-fence discipline already used by the
+  // Phase 3/7 outline finders in cli/src/commands/author/*.
+  const body = [
+    '## Research notes',
+    '',
+    '```markdown',
+    '## Drafting plan',
+    '',
+    'fake nested heading',
+    '```',
+    '',
+    '## Drafting plan',
+    '',
+    'real plan content',
+  ].join('\n');
+  assert.equal(sectionSlice(body, 'Drafting plan'), '\nreal plan content\n');
 });
