@@ -34,6 +34,28 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Fixed
 
+- **`wai check` citation-drift detector no longer flags relation bullets or
+  bibliography lines** *(2026-05-16)*. The detector previously treated every
+  list item with a wikilink as a factual claim. `## See also` bullets shaped
+  `- [[link]] — wife` and `## Bibliography` / `## Further reading` entries
+  with source years (Berl Kagan 1961, Maryland Archives 2014) generated
+  false-positive findings — and any one such finding blocked `wai author`'s
+  Phase 6 verify. Six well-authored pages were stuck verify-blocked on
+  bullets like `- [[Anna Rose Cherlin]] — wife` or bibliography entries
+  listing the very Yizkor books the rest of the page cited. The fix adds
+  two narrow exemptions to `core/src/checks/citation-drift.ts`:
+  (1) `BULLET_RELATION_RE` skips list items whose only content is a
+  wikilink + optional short descriptor, IFF the descriptor contains no
+  year, date, or second wikilink (so an actual claim smuggled into a
+  descriptor — `- [[bob]] — emigrated in 1898` — still flags);
+  (2) `SKIPPABLE_H2` skips the body of `## Bibliography` and `## Further
+  reading` sections. `## See also` is NOT in SKIPPABLE_H2 because the
+  bullet rule already handles its common shape and section-skip would
+  let claims hidden in descriptors slip through. Empirical impact:
+  citation findings across the wiki dropped from 823 to 737 (−86 false
+  positives); 5 of 6 verify-blocked pages cleared. Covered by 6 new
+  tests in `core/test/checks/citation-drift.test.ts`.
+
 - **`wai author` drafts now cite the research-phase findings, not just GEDCOM**
   *(2026-05-16)*. The in-memory evidence drawer was populated once at Phase 1
   and never refreshed, so Phases 3 (outline), 4 (draft-person), and 5
