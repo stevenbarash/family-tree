@@ -11,7 +11,7 @@ import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
-import { GENEALOGY_DIR, SELF_RECORD, WHOAMI_ROOT } from '@/lib/env';
+import { GENEALOGY_DIR, PRIVACY_GATE_ENABLED, SELF_RECORD, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
@@ -91,10 +91,10 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         })()
       : null;
 
-  // Privacy gate: if the joined record is flagged restricted, render only
-  // the redacted minimum. Skip the body render so directives like
-  // `:::infobox-person` can't interpolate from `derived` and leak fields.
-  const isRestricted = derived?.privacy?.restricted === true;
+  // Privacy gate: when enabled, restricted records render only the
+  // redacted minimum (skip the body so directives can't leak fields).
+  // The gate is master-toggled in `env.ts`; currently disabled.
+  const isRestricted = PRIVACY_GATE_ENABLED && derived?.privacy?.restricted === true;
 
   const [tree, notes] = isRestricted
     ? [null, []]
