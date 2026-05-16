@@ -440,3 +440,26 @@ test('detectConsistencyDrift: finding location points at the talk page and line 
   // Line 4 of the talk body is the claim line.
   assert.equal(drift[0]!.location.line, 4);
 });
+
+test('detectConsistencyDrift: quoted phrases inside *[…]* editorial annotations are not flagged', () => {
+  // The project's fact-correction discipline uses inline annotations like
+  // *[Corrected 2026-05-16 from "X" — Y]* to record what a claim used to
+  // be. Those quoted phrases are history, not active claims, and should
+  // not trip the detector. This was the failure mode that produced a
+  // 100% false-positive rate on the real wiki during the T4 sanity check.
+  const livePage = page('boris', {
+    body: 'Boris was awarded "For the Capture of Berlin".',
+  });
+  const talkPage = page('boris.talk', {
+    body: [
+      '## Drafting plan',
+      '',
+      '- Decorations: "For the Capture of Berlin". *[Corrected 2026-05-16: was "For Defense of Kyiv" — that medal belongs to Kelman.]*',
+    ].join('\n'),
+  });
+  const findings = detectConsistencyDrift(makeState({ pages: [livePage, talkPage] }));
+  const drift = findings.filter(f => /talk page asserts/.test(f.message));
+  // "For the Capture of Berlin" is on both → no finding.
+  // "For Defense of Kyiv" is inside the annotation → stripped before extraction → no finding.
+  assert.equal(drift.length, 0, `expected 0 findings, got: ${drift.map(d => d.message).join('; ')}`);
+});

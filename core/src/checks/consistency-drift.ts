@@ -191,6 +191,14 @@ const SCANNED_TALK_SECTIONS = ['Facts extracted', 'Drafting plan', 'Cross-refere
  * Severity is `warn` because some legitimate skew exists (a quoted source
  * phrase on the talk page may be paraphrased rather than quoted on the
  * live page); the caller decides whether to `--fail-on consistency`.
+ *
+ * Editorial annotations of the form `*[Corrected 2026-MM-DD from "X"]*`
+ * (the project's fact-correction discipline; see
+ * plugins/whoami/skills/editorial-guide/SKILL.md) are stripped from each
+ * section slice before phrase extraction. Those annotations frequently
+ * quote the old wrong claim while documenting the correction, and would
+ * otherwise produce 100% false positives on any talk page whose live
+ * page was recently corrected.
  */
 function detectTalkLivePageDrift(talkPage: LoadedPage, livePage: LoadedPage): Finding[] {
   const findings: Finding[] = [];
@@ -199,7 +207,14 @@ function detectTalkLivePageDrift(talkPage: LoadedPage, livePage: LoadedPage): Fi
   for (const section of SCANNED_TALK_SECTIONS) {
     const slice = sectionSlice(talkPage.body, section);
     if (!slice) continue;
-    for (const phrase of extractQuotedPhrases(slice)) {
+    // Strip `*[…]*` editorial annotations before phrase extraction — those
+    // are correction/history notes (see the Fact-correction discipline in
+    // plugins/whoami/skills/editorial-guide/SKILL.md), not active claims,
+    // and they routinely quote the old wrong claim while documenting the
+    // correction. Without this strip, every correction annotation produces
+    // a spurious finding.
+    const claimSlice = slice.replace(/\*\[[^\]]*\]\*/g, '');
+    for (const phrase of extractQuotedPhrases(claimSlice)) {
       if (seen.has(phrase)) continue;
       seen.add(phrase);
       if (livePage.body.includes(phrase)) continue;
