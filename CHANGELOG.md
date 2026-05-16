@@ -23,6 +23,63 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai grep-claims <phrase>`** *(2026-05-17)*. New CLI command that
+  walks `~/whoami/pages/` and `~/whoami/assets/sources/` looking for
+  occurrences of a phrase (and optional comma-separated `--variants`
+  for English / Russian / Ukrainian forms of the same claim). Used
+  as the first step of any factual correction in the wiki, so every
+  place the wrong claim lives can be fixed in one pass instead of
+  discovered piecemeal across rounds of "did you also fix the talk
+  page" follow-ups. Output groups hits by file with line numbers —
+  an audit list. `--json` for structured consumption; `--no-talk`
+  skips `*.talk.md`; `--no-sources` skips `assets/sources/`
+  transcripts; `--case-sensitive` overrides the default
+  case-insensitive match. 8 tests in
+  `cli/test/commands/grep-claims.test.ts`.
+
+- **`tools/ocr/` — local Tesseract helper for source-document images**
+  *(2026-05-17)*. New `tools/ocr/ocr-source-image.sh` for OCR'ing
+  photographed book pages, archival letters, certificates etc.
+  Defaults to a 10-language combination covering the family's
+  archive (`eng, ukr, rus, heb, yid, pol, deu, lit, aze, aze_cyrl`);
+  accepts extra Tesseract language codes as additional positional
+  args. 22 useful languages installed via `brew install tesseract
+  tesseract-lang`. Transparently handles two macOS quirks: (a) the
+  Tahoe shell sandbox where tesseract called with an absolute image
+  path from certain CWDs silently produces empty output (the script
+  always `cd`s to the image's directory first), and (b) the PNG
+  alpha-channel quirk where `sips`-resampled PNGs can't be read by
+  tesseract despite working in other tools (the script converts
+  PNG → JPG via `sips` before OCR and cleans up the temp). `README.md`
+  alongside the script covers install, language list, usage, and
+  accuracy tips.
+
+- **`[?]` citation-needed marker convention** *(2026-05-16)*. New
+  editorial-guide section documents the convention: every factual
+  sentence MUST end in either a footnote `[^id]` or the `[?]`
+  marker. `[?]` is the model's escape hatch from the fabrication
+  trap — invent no footnotes pointing at vague sources; mark `[?]`
+  and let a reviewer either cite or remove the claim. The
+  `wai check --include citation` detector enforces this, and the
+  author pipeline's verify phase blocks on it. `[?]` claims are
+  distinct from `::open` talk-page threads (`[?]` = unsourced
+  assertion; `::open` = open question on the talk page).
+
+- **Fact-correction discipline section in editorial-guide**
+  *(2026-05-16)*. Documents the required workflow when fixing a
+  factual error: list every variant of the wrong claim (English +
+  Ukrainian + Russian + Hebrew/Yiddish forms, plus inverse framings),
+  grep the entire wiki for every variant before editing any single
+  file (`wai grep-claims "<phrase>"` is the helper), build a
+  numbered audit list, fix everything in one pass, final grep to
+  confirm zero remaining hits. Also explains: talk pages need
+  fixing too (stale claims feed the next regeneration of the live
+  page); episode pages are derived content that propagate mix-ups
+  into authoritative-looking narrative; the same discipline applies
+  symmetrically when adding new facts. Motivated by the
+  Boris/Kelman Stasyuk medal mix-up unwound in the 2026-05-16
+  session.
+
 - **Cross-page consistency detector: talk-page vs live-page drift**
   *(2026-05-17)*. New `detectTalkLivePageDrift` sub-detector inside
   `core/src/checks/consistency-drift.ts` flags quoted/highlighted claim
@@ -324,6 +381,32 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   consistency findings (and counting) the existing data already has.
 
 ### Changed
+
+- **`findDatesInLine` + `normalizeDatesInBody` exported from
+  `core/src/format/dates.ts`** *(2026-05-17)*. The `findDatesInLine`
+  date-substring matcher previously lived as a private function in
+  `format-drift.ts`. Moved to the natural home in `format/dates.ts`
+  alongside `normalizeDate`; the format-drift detector imports it
+  back. Also adds `normalizeDatesInBody(body)` — rewrites every
+  date string in a markdown body into its canonical D Mon YYYY
+  form, skipping fenced code blocks and ambiguous slash dates.
+  Used by the author orchestrator to canonicalize model-drafted
+  prose before writing it to disk, so phase commits don't trip the
+  data repo's format-drift pre-commit hook on dates the detector
+  would auto-fix anyway. Also fixes a latent build break: the
+  citation-drift detector already imported `findDatesInLine` from
+  `format/dates.ts`, but the export only existed in working-tree
+  changes — `core/` failed `npm test` on import-load until the
+  export was committed.
+
+- **`writing-articles` prompt-template iterations** *(2026-05-17)*.
+  Tightenings to the four prompt templates the wai author harness
+  uses: `draft-episode.md` and `draft-person.md` get output-schema
+  and convention guidance tightened plus explicit episode-page
+  structure; `outline.md` gets per-episode guidance; `research-questions.md`
+  gets output-schema + structured-claims framing. Travels with the
+  author-pipeline iteration shipped under "Stale-bundle warning",
+  "Harness adapter caches templates", etc.
 
 - **Privacy gate disabled by default** *(2026-05-16)*. New
   `PRIVACY_GATE_ENABLED` flag in `frontend/lib/env.ts` (reads
