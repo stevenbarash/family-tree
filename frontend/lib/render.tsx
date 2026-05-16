@@ -10,6 +10,8 @@ import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 import { directives, allDirectiveAttrs, type Directive } from '@/components/directives';
+import { WikilinkHoverCard } from '@/components/wikilink-hover-card';
+import type { HoverCardData } from './page-card-data';
 import { resolveWikilinks, type SlugIndex } from './wikilinks';
 
 function directivesToHast() {
@@ -79,6 +81,9 @@ const staticComponents: Record<string, DirectiveWrapper> = (() => {
 
 interface RenderContext {
   derived?: DerivedRecord | null;
+  hoverDataBySlug?: ReadonlyMap<string, HoverCardData>;
+  /** Slug of the page being rendered — links pointing at it skip the hover-card. */
+  currentSlug?: string;
 }
 
 /**
@@ -104,6 +109,32 @@ export async function renderMarkdown(
         {p.children as ReactNode}
       </Render>
     );
+  }
+  // Wikilink hover-cards: swap internal `<a href="/<slug>">` for the
+  // hover-card component when the slug has precomputed card data. External
+  // links, fragment-only links, and self-page links pass through as plain
+  // anchors. The card itself is purely client-side; SSR renders the link.
+  if (context.hoverDataBySlug && context.hoverDataBySlug.size > 0) {
+    const dataMap = context.hoverDataBySlug;
+    const selfSlug = context.currentSlug;
+    components['a'] = (p: HastProps) => {
+      const href = typeof p.href === 'string' ? p.href : '';
+      const className = typeof p.className === 'string' ? p.className : undefined;
+      const children = p.children as ReactNode;
+      // Internal slug? Strip leading `/`, drop any anchor/query.
+      if (href.startsWith('/') && !href.startsWith('//')) {
+        const slugAndRest = href.slice(1);
+        const slug = slugAndRest.split(/[#?]/)[0] ?? '';
+        if (slug && slug !== selfSlug) {
+          const data = dataMap.get(slug);
+          if (data) {
+            return <WikilinkHoverCard slug={slug} data={data} className={className}>{children}</WikilinkHoverCard>;
+          }
+        }
+      }
+      // Fallback: plain anchor.
+      return <a href={href} className={className}>{children}</a>;
+    };
   }
   // hast-util-to-jsx-runtime's component map is typed against HAST element
   // attributes; our wrappers consume the normalized DirectiveProps shape.
