@@ -23,6 +23,22 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Cross-page consistency detector: talk-page vs live-page drift**
+  *(2026-05-17)*. New `detectTalkLivePageDrift` sub-detector inside
+  `core/src/checks/consistency-drift.ts` flags quoted/highlighted claim
+  phrases that appear in a talk page's *Facts extracted*, *Drafting
+  plan*, or *Cross-references* sections but don't appear on the live
+  page. Surfaces via `wai check --include consistency` (and via the
+  data-repo pre-commit hook when consistency is in `--fail-on`).
+  Catches the specific failure mode that let the Boris/Kelman medal
+  mix-up linger across `boris-ayzman.md` and `boris-ayzman.talk.md` —
+  the talk page's drafting plan asserted "For Defense of Kyiv" as
+  Boris's medal, which it isn't, and nothing compared the two
+  surfaces. Editorial annotations of the form
+  `*[Corrected 2026-MM-DD from "X"]*` are stripped before phrase
+  extraction so correction notes don't trigger false positives.
+  Severity `warn` (these are heuristics; some legitimate skew exists).
+
 - **Wikilink hover-cards** *(2026-05-16)*. Hovering any internal link in
   a wiki page body now pops a 200ms-delayed preview card next to the
   link with the target's portrait (or monogram), title, dates, and a
