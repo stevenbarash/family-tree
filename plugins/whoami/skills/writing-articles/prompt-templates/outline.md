@@ -60,3 +60,7 @@ For each episode:
   evidence it draws on. The orchestrator passes this to `draft-episode`.
 
 If no episode spinoffs are warranted, return `episodes: []`.
+
+Return ONLY a single JSON object matching `outputSchema`. No prose
+before or after, no markdown code fences. The orchestrator parses
+your response with `JSON.parse` directly.

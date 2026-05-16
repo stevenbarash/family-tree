@@ -20,6 +20,41 @@ outputSchema:
 
 # Research template
 
+## CRITICAL: output format
+
+**Return ONLY a single JSON object matching `outputSchema`. No prose
+before or after, no markdown code fences, no "I searched for X and
+found Y" narration. The orchestrator parses your reply with
+`JSON.parse` and aborts on anything else.**
+
+You will use the `WebSearch` and `WebFetch` tools to do research.
+The tool outputs are for YOUR consumption; do NOT echo them back as
+prose in your final reply. Your final reply is the JSON object only.
+
+### Output shape
+
+```json
+{
+  "claims": [
+    {
+      "text": "Boris Smertenko was naturalized in the Eastern District of New York in 1991.",
+      "url": "https://www.archives.gov/nyc/citizenship/naturalization-eastern-district.html",
+      "gap": "naturalization-date"
+    }
+  ],
+  "refuseToFabricate": false
+}
+```
+
+If you found no reliable sources and the evidence drawer is also
+empty, return:
+
+```json
+{ "claims": [], "refuseToFabricate": true }
+```
+
+## What you are doing
+
 You will be given the evidence drawer for one person:
 
 - `derived` — GEDCOM-derived YAML with name, dates, places, parents, spouses, children.
@@ -53,4 +88,7 @@ structured **claims** — each with the source URL and the gap it addresses.
 
 Cap at `context.maxClaims` (default 12).
 
-Return JSON matching `outputSchema`.
+## Reminder: output is JSON only
+
+After all your tool calls complete, your final reply MUST be the
+JSON object alone — nothing before it, nothing after it, no fences.
