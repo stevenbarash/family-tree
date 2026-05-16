@@ -101,24 +101,47 @@ test('findOnThisDay: skips qualified dates (Abt 15 Jun 1946 does not match Jun 1
   assert.equal(events.length, 0);
 });
 
-test('findOnThisDay: suppresses births of likely-living people (no death, within 110 years)', () => {
+test('findOnThisDay: by default, surfaces every dated birth — no living-person suppression', () => {
+  // Suppression is opt-in. Boris (no death, born 1990) surfaces because the
+  // caller didn't ask for filtering. This matches the "privacy gate is
+  // disabled, surface everything" posture; the frontend flips suppression
+  // on only when the master privacy flag is on.
   const records = new Map<string, DerivedRecord>([
-    // Boris: still living (no death), born 1990 — should be suppressed in 2026.
     ['@I1@', rec({ record: '@I1@', name: 'Boris', birth: { date: '15 Jun 1990', place: null }, death: { date: null, place: null } })],
-    // Mordechai: died, born 1880 — surfaces fine.
     ['@I2@', rec({ record: '@I2@', name: 'Mordechai', birth: { date: '15 Jun 1880', place: null }, death: { date: '1 Jan 1955', place: null } })],
   ]);
   const events = findOnThisDay(records, { month: 6, day: 15 }, { now: new Date('2026-06-15T12:00:00Z') });
+  assert.equal(events.length, 2);
+});
+
+test('findOnThisDay: with suppressLikelyLiving=true, hides births of plausibly-living people', () => {
+  // The opt-in heuristic: no recorded death + born within the living window
+  // → suppress. Boris (1990, no death) is suppressed; Mordechai (1880, with
+  // death) surfaces.
+  const records = new Map<string, DerivedRecord>([
+    ['@I1@', rec({ record: '@I1@', name: 'Boris', birth: { date: '15 Jun 1990', place: null }, death: { date: null, place: null } })],
+    ['@I2@', rec({ record: '@I2@', name: 'Mordechai', birth: { date: '15 Jun 1880', place: null }, death: { date: '1 Jan 1955', place: null } })],
+  ]);
+  const events = findOnThisDay(records, { month: 6, day: 15 }, {
+    now: new Date('2026-06-15T12:00:00Z'),
+    suppressLikelyLiving: true,
+  });
   assert.equal(events.length, 1);
   assert.equal(events[0]!.primary.name, 'Mordechai');
 });
 
-test('findOnThisDay: still surfaces births older than 110 years even when death is unrecorded', () => {
-  // A 1900 birth with no death record is clearly historical, not living.
+test('findOnThisDay: with suppressLikelyLiving, still surfaces births older than the window even without a death record', () => {
+  // Default window is 110 years. A 1900 birth with no death record in 2026
+  // is well outside the window; surfaces despite the missing death — the
+  // user's GEDCOM is allowed to be incomplete on death dates for historical
+  // relatives.
   const records = new Map<string, DerivedRecord>([
     ['@I1@', rec({ record: '@I1@', name: 'Mendel', birth: { date: '15 Jun 1900', place: null }, death: { date: null, place: null } })],
   ]);
-  const events = findOnThisDay(records, { month: 6, day: 15 }, { now: new Date('2026-06-15T12:00:00Z') });
+  const events = findOnThisDay(records, { month: 6, day: 15 }, {
+    now: new Date('2026-06-15T12:00:00Z'),
+    suppressLikelyLiving: true,
+  });
   assert.equal(events.length, 1);
   assert.equal(events[0]!.primary.name, 'Mendel');
 });

@@ -60,9 +60,18 @@ export interface FindOnThisDayInput {
 }
 
 export interface FindOnThisDayOptions {
-  /** Used for the "is this person likely living?" heuristic and the future-year guard. */
+  /** Used for the future-year guard and (when suppression is on) the living-person heuristic. */
   now: Date;
-  /** Suppress births of likely-living people born within this many years of `now`. Default 80. */
+  /**
+   * When true, suppress births of likely-living people (no `death.date` AND
+   * born within `livingWindowYears` of `now`). Default false: the aggregator
+   * surfaces everything and lets the caller decide whether to filter. The
+   * frontend wires this to the project's `PRIVACY_GATE_ENABLED` env flag so
+   * almanac suppression follows the same master switch as the rest of the
+   * privacy infrastructure — no parallel rules.
+   */
+  suppressLikelyLiving?: boolean;
+  /** Window for the living-person heuristic (only consulted when `suppressLikelyLiving` is true). Default 110, matching the project-wide `PRIVACY_LIVING_THRESHOLD_YEARS`. */
   livingWindowYears?: number;
 }
 
@@ -76,18 +85,21 @@ export interface FindOnThisDayOptions {
  * Approximate dates (Abt/Bef/Aft/Bet/Cal/Est) and partial dates are
  * silently excluded by `extractFullDate`.
  *
- * Births of likely-living people (no `death.date` AND born within
- * `livingWindowYears` of `now`) are suppressed — even with the privacy
- * gate disabled, the home-page ribbon shouldn't surface a living
- * relative's birthday by default. Historical births with no recorded
- * death (older than the window) surface normally.
+ * Living-person birth suppression is opt-in via `suppressLikelyLiving`.
+ * When off (the default), every dated birth surfaces — consistent with
+ * "the privacy gate is disabled, surface everything." When on, births of
+ * people with no recorded death AND born within `livingWindowYears` of
+ * `now` are dropped. The frontend ribbon wires this to the same env flag
+ * that governs the rest of the privacy gate, so flipping that one switch
+ * gives consistent behavior across the wiki.
  */
 export function findOnThisDay(
   records: ReadonlyMap<string, DerivedRecord>,
   on: FindOnThisDayInput,
   options: FindOnThisDayOptions,
 ): TodayEvent[] {
-  const livingWindow = options.livingWindowYears ?? 80;
+  const suppressLiving = options.suppressLikelyLiving === true;
+  const livingWindow = options.livingWindowYears ?? 110;
   const nowYear = options.now.getUTCFullYear();
   const livingCutoff = nowYear - livingWindow;
   const out: TodayEvent[] = [];
@@ -97,7 +109,7 @@ export function findOnThisDay(
     // Birth
     const bd = extractFullDate(rec.birth?.date ?? null);
     if (bd && bd.month === on.month && bd.day === on.day && bd.year <= nowYear) {
-      const isLikelyLiving = !rec.death?.date && bd.year > livingCutoff;
+      const isLikelyLiving = suppressLiving && !rec.death?.date && bd.year > livingCutoff;
       if (!isLikelyLiving) {
         out.push({ type: 'birth', year: bd.year, primary: { record: rec.record, name: rec.name } });
       }

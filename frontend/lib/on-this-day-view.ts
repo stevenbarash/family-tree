@@ -1,5 +1,6 @@
 import { findOnThisDay, type TodayEvent, type TodayEventPerson } from '@core/family/on-this-day.ts';
 import { getCachedDerivedRecords } from './family';
+import { PRIVACY_GATE_ENABLED } from './env';
 import type { PageMetaSummary } from '@core/pages/index.ts';
 
 export interface TodayEventViewPerson extends TodayEventPerson {
@@ -27,7 +28,14 @@ export function getEventsForToday(
   // as the server.
   const month = now.getUTCMonth() + 1;
   const day = now.getUTCDate();
-  const events = findOnThisDay(getCachedDerivedRecords(), { month, day }, { now });
+  // Suppression of likely-living births follows the master privacy gate.
+  // When the gate is disabled (the current default), the almanac surfaces
+  // everything — same posture as the rest of the wiki. When the gate is
+  // on, plausibly-living birthdays are hidden.
+  const events = findOnThisDay(getCachedDerivedRecords(), { month, day }, {
+    now,
+    suppressLikelyLiving: PRIVACY_GATE_ENABLED,
+  });
   if (events.length === 0) return [];
 
   const recordToSlug = new Map<string, string>();
