@@ -23,6 +23,22 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Wikilink hover-cards** *(2026-05-16)*. Hovering any internal link in
+  a wiki page body now pops a 200ms-delayed preview card next to the
+  link with the target's portrait (or monogram), title, dates, and a
+  one-line lead. Card content is fully precomputed at SSR — no
+  client-side fetch, no loading flicker. Touch devices fall through to
+  plain links (no hover events). Self-links suppress the card. Cards
+  use the project's existing shadcn-on-base-ui primitive layer
+  (`@base-ui/react/preview-card` wrapped in
+  `frontend/components/ui/hover-card.tsx`) so the primitive handles
+  hover delay, positioning (Floating UI), focus, keyboard (Esc), and
+  ARIA. New `frontend/lib/page-card-data.ts` (lead extractor + card
+  builder), `frontend/components/wikilink-hover-card.tsx` (composition),
+  renderer hook in `frontend/lib/render.tsx`, request-time data build
+  in `frontend/app/[slug]/page.tsx` limited to slugs the current page
+  actually links to (so dense pages don't slow the request).
+
 - **"On this day" almanac ribbon on the home page** *(2026-05-16)*. Under
   the index header, a compact ribbon now lists births, deaths, and
   marriages from the family tree that fall on today's calendar date,
