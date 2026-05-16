@@ -41,7 +41,7 @@ covering local conventions:
 | `cli/`           | The `wai` CLI — the surface agents use to read, write, and search articles. |
 | `plugins/whoami/`| The agent extension. Skills, agent definitions, and editorial guides that load when an agent is writing or revising articles. |
 | `evals/`         | Eval suite for benchmarking agent harness × model quality on article authoring. |
-| `tools/`         | One-off migration helpers (wikitext-to-md, wiki-preview). |
+| `tools/`         | One-off migration helpers (wikitext-to-md, wiki-preview) and editorial helpers (`tools/ocr/` for local Tesseract OCR of source-document images in 22 languages). |
 | `pages/`         | Sample/demo articles checked into the repo. |
 | `docs/`          | Design notes and implementation plans. |
 
