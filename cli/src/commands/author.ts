@@ -203,6 +203,17 @@ export async function runAuthor(opts: AuthorOptions): Promise<number> {
         `research(${opts.slug}): ${result.sourcesQueried} sources, ${result.candidateClaims.length} candidate claims drafted`,
         makeTrailer(PHASE.research, inputsWithWeb, sourcesCount),
       );
+
+      // Re-gather so phase 3 (outline) and phase 4 (draft-person) see the
+      // research notes that phase 2 just committed. Without this, the in-memory
+      // drawer is frozen at the phase-1 snapshot and downstream phases pass a
+      // stale drawer (researchNotes=[]) to the harness — so the drafted page
+      // only ever cites [^gedcom]. The bug masked itself on --resume because
+      // a resumed run gathered fresh from the talk page that prior runs had
+      // already populated. Skipped when zero notes were added.
+      if (result.candidateClaims.length > 0) {
+        drawer = await gatherFn(opts.slug, gatherDeps);
+      }
     }
   }
 

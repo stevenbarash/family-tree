@@ -339,6 +339,129 @@ test('author: injected runCheck is called by verify phase instead of no-op', asy
   assert.deepEqual(checkCalls[1], { only: ['consistency'] });
 });
 
+// ── Drawer-refresh-after-research tests ──────────────────────────────────────
+//
+// Regression: the in-memory drawer was only populated once at phase 1, so
+// phases 3 (outline) and 4 (draft-person) received a stale drawer with empty
+// researchNotes — even after phase 2 had written candidate-claim notes to the
+// talk page via the API. The published page therefore only ever cited
+// [^gedcom], even when the research phase had pulled rich multilingual
+// sources (Yizkor, Pinkas Hakehillot, Jewish Encyclopedia, etc.). On --resume
+// past phase 1, the bug masked itself: drawer was null at the start, so it
+// was re-gathered fresh and included the notes that the prior run's phase 2
+// had committed. Fix: re-gather after phase 2 so phases 3+ see the updated
+// talk-page state.
+
+test('author: re-gathers drawer after phase 2 so outline + draft see research notes', async () => {
+  let gatherCount = 0;
+  const drawerBefore: EvidenceDrawer = { ...emptyDrawer, derived: { record: 'I1', raw: 'name: Aidele' }, researchNotes: [], inputs: ['derived'] };
+  const drawerAfter: EvidenceDrawer = {
+    ...emptyDrawer,
+    derived: { record: 'I1', raw: 'name: Aidele' },
+    researchNotes: [{ id: 'n1', date: '2026-05-10', text: 'Born 1890', kind: 'research' }],
+    inputs: ['derived', 'talk'],
+  };
+  let outlineSawNotes = false;
+  let draftSawNotes = false;
+  const code = await runAuthor(fakeOpts({
+    noWeb: false,
+    _gather: async () => {
+      gatherCount++;
+      return gatherCount === 1 ? drawerBefore : drawerAfter;
+    },
+    _research: async () => ({
+      candidateClaims: [{ text: 'Born 1890', url: 'https://example.com', gap: 'birthdate' }],
+      sourcesQueried: 1,
+      refuseToFabricate: false,
+    }),
+    _outline: async (drawer) => { outlineSawNotes = drawer.researchNotes.length > 0; return emptyPlan; },
+    _draftPerson: async (_plan, drawer) => { draftSawNotes = drawer.researchNotes.length > 0; return { body: '', redlinks: [] }; },
+  }));
+  assert.equal(code, 0);
+  assert.equal(gatherCount, 2, 'gather must be called twice: once at phase 1, again after phase 2 commits notes');
+  assert.ok(outlineSawNotes, 'outline must receive a drawer that includes the phase-2 research notes');
+  assert.ok(draftSawNotes, 'draft-person must receive a drawer that includes the phase-2 research notes');
+});
+
+test('author: does NOT re-gather when --no-web (phase 2 skipped, no new notes)', async () => {
+  // When the research phase is skipped, no new notes hit the talk page, so
+  // re-gathering would just be wasted work. Keeps the noWeb fast-path fast.
+  let gatherCount = 0;
+  const code = await runAuthor(fakeOpts({
+    noWeb: true,
+    _gather: async () => { gatherCount++; return emptyDrawer; },
+  }));
+  assert.equal(code, 0);
+  assert.equal(gatherCount, 1, 'gather should be called only once when phase 2 is skipped');
+});
+
+test('author: does NOT re-gather when research returned zero candidate claims', async () => {
+  // If research returned 0 claims, no notes were added to talk, so re-gather
+  // is unnecessary. (refuseToFabricate is checked first; this is the
+  // non-refuse "empty result" path.)
+  let gatherCount = 0;
+  const code = await runAuthor(fakeOpts({
+    noWeb: false,
+    _gather: async () => { gatherCount++; return { ...emptyDrawer, derived: { record: 'I1', raw: 'name: Aidele' }, inputs: ['derived'] }; },
+    _research: async () => ({ candidateClaims: [], sourcesQueried: 3, refuseToFabricate: false }),
+  }));
+  assert.equal(code, 0);
+  assert.equal(gatherCount, 1, 'gather should be called only once when phase 2 added zero notes');
+});
+
+test('author: phase 5 (draft-episode) also receives the post-research drawer', async () => {
+  // Episodes inherit the same drawer as the person hub. The fix is a single
+  // re-assignment to the `let drawer` variable, so all phases that read
+  // `drawer` after phase 2 (phases 3, 4, AND 5) see the refresh.
+  let gatherCount = 0;
+  const drawerBefore: EvidenceDrawer = { ...emptyDrawer, derived: { record: 'I1', raw: 'name: Aidele' }, researchNotes: [], inputs: ['derived'] };
+  const drawerAfter: EvidenceDrawer = {
+    ...emptyDrawer,
+    derived: { record: 'I1', raw: 'name: Aidele' },
+    researchNotes: [{ id: 'n1', date: '2026-05-10', text: 'evidence', kind: 'research' }],
+    inputs: ['derived', 'talk'],
+  };
+  const episodeNotesSeen: number[] = [];
+  const code = await runAuthor(fakeOpts({
+    noWeb: false,
+    _gather: async () => { gatherCount++; return gatherCount === 1 ? drawerBefore : drawerAfter; },
+    _research: async () => ({
+      candidateClaims: [{ text: 'x', url: 'https://example.com', gap: 'g' }],
+      sourcesQueried: 1,
+      refuseToFabricate: false,
+    }),
+    _outline: async () => planWithEpisodes,
+    _draftEpisode: async (_ep, drawer) => { episodeNotesSeen.push(drawer.researchNotes.length); return { body: '', redlinks: [] }; },
+  }));
+  assert.equal(code, 0);
+  assert.equal(episodeNotesSeen.length, 2, 'both episodes should have run');
+  assert.ok(episodeNotesSeen.every(n => n > 0), `every draft-episode call must see research notes, got: ${JSON.stringify(episodeNotesSeen)}`);
+});
+
+test('author: --resume past phase 2 still gathers fresh drawer (existing pattern preserved)', async () => {
+  // Existing behavior: when resuming, drawer is null at start, so it's
+  // re-gathered. This is what made the bug invisible on --resume — and the
+  // fix above doesn't break it.
+  let gatherCount = 0;
+  const log = 'pipeline-run: r1\nphase: 3\nslug: aidele\ninputs: derived,talk,web\nfabrication-guard: pass';
+  let outlineSawNotes = false;
+  const code = await runAuthor(fakeOpts({
+    resume: true,
+    gitLog: () => log,
+    _gather: async () => {
+      gatherCount++;
+      return { ...emptyDrawer, derived: { record: 'I1', raw: 'name: Aidele' }, researchNotes: [{ id: 'n1', date: '2026-05-10', text: 'x', kind: 'research' }], inputs: ['derived', 'talk'] };
+    },
+    _outline: async (drawer) => { outlineSawNotes = drawer.researchNotes.length > 0; return emptyPlan; },
+  }));
+  assert.equal(code, 0);
+  // --resume at phase 4 means startPhase=4; phase 1 is skipped; the "ensure
+  // drawer is populated" fallback runs gather once. The post-phase-2 refresh
+  // does not fire because startPhase > 2.
+  assert.equal(gatherCount, 1, 'on --resume past phase 2, gather runs once (the fallback for missing drawer)');
+  assert.ok(outlineSawNotes, 'resume-fresh drawer must include the research notes from the prior run');
+});
+
 test('author: writes log to talk page during phase 7', async () => {
   const writtenPages: Array<{ slug: string; body: string }> = [];
   const client = fakeClient({
