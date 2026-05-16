@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| ✅ | [`2026-05-16-this-day-in-family-history-ribbon.md`](./2026-05-16-this-day-in-family-history-ribbon.md) | "This day in family history" ribbon | Home-page almanac listing today's births, deaths, marriages from the GEDCOM tree, sorted oldest-first. |
 | ✅ | [`2026-05-16-relationship-strip-on-person-pages.md`](./2026-05-16-relationship-strip-on-person-pages.md) | Relationship strip on person pages | One-line "Your <relation>" subtitle below the H1 of every person page, computed server-side from SELF_RECORD. |
 | 🚧 | [`2026-05-10-article-pipeline-plan-1-foundation.md`](./2026-05-10-article-pipeline-plan-1-foundation.md) | Article pipeline — Plan 1: Foundation | Evidence-drawer commands (`wai narrative`, `wai transcribe`, `wai interview`), `wai note --kind` extension, harness adapter, `writing-articles` skill scaffold. Sequenced before Plans 2 and 3. |
 | 🚧 | [`2026-05-10-article-pipeline-plan-2-author-core.md`](./2026-05-10-article-pipeline-plan-2-author-core.md) | Article pipeline — Plan 2: Authoring core | `wai author <slug>` single-slug orchestrator (gather → research → outline → draft → verify → log), `wai check --include consistency`, renderer/search filters for narrative files, four authoring prompt templates. Sequenced after Plan 1; before Plan 3. |
@@ -61,7 +62,7 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
 | ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 26 plans** — 16 shipped (✅), 4 in-progress (🚧), 5 sketches (📝), 1 index (🗂).
+**Total: 27 plans** — 17 shipped (✅), 4 in-progress (🚧), 5 sketches (📝), 1 index (🗂).
 
 ---
 
