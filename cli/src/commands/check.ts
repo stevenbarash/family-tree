@@ -1,4 +1,4 @@
-import type { Detector, Finding, FindingCategory, RepoState } from '@core/checks/types.ts';
+import type { Detector, Finding, FindingCategory, RepoState, Severity } from '@core/checks/types.ts';
 import { runDetectors } from './check/run-detectors.js';
 
 export interface CheckOptions {
@@ -7,11 +7,26 @@ export interface CheckOptions {
   fix: boolean;
   only: ReadonlyArray<FindingCategory> | null;
   failOn: ReadonlyArray<FindingCategory> | null;
+  /**
+   * Severity floor for the exit code. When set, only findings at or above
+   * this severity contribute to a non-zero exit. Findings below it are
+   * still printed (the editorial guide calls info findings "cleanup
+   * signals" — visible but not blockers), and the JSON output still
+   * includes every finding so programmatic consumers can decide for
+   * themselves. The flag only changes whether the run *fails*.
+   */
+  minSeverity: Severity | null;
   loadState: (rootDir: string) => Promise<RepoState>;
   detectors: ReadonlyArray<Detector>;
   write: (s: string) => void;
   writeErr: (s: string) => void;
   writeFile: (file: string, content: string) => void;
+}
+
+const SEVERITY_RANK: Record<Severity, number> = { info: 0, warn: 1, error: 2 };
+
+function meetsSeverity(f: Finding, min: Severity): boolean {
+  return SEVERITY_RANK[f.severity] >= SEVERITY_RANK[min];
 }
 
 export async function runCheck(opts: CheckOptions): Promise<number> {
@@ -33,7 +48,10 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
       reload: () => opts.loadState(opts.rootDir),
     });
     opts.write(`${result.fixedCount} fix${result.fixedCount === 1 ? '' : 'es'} applied.\n`);
-    return result.findings.length === 0 ? 0 : 1;
+    const blocking = opts.minSeverity
+      ? result.findings.filter(f => meetsSeverity(f, opts.minSeverity!))
+      : result.findings;
+    return blocking.length === 0 ? 0 : 1;
   }
 
   // No-fix path: run detectors, collect and filter findings.
@@ -58,7 +76,7 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
     arr.push(f);
     byCat.set(f.category, arr);
   }
-  for (const cat of (['format', 'data', 'schema', 'coverage', 'consistency'] as const)) {
+  for (const cat of (['format', 'data', 'schema', 'coverage', 'consistency', 'citation'] as const)) {
     const arr = byCat.get(cat) ?? [];
     if (arr.length === 0) continue;
     const fixable = arr.filter(f => f.fix).length;
@@ -73,11 +91,18 @@ export async function runCheck(opts: CheckOptions): Promise<number> {
   const finds = findings.length === 1 ? 'finding' : 'findings';
   opts.write(`${byCat.size} ${cats}, ${findings.length} ${finds}.\n`);
 
-  // Exit-code mapping
+  // Exit-code mapping. `--min-severity` filters the set of findings that
+  // can produce a non-zero exit; display is unchanged so info findings
+  // still surface in the output as cleanup signals. `--fail-on` and
+  // `--min-severity` compose: a finding must match both gates to block.
   if (findings.length === 0) return 0;
+  const blocking = opts.minSeverity
+    ? findings.filter(f => meetsSeverity(f, opts.minSeverity!))
+    : findings;
+  if (blocking.length === 0) return 0;
   if (opts.failOn) {
     const fail = new Set(opts.failOn);
-    const matched = findings.some(f => fail.has(f.category));
+    const matched = blocking.some(f => fail.has(f.category));
     return matched ? 1 : 0;
   }
   return 1;

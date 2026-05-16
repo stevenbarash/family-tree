@@ -18,6 +18,13 @@ export interface GatherDeps {
     body: string;
     notes: ReadonlyArray<{ id: string; date: string; text: string; kind: string }>;
   } | null>;
+  /**
+   * Fallback resolver for slugs that don't yet have a page. Scans
+   * `genealogy/derived/*.yml` and returns the record whose `name` field
+   * slugifies to the requested slug. Used by `--cohort missing` and any
+   * other path that authors a page before one exists on disk.
+   */
+  findDerivedBySlug: (slug: string, rootDir: string) => { record: string; raw: string } | null;
 }
 
 export async function gather(slug: string, deps: GatherDeps): Promise<EvidenceDrawer> {
@@ -39,6 +46,14 @@ export async function gather(slug: string, deps: GatherDeps): Promise<EvidenceDr
         derived = { record: rec, raw };
         inputs.push('derived');
       }
+    }
+  }
+  // Fallback for missing pages: scan derived/*.yml for a name-slug match.
+  if (derived === null) {
+    const found = deps.findDerivedBySlug(slug, deps.rootDir);
+    if (found) {
+      derived = found;
+      inputs.push('derived');
     }
   }
 

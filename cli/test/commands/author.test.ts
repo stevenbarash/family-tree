@@ -502,6 +502,41 @@ test('cohort: runs each slug; reports success', async () => {
   assert.equal(journalContent.length, 4);
 });
 
+test('cohort: continues remaining slugs when runOne throws (harness failure on one slug does not abort the batch)', async () => {
+  // Regression: phase functions (research, outline, draft-person) throw on
+  // harness failure rather than returning a code. Without this catch, a
+  // single flaky JSON parse on one slug would abort the entire cohort
+  // — which is the worst-case UX for a long-running batch.
+  const written: Record<string, string> = {};
+  let err = '';
+  const code = await runAuthorCohort({
+    slugs: ['flaky-slug', 'good-slug'],
+    parallel: 1,
+    order: 'file',
+    runOne: async (slug) => {
+      if (slug === 'flaky-slug') throw new Error('harness inner result is not JSON');
+      return 0;
+    },
+    journal: {
+      rootDir: '/repo',
+      appendFile: () => {},
+      mkdirP: () => {},
+    },
+    readFile: () => null,
+    writeFailedFile: (p, c) => { written[p] = c; },
+    rootDir: '/repo',
+    write: () => {},
+    writeErr: (s) => { err += s; },
+    now: () => '2026-05-11T00:00:00Z',
+  });
+  assert.equal(code, 1, 'cohort returns 1 because at least one slug failed');
+  assert.match(err, /flaky-slug threw/);
+  assert.match(err, /1 succeeded, 1 failed/);
+  const failedPath = Object.keys(written).find(p => p.endsWith('-failed.txt'));
+  assert(failedPath, 'expected failed.txt');
+  assert.match(written[failedPath!] ?? '', /flaky-slug/);
+});
+
 test('cohort: writes failed.txt on failure; returns 1', async () => {
   const written: Record<string, string> = {};
   let err = '';

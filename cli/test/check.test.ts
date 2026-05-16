@@ -59,6 +59,146 @@ test('check: findings produce non-zero exit', async () => {
   assert.match(out, /1 finding[\.\s]/);
 });
 
+test('check: --min-severity warn lets info findings print but exits 0', async () => {
+  // The pre-commit hook & API write check currently treat any finding in
+  // {format,schema,data} as blocking, including info-severity "active
+  // correction" findings that the editorial guide explicitly says should
+  // be advisory. --min-severity is the lever that aligns tooling with
+  // that documented policy: print the info, don't fail on it.
+  let out = '';
+  const finding: Finding = {
+    category: 'data',
+    severity: 'info',
+    message: 'active correction overlays GEDCOM value',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: false,
+    only: null,
+    failOn: ['data'],
+    minSeverity: 'warn',
+    loadState: async () => emptyState(),
+    detectors: [() => [finding]],
+    write: (s) => { out += s; },
+    writeErr: () => {},
+    writeFile: () => { throw new Error('no fix'); },
+  });
+  assert.equal(code, 0);
+  // Display still includes the info finding — it's a cleanup signal, not a secret.
+  assert.match(out, /active correction overlays GEDCOM value/);
+});
+
+test('check: --min-severity warn still fails on warn-severity findings', async () => {
+  // The flag must not be a blanket pass — warn and error findings in the
+  // --fail-on categories should still block. Otherwise the hook stops
+  // protecting against real drift.
+  let out = '';
+  const warnFinding: Finding = {
+    category: 'data',
+    severity: 'warn',
+    message: 'correction conflict between two pages',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: false,
+    only: null,
+    failOn: ['data'],
+    minSeverity: 'warn',
+    loadState: async () => emptyState(),
+    detectors: [() => [warnFinding]],
+    write: (s) => { out += s; },
+    writeErr: () => {},
+    writeFile: () => { throw new Error('no fix'); },
+  });
+  assert.equal(code, 1);
+});
+
+test('check: --min-severity composes with --fail-on — only matching category+severity blocks', async () => {
+  // Two findings: a warn outside --fail-on, and an info inside. Neither
+  // should block under --min-severity warn + --fail-on data.
+  const outsideFailOn: Finding = {
+    category: 'coverage',
+    severity: 'warn',
+    message: 'redlink',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const belowFloor: Finding = {
+    category: 'data',
+    severity: 'info',
+    message: 'active correction',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: false,
+    only: null,
+    failOn: ['data'],
+    minSeverity: 'warn',
+    loadState: async () => emptyState(),
+    detectors: [() => [outsideFailOn, belowFloor]],
+    write: () => {},
+    writeErr: () => {},
+    writeFile: () => { throw new Error('no fix'); },
+  });
+  assert.equal(code, 0);
+});
+
+test('check: --min-severity error allows all but errors through', async () => {
+  // Severity ordering check: info < warn < error. --min-severity error
+  // should let warn-level findings pass too.
+  const warnFinding: Finding = {
+    category: 'data',
+    severity: 'warn',
+    message: 'something to clean up',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: false,
+    only: null,
+    failOn: ['data'],
+    minSeverity: 'error',
+    loadState: async () => emptyState(),
+    detectors: [() => [warnFinding]],
+    write: () => {},
+    writeErr: () => {},
+    writeFile: () => { throw new Error('no fix'); },
+  });
+  assert.equal(code, 0);
+});
+
+test('check: without --min-severity, behavior unchanged (info findings still block)', async () => {
+  // Back-compat: the flag is opt-in. Existing pre-commit hooks and CI
+  // invocations that don't pass --min-severity get the same exit-code
+  // semantics they had before this change.
+  let out = '';
+  const finding: Finding = {
+    category: 'data',
+    severity: 'info',
+    message: 'active correction',
+    location: { file: '/tmp/x/page.md' },
+  };
+  const code = await runCheck({
+    rootDir: '/tmp/x',
+    json: false,
+    fix: false,
+    only: null,
+    failOn: ['data'],
+    loadState: async () => emptyState(),
+    detectors: [() => [finding]],
+    write: (s) => { out += s; },
+    writeErr: () => {},
+    writeFile: () => { throw new Error('no fix'); },
+  });
+  assert.equal(code, 1);
+});
+
 test('check: --json prints JSON', async () => {
   let out = '';
   const finding: Finding = {

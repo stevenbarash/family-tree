@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync, statSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 import { execSync } from 'node:child_process';
 import { ApiClient } from './api-client.js';
@@ -23,6 +23,7 @@ import { runExport } from './commands/export.js';
 import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
+import { runGrepClaims } from './commands/grep-claims.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
@@ -45,8 +46,10 @@ import { detectSchemaDrift } from '@core/checks/schema-drift.ts';
 import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import { detectPlacesDrift } from '@core/checks/places-drift.ts';
 import { detectConsistencyDrift } from '@core/checks/consistency-drift.ts';
-import type { Detector, FindingCategory } from '@core/checks/types.ts';
+import { detectCitationDrift } from '@core/checks/citation-drift.ts';
+import type { Detector, FindingCategory, Severity } from '@core/checks/types.ts';
 import { runDetectors } from './commands/check/run-detectors.js';
+import { checkBundleFreshness } from './bundle-freshness.js';
 
 function shellEscape(s: string): string { return `'${s.replace(/'/g, "'\\''")}'`; }
 
@@ -95,9 +98,22 @@ Quality:
         [--fix]                  Apply safe auto-fixes (format, schema)
         [--only A,B]             Only run detectors for categories
         [--fail-on A,B]          Exit 1 only on findings in these categories
+        [--min-severity S]       Severity floor for exit code: info|warn|error.
+                                   Findings below S still print but don't fail.
+                                   Default: no floor (any finding blocks per --fail-on).
         [--json]                 Machine-readable output
-                                 Categories: format, data, schema, coverage, consistency
-                                 Default set: format, data, schema, coverage (NOT consistency)
+                                 Categories: format, data, schema, coverage, consistency, citation
+                                 Default set: format, data, schema, coverage (NOT consistency, NOT citation)
+  grep-claims <phrase>        Find every occurrence of a phrase across pages,
+                              talk pages, and source transcripts. Use as the
+                              first step of any factual correction so you can
+                              fix every place the wrong claim lives in one pass.
+        [--variants A,B,C]      Comma-separated additional phrases to search
+                                  (e.g., Ukrainian/Russian forms of the same claim)
+        [--no-talk]              Skip *.talk.md files
+        [--no-sources]           Skip assets/sources/**/transcript.md
+        [--case-sensitive]       Default is case-insensitive
+        [--json]                 Machine-readable output
   promote-corrections         Promote a frontmatter correction to the GEDCOM.
         --record I...           Record id whose corrections to promote
         [--apply]               Write changes (default: dry-run)
@@ -242,6 +258,25 @@ async function main(): Promise<number> {
     return 0;
   }
 
+  // Stale-bundle nag. Only runs in the bundled-CLI case (process.argv[1]
+  // ending in `.cjs`); when developing via tsx the source IS the bundle,
+  // so the check has nothing meaningful to say. Failures (missing dir,
+  // permission denied) are swallowed inside the check; if anything goes
+  // sideways, the user runs an old wai for one invocation — not the end
+  // of the world. Better that than crashing wai's startup over a stat
+  // call.
+  const bundlePath = process.argv[1] ?? '';
+  if (bundlePath.endsWith('.cjs')) {
+    const srcRoot = join(dirname(bundlePath), '..', 'src');
+    const freshness = checkBundleFreshness(bundlePath, srcRoot, {
+      stat: (p) => { try { return statSync(p); } catch { return null; } },
+      readdir: (p) => { try { return readdirSync(p); } catch { return null; } },
+    });
+    if (freshness.stale && freshness.message) {
+      process.stderr.write(`${freshness.message}\n`);
+    }
+  }
+
   if (REMOVED.has(args.cmd)) {
     process.stderr.write(`wai: '${args.cmd}' is not yet supported in the markdown migration.\n`);
     return 2;
@@ -360,14 +395,28 @@ async function main(): Promise<number> {
           if (typeof v !== 'string') return null;
           return v.split(',').map(s => s.trim()) as FindingCategory[];
         };
+        const parseSeverity = (v: unknown): Severity | null => {
+          if (typeof v !== 'string') return null;
+          if (v !== 'info' && v !== 'warn' && v !== 'error') {
+            process.stderr.write(`check: --min-severity must be info, warn, or error (got "${v}")\n`);
+            return null;
+          }
+          return v as Severity;
+        };
         const onlyList = parseList(args.flags.only);
         const includeConsistency = onlyList?.includes('consistency') ?? false;
+        const includeCitation = onlyList?.includes('citation') ?? false;
+        const minSeverity = parseSeverity(args.flags['min-severity']);
+        if (args.flags['min-severity'] !== undefined && minSeverity === null) {
+          return 2;
+        }
         const code = await runCheck({
           rootDir: root,
           json: !!args.flags.json,
           fix: !!args.flags.fix,
           only: onlyList,
           failOn: parseList(args.flags['fail-on']),
+          minSeverity,
           loadState: loadRepoState,
           detectors: [
             detectFormatDrift,
@@ -376,10 +425,35 @@ async function main(): Promise<number> {
             detectCoverageDrift,
             detectPlacesDrift,
             ...(includeConsistency ? [detectConsistencyDrift] : []),
+            ...(includeCitation ? [detectCitationDrift] : []),
           ],
           write,
           writeErr: (s) => process.stderr.write(s),
           writeFile: (file, content) => writeFileSync(file, content),
+        });
+        return code;
+      }
+      case 'grep-claims': {
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const phrase = args.positional[0];
+        if (!phrase) {
+          process.stderr.write('grep-claims: phrase required (e.g., wai grep-claims "Defense of Kyiv" --variants "За оборону Києва,defended Kyiv")\n');
+          return 2;
+        }
+        const variantArg = args.flags.variants;
+        const variants = typeof variantArg === 'string'
+          ? variantArg.split(',').map(s => s.trim()).filter(s => s.length > 0)
+          : [];
+        const code = runGrepClaims({
+          rootDir: root,
+          phrases: [phrase, ...variants],
+          includeSources: args.flags['no-sources'] !== true,
+          includeTalk: args.flags['no-talk'] !== true,
+          caseInsensitive: args.flags['case-sensitive'] !== true,
+          json: !!args.flags.json,
+          write,
         });
         return code;
       }
@@ -632,17 +706,34 @@ async function main(): Promise<number> {
           gitCommit: (subject: string, body: string) => { execSync(`git -C ${shellEscape(authorRootDir)} commit --allow-empty -m ${shellEscape(subject)} -m ${shellEscape(body)}`); },
           gitHasUncommittedChanges: () => execSync(`git -C ${shellEscape(authorRootDir)} status --porcelain`).toString().trim().length > 0,
           gitIsRepo: () => existsSync(join(authorRootDir, '.git')),
+          findDerivedBySlug: (slug: string) => {
+            const derivedDir = join(authorRootDir, 'genealogy', 'derived');
+            if (!existsSync(derivedDir)) return null;
+            for (const file of readdirSync(derivedDir)) {
+              if (!file.endsWith('.yml')) continue;
+              const filePath = join(derivedDir, file);
+              const text = readFileSync(filePath, 'utf8');
+              const nameMatch = text.match(/^name:\s*(.+)$/m);
+              if (!nameMatch) continue;
+              const name = nameMatch[1]!.trim();
+              if (toSlug(name) === slug) {
+                return { record: file.slice(0, -'.yml'.length), raw: text };
+              }
+            }
+            return null;
+          },
           healthz: async () => { try { await authorClient.healthz(); return true; } catch { return false; } },
           now: () => new Date().toISOString().slice(0, 10),
           write: (s: string) => process.stdout.write(s),
           writeErr: (s: string) => process.stderr.write(s),
-          runCheck: async (checkArgs: { only: string[]; fix?: boolean }) => {
+          runCheck: async (checkArgs: { only: string[]; fix?: boolean; slugFilter?: string }) => {
             const detectorMap: Record<string, Detector> = {
               format: detectFormatDrift,
               data: detectDataDrift,
               schema: detectSchemaDrift,
               coverage: detectCoverageDrift,
               consistency: detectConsistencyDrift,
+              citation: detectCitationDrift,
             };
             const requested = checkArgs.only as FindingCategory[];
             const selected = requested.map(c => detectorMap[c]).filter((d): d is Detector => d !== undefined);
@@ -656,9 +747,19 @@ async function main(): Promise<number> {
               writeErr: (s) => process.stderr.write(s),
               reload: () => loadRepoState(authorRootDir),
             });
+            // Filter to findings about this run's slug — pre-existing findings
+            // on unrelated pages must not block authoring of a new page. The
+            // page-level wai check is the place to surface repo-wide drift;
+            // verify here is a guardrail for *this run's* output.
+            let findings = result.findings;
+            if (checkArgs.slugFilter) {
+              const pageFile = join(authorRootDir, 'pages', `${checkArgs.slugFilter}.md`);
+              const talkFile = join(authorRootDir, 'pages', `${checkArgs.slugFilter}.talk.md`);
+              findings = findings.filter(f => f.location?.file === pageFile || f.location?.file === talkFile);
+            }
             return {
-              exitCode: result.findings.length > 0 && !checkArgs.fix ? 1 : 0,
-              findingCount: result.findings.length,
+              exitCode: findings.length > 0 && !checkArgs.fix ? 1 : 0,
+              findingCount: findings.length,
               fixedCount: result.fixedCount,
             };
           },
