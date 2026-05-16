@@ -101,3 +101,61 @@ export function normalizeDate(raw: string): NormalizeResult {
 
   return { value: trimmed, changed: trimmed !== raw };
 }
+
+// Match date-like substrings strictly. Order matters: longer / more specific
+// patterns first so they're tried before shorter ones.
+const DATE_PATTERNS: RegExp[] = [
+  /\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/g,
+  /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g,
+  /\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}\b/g,
+  /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2},?\s+\d{4}\b/g,
+  /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g,
+];
+
+export function findDatesInLine(line: string): Array<{ start: number; text: string }> {
+  const hits: Array<{ start: number; text: string }> = [];
+  for (const re of DATE_PATTERNS) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(line)) !== null) {
+      const overlaps = hits.some(h => m!.index < h.start + h.text.length && m!.index + m![0].length > h.start);
+      if (!overlaps) hits.push({ start: m.index, text: m[0]! });
+    }
+  }
+  return hits.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * Rewrite every date string in `body` into its canonical form. Lines inside
+ * fenced code blocks are passed through untouched (same convention the
+ * format-drift detector uses on page bodies). Ambiguous slash dates
+ * (m/d/y vs d/m/y when both numbers are ≤ 12) are left as-is — the caller
+ * should surface them as a manual-disambiguation finding rather than guess.
+ *
+ * Used by the author orchestrator to canonicalize model-drafted prose
+ * before writing it to disk, so phase commits don't trip the data repo's
+ * format-drift pre-commit hook on dates the detector would auto-fix anyway.
+ */
+export function normalizeDatesInBody(body: string): string {
+  const lines = body.split('\n');
+  let inCode = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    if (line.trimStart().startsWith('```')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    const hits = findDatesInLine(line);
+    if (hits.length === 0) continue;
+    let newLine = line;
+    for (const hit of [...hits].reverse()) {
+      const result = normalizeDate(hit.text);
+      if (result.ambiguous) continue;
+      if (!result.changed) continue;
+      newLine = newLine.slice(0, hit.start) + result.value + newLine.slice(hit.start + hit.text.length);
+    }
+    lines[i] = newLine;
+  }
+  return lines.join('\n');
+}

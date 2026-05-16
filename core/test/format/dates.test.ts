@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeDate } from '../../src/format/dates.ts';
+import { normalizeDate, findDatesInLine, normalizeDatesInBody } from '../../src/format/dates.ts';
 
 test('normalizeDate: canonical D Mon YYYY is idempotent', () => {
   assert.equal(normalizeDate('7 Sep 1997').value, '7 Sep 1997');
@@ -117,4 +117,58 @@ test('normalizeDate: qualifier + non-canonical date recurses to normalize the re
   // Exercises the recursion: "August" → "Aug", inside the Abt wrapper.
   assert.equal(normalizeDate('Abt 25 August 1889').value, 'Abt 25 Aug 1889');
   assert.equal(normalizeDate('Bef 18 jul 1926').value, 'Bef 18 Jul 1926');
+});
+
+test('findDatesInLine: catches multiple date formats on one line', () => {
+  const hits = findDatesInLine('Boris (born 27 Jul 1946) married Galina on August 19, 2001.');
+  assert.equal(hits.length, 2);
+  assert.equal(hits[0]!.text, '27 Jul 1946');
+  assert.equal(hits[1]!.text, 'August 19, 2001');
+});
+
+test('findDatesInLine: prefers longer matches (no overlapping hits)', () => {
+  const hits = findDatesInLine('Birth: 7 September 1997.');
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0]!.text, '7 September 1997');
+});
+
+test('normalizeDatesInBody: rewrites non-canonical dates to canonical', () => {
+  const before = 'Boris was born July 27, 1946 in Kyiv.';
+  const after = normalizeDatesInBody(before);
+  assert.equal(after, 'Boris was born 27 Jul 1946 in Kyiv.');
+});
+
+test('normalizeDatesInBody: leaves canonical dates untouched (idempotent)', () => {
+  const body = 'Born 27 Jul 1946. Died Abt 2010.\nMarriage on 15 Jun 1992.';
+  assert.equal(normalizeDatesInBody(body), body);
+});
+
+test('normalizeDatesInBody: skips dates inside fenced code blocks', () => {
+  const body = [
+    'Outside the fence: July 27, 1946.',
+    '```',
+    'Inside the fence: July 27, 1946.',
+    '```',
+    'After the fence: July 27, 1946.',
+  ].join('\n');
+  const expected = [
+    'Outside the fence: 27 Jul 1946.',
+    '```',
+    'Inside the fence: July 27, 1946.',
+    '```',
+    'After the fence: 27 Jul 1946.',
+  ].join('\n');
+  assert.equal(normalizeDatesInBody(body), expected);
+});
+
+test('normalizeDatesInBody: leaves ambiguous slash dates alone', () => {
+  // 09/07/1997 — could be 9-Jul or 7-Sep, normalizer must not guess.
+  const body = 'Wedding: 09/07/1997.';
+  assert.equal(normalizeDatesInBody(body), body);
+});
+
+test('normalizeDatesInBody: handles multiple dates on one line', () => {
+  const before = 'Lead: Boris (born 27 July 1946) married Galina on August 19, 2001.';
+  const after = normalizeDatesInBody(before);
+  assert.equal(after, 'Lead: Boris (born 27 Jul 1946) married Galina on 19 Aug 2001.');
 });

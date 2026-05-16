@@ -1,5 +1,5 @@
 import type { Detector, Finding, LoadedPage, RepoState } from './types.ts';
-import { normalizeDate } from '../format/dates.ts';
+import { normalizeDate, findDatesInLine } from '../format/dates.ts';
 
 const MAX_PREVIEW = 80;
 
@@ -44,30 +44,6 @@ export const detectFormatDrift: Detector = (state: RepoState): Finding[] => {
   }
   return findings;
 };
-
-// Match date-like substrings strictly. Order matters: longer / more specific
-// patterns first so they're tried before shorter ones.
-const DATE_PATTERNS: RegExp[] = [
-  /\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\b/g,
-  /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g,
-  /\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{4}\b/g,
-  /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s+\d{1,2},?\s+\d{4}\b/g,
-  /\b\d{1,2}\/\d{1,2}\/\d{4}\b/g,
-];
-
-function findDatesInLine(line: string): Array<{ start: number; text: string }> {
-  const hits: Array<{ start: number; text: string }> = [];
-  for (const re of DATE_PATTERNS) {
-    re.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(line)) !== null) {
-      // Skip overlap with already-recorded hits
-      const overlaps = hits.some(h => m!.index < h.start + h.text.length && m!.index + m![0].length > h.start);
-      if (!overlaps) hits.push({ start: m.index, text: m[0]! });
-    }
-  }
-  return hits.sort((a, b) => a.start - b.start);
-}
 
 /**
  * Find the line index (0-based) just past the frontmatter delimiter `---`,
