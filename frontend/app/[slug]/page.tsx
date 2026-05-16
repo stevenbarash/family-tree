@@ -19,6 +19,8 @@ import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations'
 import { getCachedDerivedRecords } from '@/lib/family';
 import { computeRelationshipFromSelf } from '@/lib/relationship-from-self';
 import { RelationshipStrip } from '@/components/relationship-strip';
+import { buildHoverDataBySlug } from '@/lib/page-card-data';
+import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
 export const dynamic = 'force-dynamic';
 
@@ -96,10 +98,19 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
   // The gate is master-toggled in `env.ts`; currently disabled.
   const isRestricted = PRIVACY_GATE_ENABLED && derived?.privacy?.restricted === true;
 
+  // Hover-card data: identify which slugs this page links to, fetch their
+  // bodies in parallel, and precompute card content. Limiting to linked
+  // slugs (vs. all pages) keeps the request path cheap on dense pages.
+  const linkedSlugs = isRestricted ? new Set<string>() : extractLinkedSlugs(page.body, list);
+  const bodiesBySlug = isRestricted
+    ? new Map<string, string>()
+    : await readBodiesForSlugs(getPageStore(), linkedSlugs);
+  const hoverDataBySlug = buildHoverDataBySlug(list, getCachedDerivedRecords(), bodiesBySlug);
+
   const [tree, notes] = isRestricted
     ? [null, []]
     : await Promise.all([
-        renderMarkdown(page.body, index, { derived }),
+        renderMarkdown(page.body, index, { derived, hoverDataBySlug, currentSlug: slug }),
         buildNotesView(talkBody, index),
       ]);
 
@@ -173,4 +184,51 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
       )}
     </main>
   );
+}
+
+/**
+ * Scan a page body for `[Text](/<slug>)` links and `[[Title]]` wikilinks,
+ * return the set of internal slugs referenced. Used to bound the per-render
+ * hover-card data build to just the pages this page actually links to.
+ */
+function extractLinkedSlugs(body: string, list: ReadonlyArray<PageMetaSummary>): Set<string> {
+  const out = new Set<string>();
+  // Direct `/<slug>` links from already-resolved markdown.
+  for (const m of body.matchAll(/\]\(\/([a-z0-9-]+)(?:[#?][^)]*)?\)/g)) {
+    out.add(m[1]!);
+  }
+  // Unresolved wikilinks — match against title/alias (case-insensitive).
+  const byCanonical = new Map<string, string>();
+  for (const p of list) {
+    if (p.isTalk || p.isArchived) continue;
+    byCanonical.set(p.title.toLowerCase(), p.slug);
+    for (const a of p.aliases) byCanonical.set(a.toLowerCase(), p.slug);
+  }
+  for (const m of body.matchAll(/\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g)) {
+    const target = m[1]!.trim().toLowerCase();
+    const slug = byCanonical.get(target);
+    if (slug) out.add(slug);
+  }
+  return out;
+}
+
+/**
+ * Read page bodies for the given slugs in parallel. Errors (missing pages,
+ * permission issues) are swallowed — a missing body just yields no lead.
+ */
+async function readBodiesForSlugs(
+  store: PageStore,
+  slugs: ReadonlySet<string>,
+): Promise<Map<string, string>> {
+  const entries = await Promise.all(
+    [...slugs].map(async (slug): Promise<[string, string] | null> => {
+      try {
+        const page = await store.read(slug);
+        return [slug, page.body];
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return new Map(entries.filter((e): e is [string, string] => e !== null));
 }
