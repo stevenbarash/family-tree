@@ -59,7 +59,11 @@ function detectBibliographyMismatch(page: LoadedPage): Finding[] {
   // Find inline ::cite-vault directives (single-colon, attrs may include note/type/snapshot/timestamp).
   const inlineMatches = [...body.matchAll(/::cite-vault\{([^}]*)\}/g)];
   // Find the ## Bibliography section, then any ::cite-vault entries inside it.
-  const bibIdx = body.indexOf('## Bibliography');
+  // Anchor to line-start: a literal "## Bibliography" in body prose ("see
+  // ## Bibliography section below") would otherwise start the bib slice
+  // mid-paragraph, sweeping body-prose cite-vaults into bibKeys and hiding
+  // real "inline cite missing from bibliography" findings.
+  const bibIdx = body.startsWith('## Bibliography') ? 0 : body.indexOf('\n## Bibliography');
   const bibSection = bibIdx === -1 ? '' : body.slice(bibIdx);
   const bibMatches = [...bibSection.matchAll(/::cite-vault\{([^}]*)\}/g)];
 
@@ -156,4 +160,28 @@ function extractInfoboxField(infobox: string, key: string): string | null {
 function valuesAgree(a: string, b: string): boolean {
   const n = (s: string) => s.trim().replace(/^"|"$/g, '').toLowerCase();
   return n(a) === n(b) || n(a).startsWith(n(b)) || n(b).startsWith(n(a));
+}
+
+/**
+ * Pull every double-quoted (`"…"`) or guillemet-quoted (`«…»`) phrase out
+ * of a body string. Empty quotes are skipped; interior whitespace is
+ * trimmed. Used by `detectTalkLivePageDrift` to find claim phrases on
+ * talk pages that the live page should also assert if they're load-bearing.
+ */
+export function extractQuotedPhrases(body: string): string[] {
+  const out: string[] = [];
+  // `[^…]*` (not `+`) so an empty `""`/`«»` consumes both delimiters and
+  // advances `lastIndex` past them — otherwise the engine would skip the
+  // opening quote of an empty pair and pair its closer with the NEXT `"`,
+  // sweeping unrelated prose into a spurious match.
+  const patterns = [/"([^"]*)"/g, /«([^»]*)»/g];
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(body)) !== null) {
+      const phrase = m[1]!.trim();
+      if (phrase.length > 0) out.push(phrase);
+    }
+  }
+  return out;
 }

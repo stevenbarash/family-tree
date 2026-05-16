@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectConsistencyDrift } from '../../src/checks/consistency-drift.ts';
+import { detectConsistencyDrift, extractQuotedPhrases } from '../../src/checks/consistency-drift.ts';
 import type { RepoState, LoadedPage } from '../../src/checks/types.ts';
 import type { DerivedRecord } from '../../src/gedcom/types.ts';
 import type { PageMeta } from '../../src/pages/types.ts';
@@ -145,6 +145,30 @@ test('consistency-drift: inline cite-vault not in bibliography → info finding'
   assert.equal(bib[0]!.severity, 'info');
 });
 
+test('consistency-drift: a body mention of "## Bibliography" mid-prose is not treated as the section', () => {
+  // A bare `indexOf('## Bibliography')` matches mid-paragraph text like
+  // "see ## Bibliography below." Before the line-anchoring fix, the
+  // bibSection slice would start at that mid-prose position — sweeping any
+  // body-prose `::cite-vault` directives between the false match and the
+  // real `## Bibliography` into the bib-keys set, so a real
+  // "inline cite missing from bibliography" finding would be hidden.
+  // The page below has a cite-vault appearing between the prose mention
+  // and the actual bib section; with the fix, that cite IS counted as
+  // inline-only and the missing-from-bib finding surfaces.
+  const body = [
+    'In the source list (see ## Bibliography below), entries are sorted.',
+    '',
+    'He married in 1892.::cite-vault{snapshot=snapX note="marriage 1892"}',
+    '',
+    '## Bibliography',
+    '',
+    '(no entries)',
+  ].join('\n');
+  const findings = detectConsistencyDrift(makeState({ pages: [page('alice', { body })] }));
+  const bib = findings.filter(f => /inline cite-vault entry not listed/.test(f.message));
+  assert.equal(bib.length, 1, 'expected one missing-from-bib finding, not hidden by mid-prose match');
+});
+
 // ---------------------------------------------------------------------------
 // GEDCOM mismatch tests
 // ---------------------------------------------------------------------------
@@ -229,4 +253,37 @@ test('consistency-drift: GEDCOM birthplace mismatch with no corrections → erro
 
 test('consistency-drift: empty state → no findings', () => {
   assert.deepEqual(detectConsistencyDrift(makeState({})), []);
+});
+
+// ---------------------------------------------------------------------------
+// extractQuotedPhrases tests
+// ---------------------------------------------------------------------------
+
+test('extractQuotedPhrases: pulls double-quoted phrases from prose', () => {
+  const body = 'Boris had the "For Defense of Kyiv" medal and also "For Victory".';
+  assert.deepEqual(extractQuotedPhrases(body), ['For Defense of Kyiv', 'For Victory']);
+});
+
+test('extractQuotedPhrases: pulls guillemet-quoted phrases', () => {
+  const body = 'The book reads «Айзман Борис Хаскельович» on p. 120.';
+  assert.deepEqual(extractQuotedPhrases(body), ['Айзман Борис Хаскельович']);
+});
+
+test('extractQuotedPhrases: handles mixed quote styles in one body', () => {
+  const body = 'Medal "За оборону Києва" matches «За оборону Києва» (Ukrainian).';
+  assert.deepEqual(extractQuotedPhrases(body), ['За оборону Києва', 'За оборону Києва']);
+});
+
+test('extractQuotedPhrases: ignores empty quotes and apostrophes', () => {
+  const body = "It's his \"\" or '' — neither counts. \"Real phrase\" does.";
+  assert.deepEqual(extractQuotedPhrases(body), ['Real phrase']);
+});
+
+test('extractQuotedPhrases: trims whitespace inside quotes', () => {
+  const body = 'Phrase: "  spaced out  " — kept trimmed.';
+  assert.deepEqual(extractQuotedPhrases(body), ['spaced out']);
+});
+
+test('extractQuotedPhrases: returns empty array for empty body', () => {
+  assert.deepEqual(extractQuotedPhrases(''), []);
 });
