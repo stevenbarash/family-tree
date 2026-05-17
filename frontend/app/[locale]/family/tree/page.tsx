@@ -123,7 +123,7 @@ export default async function FamilyTreePage({ params, searchParams }: Props) {
             href="/family"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="size-4" aria-hidden />
+            <ArrowLeft className="size-4 rtl:scale-x-[-1]" aria-hidden />
             <span className="font-display tracking-tight">{t('navFamily')}</span>
           </Link>
           <div className="font-display text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground/80">
