@@ -1,0 +1,213 @@
+{
+  "Chrome": {
+    "skipToContent": "Перейти до вмісту",
+    "LangSwitcher": {
+      "label": "Мова",
+      "en": "English",
+      "ru": "Русский",
+      "uk": "Українська",
+      "he": "עברית"
+    }
+  },
+  "Page": {
+    "Home": {
+      "registry": "Реєстр",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# предок} few {# предки} many {# предків} other {# предка}} у {generations, plural, one {# поколінні} few {# поколіннях} many {# поколіннях} other {# поколіннях}}",
+      "articlesCount": "{count, plural, one {# стаття} few {# статті} many {# статей} other {# статті}}",
+      "gedcomSync": "GEDCOM {date}",
+      "navFamily": "Родина →",
+      "navTree": "Древо →",
+      "navSearch": "Пошук →",
+      "navChangelog": "Історія змін →",
+      "snapshotStale": "Знімок GEDCOM застарів на {days, plural, one {# день} few {# дні} many {# днів} other {# дня}} (остання синхронізація {date}). Виконайте <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code>, коли у вас з'являться зміни для імпорту.",
+      "dayLabel": "{day} {month}",
+      "continueResearch": "Продовжити дослідження",
+      "frontierMeta": "· пок. {generation} · {side} · відсутній {missing}",
+      "sidePaternal": "батьківська",
+      "sideMaternal": "материнська",
+      "missingFather": "батько",
+      "missingMother": "мати",
+      "missingBoth": "обоє",
+      "recentlyRevised": "Нещодавно змінені",
+      "allArticles": "Усі статті ({count})",
+      "talkPages": "Сторінки обговорення ({count})"
+    },
+    "Article": {},
+    "Family": {
+      "navIndex": "Покажчик",
+      "noDataTitle": "Родина",
+      "noDataDescription": "Не знайдено похідних даних для налаштованого запису. Виконайте <code>POST /api/gedcom/sync</code>, щоб заповнити <code>genealogy/derived/</code>.",
+      "pageTitle": "Родинні лінії",
+      "pageDescription": "Прямі предки <strong>{name}</strong>, простежені по батьківській та материнській лініях.",
+      "browseTree": "Переглянути родинне древо",
+      "gen1": "Батьки",
+      "gen2": "Бабусі й дідусі",
+      "gen3": "Прабабусі й прадідусі",
+      "gen4": "Прапрабабусі й прапрадідусі",
+      "gen5": "Прапрапрабабусі й прапрапрадідусі",
+      "gen6": "Прапрапрапрабабусі й прапрапрапрадідусі",
+      "genFallback": "Покоління {n}",
+      "paternalLine": "Батьківська лінія",
+      "maternalLine": "Материнська лінія",
+      "unknown": "невідомо",
+      "bornDate": "нар. {date}",
+      "diedDate": "пом. {date}",
+      "bornDiedDate": "{birth} — {death}",
+      "lineSide": "{side, select, paternal {Батьківська лінія} maternal {Материнська лінія} other {Перспектива}}"
+    },
+    "FamilyTree": {
+      "navFamily": "Родина",
+      "registry": "Реєстр",
+      "lineagePathAria": "Шлях родоводу",
+      "buttonMe": "Я",
+      "emptyState": "Пов'язаних записів поки немає.",
+      "person": {
+        "folio": "Аркуш · {record}",
+        "perspectiveSuffix": "· до {isMe, select, true {мене} other {{name}}}",
+        "statParents": "Батьки",
+        "statSiblings": "Брати й сестри",
+        "statSpouses": "Подружжя",
+        "statChildren": "Діти",
+        "statAncestors": "Предки",
+        "statGenerations": "{n, plural, one {# пок.} few {# пок.} many {# пок.} other {# пок.}}",
+        "buttonArticle": "Стаття"
+      },
+      "family": {
+        "title": "Родина",
+        "familyOfOrigin": "Батьківська родина",
+        "familyOfOriginPedigree": "{kind, select, adopted {Прийомна родина} foster {Родина опікунів} sealing {Запечатана родина} other {Батьківська родина}}",
+        "familyOfOriginNumbered": "{base} ({ordinal})",
+        "marriage": "Шлюб",
+        "marriageNumbered": "Шлюб ({ordinal})",
+        "otherMarriage": "{role, select, father {Інший шлюб батька} mother {Інший шлюб матері} other {Інший шлюб}}",
+        "otherMarriageNumbered": "{base} ({ordinal})",
+        "marriedOn": "шл. {date}",
+        "halfSiblingsTitle": "Зведені брати й сестри ({count})",
+        "cousinsTitle": "Двоюрідні брати й сестри ({count})",
+        "viaMeta": "через {via}",
+        "relation": "{kind, select, father {батько} mother {мати} sibling {брат або сестра} spouse {чоловік або дружина} child {дитина} stepMother {мачуха} stepFather {вітчим} halfSibling {зведений брат або сестра} cousin {двоюрідний брат або сестра} other {родич}}"
+      },
+      "conflicts": {
+        "title": "Суперечності",
+        "unresolved": "{n, plural, one {# нерозв'язана} few {# нерозв'язані} many {# нерозв'язаних} other {# нерозв'язаних}}",
+        "resolved": "розв'язано",
+        "weight": "вага {value}",
+        "field": "{field, select, birthDate {Дата народження} birthPlace {Місце народження} deathDate {Дата смерті} deathPlace {Місце смерті} marriageDate {Дата шлюбу} marriagePlace {Місце шлюбу} other {{raw}}}"
+      },
+      "coverage": {
+        "title": "Охоплення",
+        "knownOfPossible": "{known} / {possible} відомо",
+        "perGeneration": "За поколіннями",
+        "researchFrontier": "Межа дослідження",
+        "missing": "відсутній {what, select, father {батько} mother {мати} both {батьки} other {{what}}}",
+        "complete": "Родовід заповнений до налаштованої глибини."
+      },
+      "descendants": {
+        "title": "Нащадки",
+        "generationFallback": "Покоління +{n}",
+        "viaMeta": "через {via}",
+        "headings": "{n, select, 1 {Діти} 2 {Онуки} 3 {Правнуки} 4 {Праправнуки} 5 {Прапраправнуки} other {Покоління +{n}}}"
+      },
+      "lifespans": {
+        "title": "Тривалість життя",
+        "range": "{min} – {max}"
+      },
+      "lineage": {
+        "title": "Родовід",
+        "legendPaternal": "Батьківська",
+        "legendMaternal": "Материнська",
+        "columnLine": "лінія",
+        "generationFallback": "Покоління {n}",
+        "absentia": "— відсутній —",
+        "headings": "{n, select, 1 {Батьки} 2 {Бабусі й дідусі} 3 {Прабабусі й прадідусі} 4 {Прапрабабусі й прапрадідусі} 5 {Прапрапрабабусі й прапрапрадідусі} 6 {Прапрапрапрабабусі й прапрапрапрадідусі} 7 {Прапрапрапрапрабабусі й прапрапрапрапрадідусі} 8 {Прапрапрапрапрапрабабусі й прапрапрапрапрапрадідусі} other {Покоління {n}}}"
+      },
+      "media": {
+        "title": "Медіа",
+        "primary": "основне",
+        "fallbackTitle": "Медіа {record}"
+      },
+      "places": {
+        "title": "Місця народження",
+        "located": "{n} з координатами",
+        "unlocated": " · {n} без координат",
+        "unmappedHeading": "Місця без координат",
+        "unmappedHelp": "Цих місць поки немає у <code>genealogy/places-coords.yml</code>. Додайте запис там, щоб вони з'явилися на карті. Поточні дослідницькі нотатки див. у <code>research-plans/places-research.md</code>."
+      },
+      "dates": {
+        "bornDate": "нар. {date}",
+        "diedDate": "пом. {date}",
+        "bornDiedDate": "{birth} – {death}"
+      },
+      "disclosure": {
+        "show": "Показати",
+        "hide": "Сховати"
+      }
+    },
+    "Search": {
+      "navIndex": "← Покажчик",
+      "heading": "Пошук",
+      "placeholder": "Пошук сторінок, місць, людей…",
+      "emptyPrompt": "Введіть запит вище. Пошук охоплює заголовки, текст, псевдоніми, категорії та структуровані дані GEDCOM (місця, заняття, пов'язані імена).",
+      "noResults": "Немає результатів за запитом «{query}».",
+      "tabAll": "Усі",
+      "typeLabel": "{type, select, person {Люди} family {Родини} event {Події} tree {Древа} meta {Мета} other {Інше}}",
+      "placesHeading": "Місця",
+      "clearPlaces": "очистити ×"
+    },
+    "Changelog": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Історія правок",
+      "subtitle": "Повний перелік значимих змін —",
+      "heading": "Історія змін",
+      "statRevisions": "{count, plural, one {# правка} few {# правки} many {# правок} other {# правки}}",
+      "statReleased": "{count} випущено",
+      "statEntries": "{count} записів",
+      "statUpdated": "оновлено {date}",
+      "onThisPage": "На цій сторінці"
+    }
+  },
+  "Months": {
+    "long": {
+      "1": "січень",
+      "2": "лютий",
+      "3": "березень",
+      "4": "квітень",
+      "5": "травень",
+      "6": "червень",
+      "7": "липень",
+      "8": "серпень",
+      "9": "вересень",
+      "10": "жовтень",
+      "11": "листопад",
+      "12": "грудень"
+    }
+  },
+  "Directives": {
+    "infoboxPerson": {
+      "eyebrow": "Особа",
+      "born": "народився",
+      "died": "помер",
+      "parents": "батьки",
+      "spouses": "подружжя",
+      "children": "діти",
+      "residences": "місця проживання",
+      "work": "діяльність",
+      "lifespanBornDied": "{birth} – {death}",
+      "lifespanBornOnly": "нар. {year}",
+      "lifespanDiedOnly": "пом. {year}"
+    },
+    "onThisDay": {
+      "heading": "У цей день — {dayLabel}",
+      "event": "{kind, select, birth {народився} death {помер} marriage {одружився} other {відбулася подія}}",
+      "marriedWithSecondary": "одружився"
+    }
+  },
+  "Errors": {
+    "notFound": "Сторінку не знайдено",
+    "notFoundHeading": "Цієї сторінки немає в реєстрі.",
+    "notFoundHelp": "Можливо, її було перейменовано, заархівовано або вона ніколи не існувала. Якщо ви шукали людину, спробуйте пошук за іменем — вікі індексує псевдоніми та поля, похідні від GEDCOM, тому часто знаходить людей, чий канонічний slug сторінки неочевидний.",
+    "searchPlaceholder": "Пошук за іменем…",
+    "linkHome": "← Головна",
+    "linkFamilyTree": "Родинне древо →"
+  }
+}
