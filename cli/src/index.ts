@@ -492,7 +492,7 @@ async function main(): Promise<number> {
           record: recordArg,
           apply: !!args.flags.apply,
           gedcomPath: resolve(root, 'genealogy', 'barash-tree.ged'),
-          pagesDir: resolve(root, 'pages'),
+          pagesDir: resolve(root, 'pages', 'en'),
           loadCorrections: loadPageCorrectionsWithSource,
           readFile: (p) => readFileSync(p, 'utf-8'),
           writeFile: (p, c) => writeFileSync(p, c),
@@ -793,7 +793,7 @@ async function main(): Promise<number> {
           const slugs = await resolveCohort(selector, {
             rootDir: authorRootDir,
             listExistingPages: (root) => {
-              const pagesDir = join(root, 'pages');
+              const pagesDir = join(root, 'pages', 'en');
               if (!existsSync(pagesDir)) return [];
               return readdirSync(pagesDir)
                 .filter(f => f.endsWith('.md') && !f.endsWith('.talk.md') && !f.endsWith('.narrative.md'))
