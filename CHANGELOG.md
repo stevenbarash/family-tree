@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Article translation status detection:** `app/[locale]/[slug]/page.tsx` now resolves translation status per request via `getTranslationInfo(slug, locale)` and renders the appropriate banner. Missing translations fall back to canonical EN content with a "not translated yet" banner.
+
 - **Translation banners:** new `frontend/components/translation-banner.tsx` renders stale / review / missing notices on translated article pages. Strings added to `Page.Article.banners` in all four locale message files with correct ICU plural categories.
 
 - **Translation frontmatter:** `translation_of`, `canonical_sha`, `translated_at`, `lang` fields now parse off translation files into `PageMeta` (as `translationOf`, `canonicalSha`, `translatedAt`, `lang`). All optional — canonical EN files continue to parse cleanly. `serializePage` round-trips them in snake_case form on disk. No schema-version bump needed.

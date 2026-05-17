@@ -7,7 +7,9 @@ import {
   getCachedSnapshots,
   readTalkBody,
   buildNotesView,
+  getTranslationInfo,
 } from '@/lib/server-services';
+import { TranslationBanner } from '@/components/translation-banner';
 import { routing } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
 import { renderMarkdown } from '@/lib/render';
@@ -16,6 +18,7 @@ import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
 import { GENEALOGY_DIR, PRIVACY_GATE_ENABLED, SELF_RECORD, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
+import type { TranslationStatus } from '@core/i18n/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
 import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
@@ -32,12 +35,16 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
-  const store = getPageStore();
   const indexPromise = getCachedList();
 
   let page: Page;
+  let translationStatus: TranslationStatus;
+  let unresolvedCount: number;
   try {
-    page = await store.read(slug);
+    const info = await getTranslationInfo(slug, locale);
+    page = info.page;
+    translationStatus = info.status;
+    unresolvedCount = info.unresolvedCount;
   } catch (err) {
     if (err instanceof FutureSchemaVersionError) {
       return (
@@ -132,6 +139,12 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
       <Link href="/" className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
         ← Index
       </Link>
+      <TranslationBanner
+        status={translationStatus}
+        slug={slug}
+        unresolvedCount={unresolvedCount}
+        locale={locale}
+      />
       <header className="mt-7 mb-8 border-b pb-6">
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">
           {page.meta.type}
