@@ -184,7 +184,7 @@ export function FamilySection({ view }: Props) {
         })}
 
         {standaloneHalfSiblings.length > 0 ? (
-          <GroupedList title={t('halfSiblingsTitle', { count: standaloneHalfSiblings.length })}>
+          <GroupedList title={t('halfSiblingsTitle', { count: String(standaloneHalfSiblings.length) })}>
             {standaloneHalfSiblings.map((s, i) => (
               <PersonRow
                 key={`half-${s.record}`}
@@ -200,7 +200,7 @@ export function FamilySection({ view }: Props) {
         ) : null}
 
         {cousins.length > 0 ? (
-          <GroupedList title={t('cousinsTitle', { count: cousins.length })}>
+          <GroupedList title={t('cousinsTitle', { count: String(cousins.length) })}>
             {cousins.map((c, i) => (
               <PersonRow
                 key={`cousin-${c.record}`}

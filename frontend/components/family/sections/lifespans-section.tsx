@@ -22,7 +22,7 @@ export function LifespansSection({ view }: Props) {
         count={timeline.entries.length}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {t('range', { min: timeline.range.minYear, max: timeline.range.maxYear })}
+            {t('range', { min: String(timeline.range.minYear), max: String(timeline.range.maxYear) })}
           </p>
         }
       />

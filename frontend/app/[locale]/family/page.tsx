@@ -107,7 +107,7 @@ export default async function FamilyPage({
         const paternal = ancestors.filter(a => a.side === 'paternal');
         const maternal = ancestors.filter(a => a.side === 'maternal');
         const genKey = GEN_KEY[generation];
-        const heading = genKey ? t(genKey) : t('genFallback', { n: generation });
+        const heading = genKey ? t(genKey) : t('genFallback', { n: String(generation) });
         return (
           <section key={generation} className="mb-10">
             <h2 className="text-xl font-semibold mb-4">{heading}</h2>

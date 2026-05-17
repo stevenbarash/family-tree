@@ -47,7 +47,7 @@ function DescendantsBlock({
   people: BrowserDescendantView[];
   t: ReturnType<typeof useTranslations>;
 }) {
-  const heading = t('headings', { n: generation });
+  const heading = t('headings', { n: String(generation) });
   return (
     <section className="border-b rule-hair last:border-b-0">
       <GenerationHeader

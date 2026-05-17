@@ -23,7 +23,7 @@ export function CoverageSection({ view }: Props) {
         count={coverage.knownTotal}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {t('knownOfPossible', { known: coverage.knownTotal, possible: coverage.possibleTotal })}
+            {t('knownOfPossible', { known: String(coverage.knownTotal), possible: String(coverage.possibleTotal) })}
           </p>
         }
       />
@@ -44,7 +44,7 @@ export function CoverageSection({ view }: Props) {
                   {roman(g.generation)}
                 </span>
                 <span className="flex-1 truncate font-display tracking-tight text-foreground">
-                  {tLineage('headings', { n: g.generation })}
+                  {tLineage('headings', { n: String(g.generation) })}
                 </span>
                 <span className={g.known === g.possible ? 'text-foreground' : 'text-muted-foreground'}>
                   {String(g.known).padStart(2, '0')} / {String(g.possible).padStart(2, '0')}

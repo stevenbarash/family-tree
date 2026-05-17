@@ -49,7 +49,7 @@ export default async function HomePage({
   const now = new Date();
   const todayEvents = getEventsForToday(live, now);
   const monthKey = String(now.getUTCMonth() + 1) as MonthKey;
-  const dayLabel = t('dayLabel', { month: tMonths(monthKey), day: now.getUTCDate() });
+  const dayLabel = t('dayLabel', { month: tMonths(monthKey), day: String(now.getUTCDate()) });
 
   const latestSnap = snapshots[snapshots.length - 1];
   const snapAge = snapshotAgeDays(latestSnap?.date);
@@ -123,7 +123,7 @@ export default async function HomePage({
                   </Link>{' '}
                   <span className="font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/80">
                     {t('frontierMeta', {
-                      generation: f.generation,
+                      generation: String(f.generation),
                       side: t(sideKey),
                       missing: t(missingKey),
                     })}
@@ -160,7 +160,7 @@ export default async function HomePage({
 
       <section className="mb-10">
         <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-          {t('allArticles', { count: live.length })}
+          {t('allArticles', { count: String(live.length) })}
         </h2>
         <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           {live.map(p => (
@@ -176,7 +176,7 @@ export default async function HomePage({
       {talk.length > 0 ? (
         <section>
           <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            {t('talkPages', { count: talk.length })}
+            {t('talkPages', { count: String(talk.length) })}
           </h2>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {talk.map(p => (

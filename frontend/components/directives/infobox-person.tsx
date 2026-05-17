@@ -155,9 +155,9 @@ function PersonList({ items }: { items: { record: string; name: string }[] }) {
 function formatLifespan(d: DerivedRecord, t: ReturnType<typeof useTranslations>): string | null {
   const b = parseGedcomYear(d.birth?.date);
   const dy = parseGedcomYear(d.death?.date);
-  if (b && dy) return t('lifespanBornDied', { birth: labelYear(b), death: dy.year });
+  if (b && dy) return t('lifespanBornDied', { birth: labelYear(b), death: String(dy.year) });
   if (b) return t('lifespanBornOnly', { year: labelYear(b) });
-  if (dy) return t('lifespanDiedOnly', { year: dy.year });
+  if (dy) return t('lifespanDiedOnly', { year: String(dy.year) });
   return null;
 }
 

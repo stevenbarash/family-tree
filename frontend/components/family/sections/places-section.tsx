@@ -23,9 +23,9 @@ export function PlacesSection({ view }: Props) {
         count={total}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {t('located', { n: placesMap.mapped.length })}
+            {t('located', { n: String(placesMap.mapped.length) })}
             {placesMap.unmapped.length > 0
-              ? t('unlocated', { n: placesMap.unmapped.length })
+              ? t('unlocated', { n: String(placesMap.unmapped.length) })
               : ''}
           </p>
         }

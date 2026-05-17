@@ -36,8 +36,8 @@ export function LineageSection({ view }: Props) {
         }
       />
       <div className="grid gap-4 md:grid-cols-2">
-        <LineageColumn title={t('legendPaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n })} groups={paternalGroups} side="paternal" />
-        <LineageColumn title={t('legendMaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n })} groups={maternalGroups} side="maternal" />
+        <LineageColumn title={t('legendPaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n: String(n) })} groups={paternalGroups} side="paternal" />
+        <LineageColumn title={t('legendMaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n: String(n) })} groups={maternalGroups} side="maternal" />
       </div>
     </section>
   );

@@ -51,9 +51,9 @@ export default async function ChangelogPage({ params }: { params: Promise<{ loca
         <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[0.72rem] uppercase tracking-[0.16em] text-muted-foreground">
           <span>{t('statRevisions', { count: versions })}</span>
           <span aria-hidden className="text-muted-foreground/40">/</span>
-          <span>{t('statReleased', { count: released })}</span>
+          <span>{t('statReleased', { count: String(released) })}</span>
           <span aria-hidden className="text-muted-foreground/40">/</span>
-          <span>{t('statEntries', { count: entries })}</span>
+          <span>{t('statEntries', { count: String(entries) })}</span>
           <span aria-hidden className="text-muted-foreground/40">/</span>
           <span>{t('statUpdated', { date: generatedDate })}</span>
         </div>
