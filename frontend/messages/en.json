@@ -1,6 +1,13 @@
 {
   "Chrome": {
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "LangSwitcher": {
+      "label": "Language",
+      "en": "English",
+      "ru": "Русский",
+      "uk": "Українська",
+      "he": "עברית"
+    }
   },
   "Page": {
     "Home": {
