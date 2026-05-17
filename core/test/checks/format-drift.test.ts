@@ -28,17 +28,18 @@ test('detectFormatDrift: clean GEDCOM produces no findings', () => {
   assert.deepEqual(findings, []);
 });
 
-test('detectFormatDrift: flags ALL-CAPS month in GEDCOM date', () => {
+test('detectFormatDrift: ALL-CAPS month in GEDCOM date is NOT flagged (spec-canonical)', () => {
+  // GEDCOM 5.5.1 + 7.0 spec defines month abbreviations as UPPERCASE
+  // (JAN/FEB/MAR/...). The page-prose normalizer rewrites to title case for
+  // display, but a case-only difference in the GEDCOM source itself is not
+  // drift — the source is spec-compliant. Real drift (slash dates, full
+  // month names, mixed-form prose) is still flagged in the test below.
   const ged = `0 @I1@ INDI
 1 BIRT
 2 DATE 11 MAR 1866
 `;
   const findings = detectFormatDrift(makeState(ged));
-  assert.equal(findings.length, 1);
-  assert.equal(findings[0]!.category, 'format');
-  assert.equal(findings[0]!.location.line, 3);
-  assert.equal(findings[0]!.fix?.oldLine, '2 DATE 11 MAR 1866');
-  assert.equal(findings[0]!.fix?.newLine, '2 DATE 11 Mar 1866');
+  assert.equal(findings.length, 0);
 });
 
 test('detectFormatDrift: flags slash date and full month name', () => {

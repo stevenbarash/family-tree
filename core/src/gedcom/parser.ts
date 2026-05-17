@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import * as parseGedcomLib from 'parse-gedcom';
+import { GEDCStruct, g5ConfGEDC, g7ConfGEDC } from './vendor/gedcstruct.mjs';
 import type { GedcomNode } from './types.ts';
 
 export interface ParseResult {
@@ -11,91 +11,78 @@ export interface ParseResult {
 }
 
 /**
- * parse-gedcom 2.x emits a unist-style tree:
- *   { type: string, value?: string, children: RawNode[], data: { xref_id?: string, pointer?: string, ... } }
- * Older 0.1.x used { tag, data (string), tree }.
- * Normalize both to our internal GedcomNode shape (tag/data/tree).
+ * Parses GEDCOM 5.5.1 OR 7.0 UTF-8 files via the vendored gedcstruct.mjs
+ * (js-gedcom by Luther Tychonievich, technical editor of the v7 spec).
+ *
+ * The vendored library:
+ *   - Handles CONC/CONT line continuation automatically
+ *   - Returns a forest of GEDCStruct with .tag / .payload (string or
+ *     reference to pointed-to struct) / .sub (children) / .xref_id
+ *   - Accepts both 5.5.1 and 7.0 dialect configs
+ *
+ * We normalize that to our internal GedcomNode (tag/pointer/data/tree)
+ * so the existing derive layer keeps working unchanged.
+ *
+ * History: previously used `parse-gedcom@2.0.1` (5.5.1-only). Replaced
+ * when the source .ged was upgraded to 7.0.18 in 2026-05-17.
  */
-type RawNode = {
-  // parse-gedcom 2.x fields
-  type?: string;
-  value?: string;
-  children?: RawNode[];
-  data?: { xref_id?: string; pointer?: string; [k: string]: unknown };
-  // parse-gedcom 0.1.x / fallback fields
-  tag?: string;
-  pointer?: string;
-  tree?: RawNode[];
-};
 
-/** Root node emitted by parse-gedcom 2.x */
-type RootNode = {
-  type: 'root';
-  children: RawNode[];
-};
-
-function normalize(node: RawNode): GedcomNode {
-  const tag = node.type ?? node.tag ?? '';
-  // xref_id lives in node.data.xref_id in 2.x; older versions put it in node.pointer
-  const pointer = node.data?.xref_id ?? node.pointer;
-  // In 2.x, data is an object; value is the text after the tag.
-  // For pointers (FAMC, HUSB, WIFE), the pointer is in node.data.pointer
-  let data = node.value ?? (typeof (node as Record<string, unknown>).data === 'string' ? (node as unknown as { data: string }).data : undefined);
-  if (!data && node.data?.pointer) {
-    data = node.data.pointer;
+/** Normalize a GEDCStruct node into our internal GedcomNode shape. */
+function normalize(node: GEDCStruct): GedcomNode {
+  // payload can be a string OR a GEDCStruct (when it's a pointer to another record).
+  // For our consumers, `data` is always a string — resolve pointer refs back to
+  // their xref_id (e.g. an HUSB pointer resolves to "I1" rather than the linked
+  // INDI struct itself).
+  let data: string | undefined;
+  if (typeof node.payload === 'string') {
+    data = node.payload;
+  } else if (node.payload && typeof node.payload === 'object' && 'xref_id' in node.payload) {
+    const xref = (node.payload as GEDCStruct).xref_id;
+    data = xref ? `@${xref}@` : undefined;
   }
-  const kids = node.children ?? node.tree ?? [];
+
   return {
-    tag,
-    pointer,
+    tag: node.tag,
+    pointer: node.xref_id ? `@${node.xref_id}@` : undefined,
     data,
-    tree: kids.map(normalize),
+    tree: node.sub.map(normalize),
   };
 }
 
-/** Parse a GEDCOM 5.5.1 UTF-8 file. Throws on missing/unsupported CHAR. */
+/**
+ * Detect which dialect (5.5.1 vs 7.0) the file declares so we hand the right
+ * config to the parser. Quick line-scan over the HEAD's GEDC.VERS line.
+ * Returns 'g7' for 7.x, 'g5' for 5.x, and 'g5' by default (matches the
+ * legacy behavior on files with no/odd version line).
+ */
+function detectDialect(text: string): 'g5' | 'g7' {
+  // Look for "VERS 7.x" or "VERS 5.x" anywhere in the first ~30 lines (HEAD block).
+  const head = text.split(/\r?\n/, 30).join('\n');
+  const m = head.match(/^[12]\s+VERS\s+(\d+)/m);
+  if (m && Number(m[1]) >= 7) return 'g7';
+  return 'g5';
+}
+
+/** Parse a GEDCOM file (5.5.1 or 7.0) and return INDI/FAM/SOUR/OBJE records by xref id. */
 export async function parseGedcomFile(path: string): Promise<ParseResult> {
   const text = readFileSync(path, 'utf-8');
+  const dialect = detectDialect(text);
+  const config = dialect === 'g7' ? g7ConfGEDC : g5ConfGEDC;
 
-  // parse-gedcom may expose `parse` as a named export, default export, or
-  // single-function module export. Try all three.
-  const lib = parseGedcomLib as unknown as Record<string, unknown> & { default?: unknown };
-  const candidates: unknown[] = [
-    lib.parse,
-    typeof lib.default === 'object' && lib.default !== null ? (lib.default as Record<string, unknown>).parse : undefined,
-    lib.default,
-  ];
-  const parser = candidates.find(c => typeof c === 'function') as ((s: string) => RootNode | RawNode[]) | undefined;
-  if (!parser) throw new Error('parse-gedcom: could not locate parse function (incompatible version?)');
-
-  const rawResult = parser(text);
-
-  // parse-gedcom 2.x returns a root node { type: 'root', children: [...] }
-  // Older versions returned a flat RawNode[] array
-  let topNodes: RawNode[];
-  if (Array.isArray(rawResult)) {
-    topNodes = rawResult;
-  } else {
-    const root = rawResult as RootNode;
-    topNodes = root.children ?? [];
-  }
-
-  const top: GedcomNode[] = topNodes.map(normalize);
+  const forest = GEDCStruct.fromString(text, config) as GEDCStruct[];
+  const top: GedcomNode[] = forest.map(normalize);
 
   const head = top.find(n => n.tag === 'HEAD');
   if (!head) throw new Error('GEDCOM: no HEAD record');
-  const charNode = head.tree.find(n => n.tag === 'CHAR');
-  if (!charNode) throw new Error('GEDCOM: missing CHAR (encoding); only UTF-8 is supported');
-  const encoding = (charNode.data ?? '').trim().toUpperCase();
-  if (encoding !== 'UTF-8' && encoding !== 'UTF8') {
-    throw new Error(`GEDCOM: ${encoding} encoding not supported (this tool only accepts UTF-8); ANSEL and other encodings are out of scope`);
-  }
 
-  const gedcNode = head.tree.find(n => n.tag === 'GEDC');
-  const versNode = gedcNode?.tree.find(n => n.tag === 'VERS');
-  const version = (versNode?.data ?? '').trim();
-  if (version && !version.startsWith('5.5')) {
-    throw new Error(`GEDCOM: version ${version} not supported (this tool only accepts 5.5.x)`);
+  // CHAR check: required and must be UTF-8 in 5.5.1; absent in 7.0 (UTF-8 implied).
+  if (dialect === 'g5') {
+    const charNode = head.tree.find(n => n.tag === 'CHAR');
+    if (!charNode) throw new Error('GEDCOM: missing CHAR (encoding); only UTF-8 is supported');
+    const encoding = (charNode.data ?? '').trim().toUpperCase();
+    if (encoding !== 'UTF-8' && encoding !== 'UTF8') {
+      throw new Error(`GEDCOM: ${encoding} encoding not supported (this tool only accepts UTF-8); ANSEL and other encodings are out of scope`);
+    }
   }
 
   const individuals = new Map<string, GedcomNode>();

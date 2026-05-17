@@ -35,3 +35,16 @@ test('parseGedcomFile: each individual exposes its raw children tree', async () 
   const nameNode = i1.tree.find(n => n.tag === 'NAME');
   assert.equal(nameNode?.data, 'John /Doe/');
 });
+
+test('parseGedcomFile: parses a GEDCOM 7.0 file (no CHAR required)', async () => {
+  const result = await parseGedcomFile(FIX('tiny-v7.ged'));
+  assert.equal(result.individuals.size, 2);
+  assert.equal(result.families.size, 1);
+  const i1 = result.individuals.get('I1')!;
+  assert.equal(i1.tree.find(n => n.tag === 'NAME')?.data, 'Alice /Smith/');
+  assert.equal(i1.tree.find(n => n.tag === 'SEX')?.data, 'F');
+  // HUSB pointer in F1 should resolve to "@I2@" — payload that's a struct ref
+  // gets serialized back to its xref_id wrapped in @...@.
+  const f1 = result.families.get('F1')!;
+  assert.equal(f1.tree.find(n => n.tag === 'HUSB')?.data, '@I2@');
+});

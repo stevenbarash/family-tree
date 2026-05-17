@@ -12,7 +12,6 @@
     "flexsearch": "^0.8.212",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.1",
-    "parse-gedcom": "^2.0.1",
     "simple-git": "^3.36.0",
     "zod": "^4.4.3"
   },

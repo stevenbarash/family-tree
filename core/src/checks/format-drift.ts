@@ -24,6 +24,11 @@ export const detectFormatDrift: Detector = (state: RepoState): Finding[] => {
       });
       continue;
     }
+    // GEDCOM 5.5.1 + 7.0 canonical month form is UPPERCASE (JAN/FEB/...).
+    // normalizeDate rewrites to title case (Jan/Feb/...) for prose, but a
+    // case-only difference inside a GEDCOM source file is not drift — the
+    // file is spec-compliant and the page renderer normalizes for display.
+    if (result.value.toLowerCase() === value!.toLowerCase()) continue;
     findings.push({
       category: 'format',
       severity: 'info',
