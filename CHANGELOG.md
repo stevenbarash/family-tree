@@ -55,6 +55,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 - **Language switcher messages:** `Chrome.LangSwitcher` namespace in `messages/en.json` (native names per locale).
 
+- **RTL family-tree icon audit:** directional icons in `components/family/` were audited for RTL mirroring. No horizontal directional icons (ChevronRight, ChevronLeft, ArrowLeft, ArrowRight) are present in that subtree — only `ChevronDown` (a vertical expand/collapse indicator that does not require mirroring) and `FileText` (non-directional). Horizontal `flex-row` auto-flips under RTL via CSS logical default; no Tailwind change needed. One `ArrowLeft` exists in `app/[locale]/family/tree/page.tsx` (the "back to family" nav link) — outside `components/family/` scope; deferred to a future cleanup pass.
+
 - **RTL-ready Tailwind:** converted directional utility class usages (ml-/mr-/pl-/pr-/text-left/text-right/left-/right-/border-l/border-r/rounded-l/rounded-r) across `frontend/app/` and `frontend/components/` to logical equivalents (ms-/me-/ps-/pe-/text-start/text-end/start-/end-/border-s/border-e/rounded-s/rounded-e). Layout now flows correctly under `dir="rtl"` for Hebrew. The `sheet.tsx` `data-[side=left|right]:*` variants were intentionally left physical because they tie to a `side` prop naming a visual position; converting them would change the component contract.
 
 - **Roadmap & plan-index drift guards + CLAUDE.md Rules 14/15**
