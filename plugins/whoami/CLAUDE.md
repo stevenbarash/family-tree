@@ -22,7 +22,9 @@ and the people, places, and events on it.
 ## CLI surface
 
 Agents drive the wiki via the `wai` CLI. Run `wai help` for the full
-list. Most-used commands:
+list. Most-used commands, grouped by phase:
+
+**Reading & search**
 
 ```
 wai read <slug>                 # read an article (body to stdout; --json for full)
@@ -30,14 +32,81 @@ wai read <slug>.talk            # read its talk page (markdown sibling)
 wai search "query"              # full-text over title/body/aliases/categories
                                 #   and GEDCOM-derived fields (places, occupations,
                                 #   names of related individuals)
+wai redlinks [--limit N]        # list unwritten pages other pages link to,
+                                #   ranked by inbound count
+```
+
+**Writing**
+
+```
 wai create <slug> --file F      # create a new page (refuses if exists)
 wai write  <slug> --file F      # overwrite (requires --summary)
 wai edit   <slug>               # open in $EDITOR
+wai delete <slug> --yes         # soft-delete (moves to _archived/)
 wai note   <slug> [text]        # append a dated research note to <slug>.talk
                                 #   --edit <id> | --delete <id> | --restore <id>
-                                #   --list | --as-agent
+                                #   --list
+                                #   --kind <k>   where k = human | agent | interview
+                                #                       | research | transcript
+                                #   --as-agent   shorthand for --kind agent
+```
+
+**Evidence gathering** (drawer files alongside the article)
+
+```
+wai narrative <slug>            # edit pages/<slug>.narrative.md — long-form
+                                #   recollection / personal voice. --file F to
+                                #   ingest existing text; --print to dump current.
+wai transcribe <slug> <audio>   # Whisper-transcribe audio, append as a
+                                #   kind=transcript research note on <slug>.talk
+                                #   --lang en|ru|he|auto, --speaker, --date
+wai transcribe <slug> --dir D   # batch-transcribe every audio file in D
+wai interview <slug>            # harness-generated Q&A; answers captured as
+                                #   kind=interview notes. --questions N
+```
+
+**Fact-correction discipline**
+
+```
+wai grep-claims "<phrase>"      # find every occurrence of a claim across pages,
+                                #   talk pages, and source transcripts. Run this
+                                #   FIRST when correcting a factual error so you
+                                #   fix every site in one pass instead of leaving
+                                #   the wrong version live on related pages.
+                                #   --variants "A,B,C" for translations / forms
+                                #   --no-talk / --no-sources to narrow scope
+```
+
+**GEDCOM**
+
+```
 wai sync-gedcom --ged-file F    # re-derive genealogy/derived/*.yml
 wai recite [--apply]            # report or advance stale snapshot pointers
+wai promote-corrections --record I... [--apply]
+                                # promote a frontmatter correction into the GEDCOM
+                                #   (writes a 1 BIRT/DEAT block with 2 NOTE source)
+```
+
+**Orchestrator** (for the user; not for an editor subagent)
+
+```
+wai author <slug>               # run the full pipeline (gather → research →
+                                #   outline → draft → verify → log) for one slug.
+                                #   --resume, --dry-run, --no-web, --skip-episodes
+wai author --cohort missing     # author every derived record without a page
+wai author --cohort file:F.txt  # author slugs listed in F (one per line)
+wai revert <slug>               # undo the most recent pipeline run; --run <id>,
+                                #   --phase <p>, --last, --list, --dry-run
+wai history <slug>              # pipeline-relevant commits for the page;
+                                #   --recent N for cross-slug recency
+```
+
+**Quality**
+
+```
+wai check                       # run drift detectors (see below).
+                                #   --fix, --only A,B, --fail-on A,B,
+                                #   --min-severity info|warn|error
 ```
 
 ## Removed in the v2 markdown migration

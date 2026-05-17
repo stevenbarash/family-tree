@@ -53,7 +53,7 @@ the talk page of the relevant plan, not silently re-ordered.
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ⏳ ready | **P0.1** Strip removed CLI commands from `plugins/whoami/CLAUDE.md` and `agents/editor.md`; add eval smoke test for prompt/CLI drift | S | [Review §P0.1](./reviews/2026-05-07-platform-review.md#p01--agent-prompts-reference-removed-cli-commands) |
+| ✅ shipped | **P0.1** Strip removed CLI commands from `plugins/whoami/CLAUDE.md` and `agents/editor.md`; add eval smoke test for prompt/CLI drift | S | [Review §P0.1](./reviews/2026-05-07-platform-review.md#p01--agent-prompts-reference-removed-cli-commands) — *Shipped 2026-05-17. Prompts now document the full agent-facing surface (added `author`, `narrative`, `transcribe`, `interview`, `grep-claims`, `redlinks`, `delete`, `note --kind`); pre-existing stale `--include` flag references in editorial-guide also fixed; smoke test at `cli/test/prompt-drift.test.ts` extracts every `wai <cmd>` and `--flag` from the prompts and asserts each is a live CLI surface element.* |
 | ⏳ ready | **P0.3** Flag slash-date ambiguity in `core/src/family/dates.ts`; add `wai audit dates`; render `?` glyph in infobox | S | [Review §P0.3](./reviews/2026-05-07-platform-review.md#p03--slash-date-ambiguity-is-unresolved) |
 | ⏳ ready | **P2.1** Move citation directives to design tokens; verify dark-mode contrast | S | [Review §P2.1](./reviews/2026-05-07-platform-review.md#p21--citation-directives-are-visually-disconnected-and-dark-mode-broken) |
 | ⏳ ready | **P2.5** Accessibility hotfix bundle: skip-to-content, alt text on portraits/avatars, `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps) |

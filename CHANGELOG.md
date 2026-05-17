@@ -23,6 +23,26 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Agent prompts refreshed against the live CLI surface (P0.1)**
+  *(2026-05-17)*. `plugins/whoami/CLAUDE.md` and
+  `plugins/whoami/agents/editor.md` previously documented only the
+  pre-`author`-pipeline subset of `wai`. They now cover the full
+  agent-facing surface: `author` and `author --cohort` as the
+  orchestrator, `narrative` / `transcribe` / `interview` as evidence
+  drawers, `grep-claims` for the fact-correction discipline,
+  `redlinks` for picking the next page to write, `delete`, and the
+  `note --kind <k>` flag for tagging research-note provenance.
+  Editor-agent workflow gained a new "Phase 2.5: Fact-correction
+  discipline" that requires `wai grep-claims` before any factual
+  edit. Two pre-existing stale flag references (`wai check --include
+  consistency/citation` — that flag never existed; the real form is
+  `--only`) were also fixed in `editorial-guide/SKILL.md`. New smoke
+  test `cli/test/prompt-drift.test.ts` extracts every `wai <cmd>`
+  and `--flag` mention from the four agent-facing markdown files
+  (CLAUDE.md, editor.md, editorial-guide, writing-articles) and
+  asserts each is a live CLI surface element — so future drift in
+  either direction fails fast at `npm test` time.
+
 - **`wai grep-claims <phrase>`** *(2026-05-17)*. New CLI command that
   walks `~/whoami/pages/` and `~/whoami/assets/sources/` looking for
   occurrences of a phrase (and optional comma-separated `--variants`

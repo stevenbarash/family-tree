@@ -25,6 +25,13 @@ You are a wiki editor for a personal encyclopedia. Follow this workflow when wri
 2. **Read relevant source pages** — these contain querying instructions for programmatic access to the vault. For example, the WhatsApp source page explains how to query ChatStorage.sqlite, and the Facebook source page explains the JSON message format.
 3. **Follow the querying recipes** in source pages to extract data. This means running SQL queries against databases, reading JSON files via snapshot hashes, etc.
 4. **Check existing person pages** for source identifiers: `wai read <slug>` — look at their `:::cite-vault:::` entries for JIDs, session PKs, thread paths, and other cross-references that help locate data.
+5. **Look for evidence drawers** alongside the article:
+   - `pages/<slug>.narrative.md` — long-form recollection in personal voice. Read with `wai narrative <slug> --print`. Treat as first-class source material (it's how the user captures things they remember).
+   - `pages/<slug>.talk.md` `## Research notes` entries with `kind=transcript` (audio transcripts via `wai transcribe`) or `kind=interview` (Q&A via `wai interview`). Both came from the user; cite them like any other source.
+6. **Generate fresh evidence if there are open gaps**:
+   - `wai interview <slug>` — harness-generated Q&A questions; the user types answers; they're captured as `kind=interview` notes on the talk page.
+   - `wai transcribe <slug> <audio>` — transcribe a voice memo via OpenAI Whisper; appended as a `kind=transcript` note. `--lang en|ru|he|auto`, `--speaker`, `--date`.
+7. **Find pages worth writing**: `wai redlinks --limit N` lists unwritten slugs that other pages already link to, ranked by inbound count. Useful when the user asks "what's next" and you want a frontier to pick from.
 
 ## Phase 2: Drafting
 
@@ -53,6 +60,18 @@ Follow the editorial guide for page type conventions, editorial standards, and c
 - Use markdown tables for statistics and structured data
 - Link to people, places, events with `[[wikilinks]]`
 - Tag with categories at the bottom of the file (per the editorial guide)
+
+## Phase 2.5: Fact-correction discipline
+
+**Before correcting any factual error, grep the whole wiki.** Wiki facts are graph-distributed: the same claim lives on the person's page, in the corresponding episode page, in talk-page research notes, in source transcripts, and in cross-references on related people's pages. Fixing only the most-obvious site leaves the wrong version live everywhere else.
+
+```
+wai grep-claims "Defense of Kyiv"                              # exact phrase
+wai grep-claims "Boris Ayzman" --variants "Борис Айзман"       # add translations
+wai grep-claims "1942-08-15" --no-talk                         # narrow scope
+```
+
+Run this BEFORE touching any file. Make a list of every hit, then fix them in one pass (one commit). Talk-page-vs-live-page consistency is also enforced by `wai check --only consistency` (opt-in detector).
 
 ## Phase 3: Publishing
 
@@ -92,15 +111,30 @@ The user's pre-commit hook (installed via `wai init`) will block any commit that
 
 ## CLI reference
 
+Reading & search:
+
 ```
 wai read <slug>                          # read a page
 wai read <slug>.talk                     # read its talk page (markdown sibling)
+wai search "query"                       # full-text search
+wai search "query" --limit 50            # cap results
+wai redlinks --limit 50                  # unwritten pages others link to
+```
+
+Writing:
+
+```
 wai create <slug> --file draft.md        # create a new page
 wai create <slug> --stdin                # create, body from stdin
-wai write <slug> --file draft.md         # overwrite page content
 wai write <slug> --summary "msg" --file draft.md
 wai edit <slug>                          # interactive edit (opens $EDITOR)
-wai note <slug> "text"                   # append a dated research note to <slug>.talk
+wai delete <slug> --yes                  # delete a page (soft, → _archived/)
+```
+
+Research notes (talk page):
+
+```
+wai note <slug> "text"                   # append a dated research note
 wai note <slug> --file scratch.md        # ditto, body from file
 wai note <slug>                          # ditto, opens $EDITOR with empty buffer
 wai note <slug> --edit <id> "text"       # edit an existing note
@@ -108,13 +142,47 @@ wai note <slug> --delete <id>            # soft-delete (retract) a note
 wai note <slug> --restore <id>           # restore a retracted note
 wai note <slug> --list                   # list note ids + previews
 wai note <slug> --as-agent "text"        # append, marked kind=agent
-wai delete <slug> --yes                  # delete a page
-wai search "query"                       # full-text search
-wai search "query" --limit 50            # cap results
+wai note <slug> --kind <k> "text"        # tag kind; k ∈ human|agent|interview|
+                                         #                 research|transcript
+```
+
+Evidence drawers:
+
+```
+wai narrative <slug>                     # edit <slug>.narrative.md in $EDITOR
+wai narrative <slug> --file F            # ingest existing text as the narrative
+wai narrative <slug> --print             # write current narrative to stdout
+wai transcribe <slug> <audio>            # Whisper → kind=transcript note
+wai transcribe <slug> --dir D            # batch every audio in D
+wai interview <slug> --questions 8       # harness-generated Q&A; captures answers
+```
+
+Fact-correction:
+
+```
+wai grep-claims "<phrase>"               # find every site of a claim
+wai grep-claims "<phrase>" --variants "A,B" --no-talk --no-sources
+```
+
+GEDCOM & sync:
+
+```
 wai sync-gedcom --ged-file family.ged    # sync a GEDCOM file
 wai recite                               # dry-run lint pass
 wai recite --apply                       # apply lint fixes
+wai promote-corrections --record I... --apply
+                                         # promote a page correction into the GEDCOM
+```
+
+Diagnostics:
+
+```
+wai check                                # run drift detectors
+wai check --fix --only format,schema     # auto-fix safe categories
+wai check --only consistency             # opt-in talk-vs-live drift detector
+                                         #   (citation is also opt-in via --only)
 wai healthz                              # check server reachability
+wai doctor                               # diagnose dev-env (server, version, paths)
 wai config server <url>                  # set the wiki server URL
 wai config server                        # print the current server URL
 ```

@@ -178,7 +178,7 @@ Boris arrived in the United States in the mid-1980s.[?]
 
 The marker is the model's escape hatch from the fabrication trap. Every factual sentence (one containing a date, year, place, or `[[wikilink]]` to a named entity) MUST end in **either** a footnote reference `[^id]` **or** the `[?]` marker. Inventing a footnote that points to a vague or unread source is forbidden — use `[?]` and let a reviewer either cite or remove the claim.
 
-The `wai check --include citation` detector enforces this. The author pipeline's verify phase blocks completion when any factual sentence on the current slug lacks a source.
+The `wai check --only citation` opt-in detector enforces this. The author pipeline's verify phase blocks completion when any factual sentence on the current slug lacks a source.
 
 `[?]` claims are not the same as `::open` threads:
 - Use **`[?]`** for an *assertion you believe is true* but haven't sourced.
@@ -279,10 +279,10 @@ When you correct a factual error in any wiki page — a wrong date, medal, unit,
 2. **Grep the entire wiki** for every variant before editing any single file:
 
    ```bash
-   grep -rn "<claim variant>" ~/whoami/pages/ ~/whoami/assets/sources/
+   wai grep-claims "<phrase>" --variants "<translation>,<acronym>,..."
    ```
 
-   (or, once available, `wai grep-claims "<phrase>"` — see the CLI reference.)
+   `wai grep-claims` is the right tool — it searches pages, talk pages, and `assets/sources/**/transcript.md` in one pass. Fall back to raw `grep -rn` only when you need a non-standard search root.
 
 3. **Build a numbered audit list** — file path, line number, what's wrong, what it should be — before opening any editor. This makes scope visible and prevents the fix-one-ship-get-asked-to-fix-more pattern.
 
