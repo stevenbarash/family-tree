@@ -136,7 +136,17 @@
         "hide": "Hide"
       }
     },
-    "Search": {},
+    "Search": {
+      "navIndex": "← Index",
+      "heading": "Search",
+      "placeholder": "Search pages, places, people…",
+      "emptyPrompt": "Type a query above. Searches title, body, aliases, categories, and structured GEDCOM data (places, occupations, related names).",
+      "noResults": "No results for \"{query}\".",
+      "tabAll": "All",
+      "typeLabel": "{type, select, person {People} family {Families} event {Events} tree {Trees} meta {Meta} other {Other}}",
+      "placesHeading": "Places",
+      "clearPlaces": "clear ×"
+    },
     "Changelog": {}
   },
   "Months": {

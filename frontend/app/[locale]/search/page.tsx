@@ -1,20 +1,16 @@
 import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { searchAndJoin } from '@/lib/server-services';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string; type?: string; place?: string }>;
 }
 
 const TYPE_ORDER = ['person', 'family', 'event', 'tree', 'meta'] as const;
-const TYPE_LABELS: Record<string, string> = {
-  person: 'People',
-  family: 'Families',
-  event: 'Events',
-  tree: 'Trees',
-  meta: 'Meta',
-};
 const PLACE_FACET_LIMIT = 8;
 
 function titleCasePlace(bucket: string): string {
@@ -24,7 +20,11 @@ function titleCasePlace(bucket: string): string {
     .join(' ');
 }
 
-export default async function SearchPage({ searchParams }: Props) {
+export default async function SearchPage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = useTranslations('Page.Search');
+
   const { q = '', type, place: placeRaw } = await searchParams;
   const trimmed = q.trim();
   const all = await searchAndJoin(trimmed, 200);
@@ -54,37 +54,37 @@ export default async function SearchPage({ searchParams }: Props) {
   );
 
   function buildHref(overrides: { type?: string | null; place?: string | null } = {}): string {
-    const params = new URLSearchParams();
-    if (trimmed) params.set('q', trimmed);
+    const ps = new URLSearchParams();
+    if (trimmed) ps.set('q', trimmed);
     const nextType = overrides.type === undefined ? type : (overrides.type ?? undefined);
-    if (nextType) params.set('type', nextType);
+    if (nextType) ps.set('type', nextType);
     const nextPlace = overrides.place === undefined ? place : (overrides.place ?? undefined);
-    if (nextPlace) params.set('place', nextPlace);
-    const s = params.toString();
+    if (nextPlace) ps.set('place', nextPlace);
+    const s = ps.toString();
     return s ? `/search?${s}` : '/search';
   }
-  const tabHref = (t?: string) => buildHref({ type: t ?? null });
+  const tabHref = (tp?: string) => buildHref({ type: tp ?? null });
   const placeHref = (p?: string) => buildHref({ place: p ?? null });
 
   return (
     <main className="mx-auto max-w-3xl p-6">
-      <Link href="/" className="text-sm text-muted-foreground">← Index</Link>
-      <h1 className="text-3xl font-bold mt-4 mb-4">Search</h1>
+      <Link href="/" className="text-sm text-muted-foreground">{t('navIndex')}</Link>
+      <h1 className="text-3xl font-bold mt-4 mb-4">{t('heading')}</h1>
       <form className="mb-6">
         <input
           type="search"
           name="q"
           defaultValue={q}
-          placeholder="Search pages, places, people…"
+          placeholder={t('placeholder')}
           autoFocus
           className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm"
         />
       </form>
 
       {trimmed === '' ? (
-        <p className="text-muted-foreground">Type a query above. Searches title, body, aliases, categories, and structured GEDCOM data (places, occupations, related names).</p>
+        <p className="text-muted-foreground">{t('emptyPrompt')}</p>
       ) : all.length === 0 ? (
-        <p className="text-muted-foreground">No results for &ldquo;{trimmed}&rdquo;.</p>
+        <p className="text-muted-foreground">{t('noResults', { query: trimmed })}</p>
       ) : (
         <>
           <nav className="mb-4 flex flex-wrap gap-1.5 border-b rule-hair pb-2">
@@ -94,21 +94,21 @@ export default async function SearchPage({ searchParams }: Props) {
                 !type ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
               }`}
             >
-              All <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{all.length}</span>
+              {t('tabAll')} <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{all.length}</span>
             </Link>
-            {TYPE_ORDER.map(t => {
-              const n = counts.get(t) ?? 0;
+            {TYPE_ORDER.map(tp => {
+              const n = counts.get(tp) ?? 0;
               if (n === 0) return null;
-              const active = type === t;
+              const active = type === tp;
               return (
                 <Link
-                  key={t}
-                  href={tabHref(t)}
+                  key={tp}
+                  href={tabHref(tp)}
                   className={`rounded-md px-2 py-1 text-xs font-display uppercase tracking-[0.16em] transition-colors ${
                     active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
                   }`}
                 >
-                  {TYPE_LABELS[t] ?? t} <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{n}</span>
+                  {t('typeLabel', { type: tp })} <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{n}</span>
                 </Link>
               );
             })}
@@ -117,14 +117,14 @@ export default async function SearchPage({ searchParams }: Props) {
           {topPlaces.length > 0 ? (
             <nav className="mb-4 flex flex-wrap items-center gap-1.5">
               <span className="font-display text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground/80">
-                Places
+                {t('placesHeading')}
               </span>
               {place ? (
                 <Link
                   href={placeHref()}
                   className="rounded-md px-2 py-0.5 text-xs font-mono uppercase tracking-[0.08em] text-muted-foreground hover:bg-accent/45"
                 >
-                  clear ×
+                  {t('clearPlaces')}
                 </Link>
               ) : null}
               {topPlaces.map(([bucket, n]) => {
@@ -154,13 +154,13 @@ export default async function SearchPage({ searchParams }: Props) {
             </ul>
           ) : (
             <div className="space-y-6">
-              {TYPE_ORDER.map(t => {
-                const items = all.filter(r => r.type === t);
+              {TYPE_ORDER.map(tp => {
+                const items = all.filter(r => r.type === tp);
                 if (items.length === 0) return null;
                 return (
-                  <section key={t}>
+                  <section key={tp}>
                     <h2 className="mb-1.5 font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-                      {TYPE_LABELS[t] ?? t}
+                      {t('typeLabel', { type: tp })}
                       <span className="ml-2 font-mono tabular-nums text-muted-foreground/70">{items.length}</span>
                     </h2>
                     <ul className="space-y-1">

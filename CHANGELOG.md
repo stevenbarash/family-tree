@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Search page localized:** `TYPE_LABELS` dict ("People/Families/Events/Trees/Meta") and the search placeholder extracted to `Page.Search` namespace using ICU `select`.
+
 - **Family tree localized:** `app/family/tree/page.tsx` → `app/[locale]/family/tree/page.tsx` and `components/family/sections/*` strings extracted to `Page.FamilyTree` namespace. The interactive tree is the largest UI-string surface and the densest translation target; data unions (relations, pedigree, missing-parent side, generation headings) use ICU `select`. The `mobile-disclosure` client island accepts show/hide labels as props from its server parent.
 
 - **Family page localized:** `app/family/page.tsx` → `app/[locale]/family/page.tsx`; strings extracted to `Page.Family` namespace (nav, titles, generation headings, line-side labels, date formats, empty-state copy).
