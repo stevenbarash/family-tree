@@ -185,7 +185,7 @@ function DateText({ date }: { date: string }): ReactNode {
       <>
         {date}
         <span
-          className="ml-1 cursor-help text-infobox-muted"
+          className="ms-1 cursor-help text-infobox-muted"
           title="Date format ambiguous (m/d/y vs d/m/y) — original record needs disambiguation"
           aria-label="ambiguous date"
         >

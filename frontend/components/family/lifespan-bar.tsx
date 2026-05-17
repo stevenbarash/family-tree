@@ -49,7 +49,7 @@ export function LifespanBar({
           aria-hidden
         />
       </span>
-      <span className="text-right font-mono text-[0.7rem] tabular-nums text-muted-foreground/85">
+      <span className="text-end font-mono text-[0.7rem] tabular-nums text-muted-foreground/85">
         {dates}
       </span>
     </Link>

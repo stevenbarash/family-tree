@@ -7,7 +7,7 @@ interface Props {
 
 export function CiteMessage({ snapshot, date, thread, note }: Props) {
   return (
-    <aside className="my-2 rounded-r border-l-2 border-l-primary bg-muted p-2 text-xs text-muted-foreground">
+    <aside className="my-2 rounded-e border-s-2 border-s-primary bg-muted p-2 text-xs text-muted-foreground">
       <div className="font-semibold mb-1">Message citation</div>
       {date ? <div><span className="font-medium">date:</span> {date}</div> : null}
       {thread ? <div><span className="font-medium">thread:</span> {thread}</div> : null}

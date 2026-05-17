@@ -55,6 +55,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 - **Language switcher messages:** `Chrome.LangSwitcher` namespace in `messages/en.json` (native names per locale).
 
+- **RTL-ready Tailwind:** converted directional utility class usages (ml-/mr-/pl-/pr-/text-left/text-right/left-/right-/border-l/border-r/rounded-l/rounded-r) across `frontend/app/` and `frontend/components/` to logical equivalents (ms-/me-/ps-/pe-/text-start/text-end/start-/end-/border-s/border-e/rounded-s/rounded-e). Layout now flows correctly under `dir="rtl"` for Hebrew. The `sheet.tsx` `data-[side=left|right]:*` variants were intentionally left physical because they tie to a `side` prop naming a visual position; converting them would change the component contract.
+
 - **Roadmap & plan-index drift guards + CLAUDE.md Rules 14/15**
   *(2026-05-17)*. Two new drift-detection test files mirror the
   agent-prompt drift test added under P0.1: `cli/test/roadmap-drift.test.ts`

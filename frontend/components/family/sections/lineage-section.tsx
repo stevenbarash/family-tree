@@ -27,10 +27,10 @@ export function LineageSection({ view }: Props) {
         count={ancestorCount}
         after={
           <p className="font-display text-[0.7rem] tracking-tight text-muted-foreground">
-            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-paternal mr-1.5 align-baseline" aria-hidden />
+            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-paternal me-1.5 align-baseline" aria-hidden />
             {t('legendPaternal')}
             <span className="mx-2 text-border">|</span>
-            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-maternal mr-1.5 align-baseline" aria-hidden />
+            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-maternal me-1.5 align-baseline" aria-hidden />
             {t('legendMaternal')}
           </p>
         }

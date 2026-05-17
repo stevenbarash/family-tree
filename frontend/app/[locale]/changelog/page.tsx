@@ -62,7 +62,7 @@ export default async function ChangelogPage({ params }: { params: Promise<{ loca
         ) : null}
         <div
           aria-hidden
-          className="absolute -bottom-px left-0 h-px w-full bg-gradient-to-r from-foreground/40 via-foreground/15 to-transparent"
+          className="absolute -bottom-px start-0 h-px w-full bg-gradient-to-r from-foreground/40 via-foreground/15 to-transparent"
         />
       </header>
 

@@ -49,7 +49,7 @@ export function OnThisDayRibbon({ events, dayLabel }: Props) {
   const t = useTranslations('Directives.onThisDay');
   if (events.length === 0) return null;
   return (
-    <section className="mb-10 border-l-2 border-muted-foreground/30 pl-4">
+    <section className="mb-10 border-s-2 border-muted-foreground/30 ps-4">
       <h2 className="font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
         {t('heading', { dayLabel })}
       </h2>

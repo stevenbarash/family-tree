@@ -178,7 +178,7 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
         <RestrictedNotice page={page} derived={derived} />
       ) : (
         <>
-          <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 prose-a:hover:decoration-primary prose-blockquote:rounded-r-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
+          <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 prose-a:hover:decoration-primary prose-blockquote:rounded-e-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
             {tree}
           </article>
           {isTalkSlug(slug) ? null : (

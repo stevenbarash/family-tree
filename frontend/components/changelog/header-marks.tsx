@@ -10,7 +10,7 @@ export function NumberMark({ n }: NumberMarkProps): ReactElement | null {
   return (
     <p
       aria-hidden
-      className="absolute -top-1 right-0 select-none font-display text-[5rem] font-light leading-none text-foreground/[0.04] sm:text-[7rem]"
+      className="absolute -top-1 end-0 select-none font-display text-[5rem] font-light leading-none text-foreground/[0.04] sm:text-[7rem]"
     >
       §{n}
     </p>

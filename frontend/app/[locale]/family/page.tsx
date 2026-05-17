@@ -19,9 +19,9 @@ const GEN_KEY: Record<number, GenKey> = {
 };
 
 function lineTone(side: AncestorView['side']): string {
-  if (side === 'paternal') return 'border-l-sky-500';
-  if (side === 'maternal') return 'border-l-rose-500';
-  return 'border-l-muted';
+  if (side === 'paternal') return 'border-s-sky-500';
+  if (side === 'maternal') return 'border-s-rose-500';
+  return 'border-s-muted';
 }
 
 function PersonCard({
@@ -44,7 +44,7 @@ function PersonCard({
     ? <Link href={`/${a.slug}`} className="text-primary underline-offset-4 hover:underline">{a.name}</Link>
     : a.name;
   return (
-    <Card size="sm" className={`border-l-4 ${lineTone(a.side)}`}>
+    <Card size="sm" className={`border-s-4 ${lineTone(a.side)}`}>
       <CardHeader>
         <CardDescription className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide">
           <span>{a.label}</span>

@@ -86,7 +86,7 @@ export function PlacesSection({ view }: Props) {
         <div className="mt-6">
           <h3 className="mb-2 font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
             {t('unmappedHeading')}
-            <span className="ml-2 font-mono tabular-nums text-muted-foreground/70">
+            <span className="ms-2 font-mono tabular-nums text-muted-foreground/70">
               {placesMap.unmapped.length}
             </span>
           </h3>

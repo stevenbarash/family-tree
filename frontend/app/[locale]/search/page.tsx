@@ -95,7 +95,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                 !type ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
               }`}
             >
-              {t('tabAll')} <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{all.length}</span>
+              {t('tabAll')} <span className="ms-1 font-mono tabular-nums text-muted-foreground/80">{all.length}</span>
             </Link>
             {TYPE_ORDER.map(tp => {
               const n = counts.get(tp) ?? 0;
@@ -109,7 +109,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                     active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
                   }`}
                 >
-                  {t('typeLabel', { type: tp })} <span className="ml-1 font-mono tabular-nums text-muted-foreground/80">{n}</span>
+                  {t('typeLabel', { type: tp })} <span className="ms-1 font-mono tabular-nums text-muted-foreground/80">{n}</span>
                 </Link>
               );
             })}
@@ -138,7 +138,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                       active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
                     }`}
                   >
-                    {titleCasePlace(bucket)} <span className="ml-1 tabular-nums text-muted-foreground/80">{n}</span>
+                    {titleCasePlace(bucket)} <span className="ms-1 tabular-nums text-muted-foreground/80">{n}</span>
                   </Link>
                 );
               })}
@@ -162,7 +162,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                   <section key={tp}>
                     <h2 className="mb-1.5 font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
                       {t('typeLabel', { type: tp })}
-                      <span className="ml-2 font-mono tabular-nums text-muted-foreground/70">{items.length}</span>
+                      <span className="ms-2 font-mono tabular-nums text-muted-foreground/70">{items.length}</span>
                     </h2>
                     <ul className="space-y-1">
                       {items.map(r => (

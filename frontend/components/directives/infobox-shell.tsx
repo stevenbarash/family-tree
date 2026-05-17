@@ -12,7 +12,7 @@ export function Infobox({ children, className }: { children: ReactNode; classNam
       className={cn(
         'not-prose my-5 w-full bg-infobox text-infobox-foreground ring-infobox-border/70',
         'shadow-[0_18px_48px_-18px_rgba(63,49,24,0.18)] dark:shadow-[0_18px_48px_-18px_rgba(0,0,0,0.6)]',
-        'md:float-right md:clear-right md:my-1 md:ml-6 md:max-w-xs',
+        'md:float-right md:clear-right md:my-1 md:ms-6 md:max-w-xs',
         className,
       )}
     >

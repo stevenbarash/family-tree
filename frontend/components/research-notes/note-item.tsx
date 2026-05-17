@@ -118,7 +118,7 @@ export function NoteItem({ slug, note }: Props) {
             {isDeleted ? (
               <span>· retracted by {note.deletedBy} · {formatRelative(note.deletedAt)}</span>
             ) : null}
-            <span className="ml-auto flex gap-1 opacity-0 transition-opacity group-hover/note:opacity-100">
+            <span className="ms-auto flex gap-1 opacity-0 transition-opacity group-hover/note:opacity-100">
               {canMutate ? (
                 <>
                   <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={() => setEditing(true)} aria-label="Edit note">

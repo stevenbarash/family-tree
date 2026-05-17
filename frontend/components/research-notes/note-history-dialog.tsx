@@ -91,7 +91,7 @@ function renderBody(fetched: Fetched, retry: () => void): ReactNode {
   return (
     <ol className="space-y-3">
       {fetched.events.map((e, i) => (
-        <li key={i} className="border-l-2 border-border pl-3">
+        <li key={i} className="border-s-2 border-border ps-3">
           <div className="flex items-baseline gap-2 text-sm">
             <span className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
               {e.kind}

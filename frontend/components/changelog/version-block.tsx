@@ -14,7 +14,7 @@ export async function VersionBlock({ data, nested = false }: VersionBlockProps):
   return (
     <article
       id={data.id}
-      className={`registry-rise scroll-mt-20 ${nested ? 'border-l border-border/50 pl-6' : 'border-t border-foreground/12 pt-12 first-of-type:border-t-0 first-of-type:pt-2'}`}
+      className={`registry-rise scroll-mt-20 ${nested ? 'border-s border-border/50 ps-6' : 'border-t border-foreground/12 pt-12 first-of-type:border-t-0 first-of-type:pt-2'}`}
     >
       <header className="relative">
         <NumberMark n={data.number} />
