@@ -176,8 +176,24 @@
     }
   },
   "Directives": {
-    "infoboxPerson": {},
-    "onThisDay": {}
+    "infoboxPerson": {
+      "eyebrow": "Person",
+      "born": "born",
+      "died": "died",
+      "parents": "parents",
+      "spouses": "spouses",
+      "children": "children",
+      "residences": "residences",
+      "work": "work",
+      "lifespanBornDied": "{birth} – {death}",
+      "lifespanBornOnly": "b. {year}",
+      "lifespanDiedOnly": "d. {year}"
+    },
+    "onThisDay": {
+      "heading": "On this day — {dayLabel}",
+      "event": "{kind, select, birth {was born} death {died} marriage {married} other {had an event}}",
+      "marriedWithSecondary": "married"
+    }
   },
   "Errors": {
     "notFound": "Page not found",

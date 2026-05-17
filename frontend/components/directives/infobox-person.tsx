@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Calendar, Users, Heart, Baby, Home, Briefcase } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 import { parseGedcomYear } from '@core/family/dates.ts';
 import { normalizeDate } from '@core/format/dates.ts';
@@ -22,14 +23,15 @@ interface Props {
 }
 
 export function InfoboxPerson({ derived, children }: Props) {
+  const t = useTranslations('Directives.infoboxPerson');
   const fields = derived ? null : extractFieldsFromChildren(children);
   const name = derived?.name ?? fields?.name ?? 'Person';
-  const lifespan = derived ? formatLifespan(derived) : null;
+  const lifespan = derived ? formatLifespan(derived, t) : null;
 
   return (
     <Infobox>
       <InfoboxHeader
-        eyebrow="Person"
+        eyebrow={t('eyebrow')}
         title={name}
         description={lifespan}
         avatar={
@@ -41,53 +43,53 @@ export function InfoboxPerson({ derived, children }: Props) {
         }
       />
       <InfoboxBody>
-        {derived ? renderDerivedRows(derived) : renderFallbackRows(fields ?? {})}
+        {derived ? renderDerivedRows(derived, t) : renderFallbackRows(fields ?? {})}
       </InfoboxBody>
     </Infobox>
   );
 }
 
-function renderDerivedRows(d: DerivedRecord): ReactNode[] {
+function renderDerivedRows(d: DerivedRecord, t: ReturnType<typeof useTranslations>): ReactNode[] {
   const rows: ReactNode[] = [];
 
   if (d.birth) {
     rows.push(
-      <InfoboxRow key="born" label="born" icon={Calendar}>
+      <InfoboxRow key="born" label={t('born')} icon={Calendar}>
         {formatPlaceDate(d.birth.date, d.birth.place)}
       </InfoboxRow>,
     );
   }
   if (d.death) {
     rows.push(
-      <InfoboxRow key="died" label="died" icon={Calendar}>
+      <InfoboxRow key="died" label={t('died')} icon={Calendar}>
         {formatPlaceDate(d.death.date, d.death.place)}
       </InfoboxRow>,
     );
   }
   if (d.parents.length > 0) {
     rows.push(
-      <InfoboxRow key="parents" label="parents" icon={Users}>
+      <InfoboxRow key="parents" label={t('parents')} icon={Users}>
         <PersonList items={d.parents} />
       </InfoboxRow>,
     );
   }
   if (d.spouses.length > 0) {
     rows.push(
-      <InfoboxRow key="spouses" label="spouses" icon={Heart}>
+      <InfoboxRow key="spouses" label={t('spouses')} icon={Heart}>
         <PersonList items={d.spouses} />
       </InfoboxRow>,
     );
   }
   if (d.children.length > 0) {
     rows.push(
-      <InfoboxRow key="children" label="children" icon={Baby}>
+      <InfoboxRow key="children" label={t('children')} icon={Baby}>
         <PersonList items={d.children} />
       </InfoboxRow>,
     );
   }
   if (d.residences.length > 0) {
     rows.push(
-      <InfoboxRow key="residences" label="residences" icon={Home}>
+      <InfoboxRow key="residences" label={t('residences')} icon={Home}>
         <ul className="flex flex-col gap-0.5 list-none p-0">
           {d.residences.map((r, i) => (
             <li key={i}>{formatPlaceDate(r.date, r.place)}</li>
@@ -98,7 +100,7 @@ function renderDerivedRows(d: DerivedRecord): ReactNode[] {
   }
   if (d.occupations.length > 0) {
     rows.push(
-      <InfoboxRow key="occupations" label="work" icon={Briefcase}>
+      <InfoboxRow key="occupations" label={t('work')} icon={Briefcase}>
         <div className="flex flex-wrap gap-1.5">
           {d.occupations.map((o, i) => (
             <Badge
@@ -150,12 +152,12 @@ function PersonList({ items }: { items: { record: string; name: string }[] }) {
   );
 }
 
-function formatLifespan(d: DerivedRecord): string | null {
+function formatLifespan(d: DerivedRecord, t: ReturnType<typeof useTranslations>): string | null {
   const b = parseGedcomYear(d.birth?.date);
   const dy = parseGedcomYear(d.death?.date);
-  if (b && dy) return `${labelYear(b)} – ${dy.year}`;
-  if (b) return `b. ${labelYear(b)}`;
-  if (dy) return `d. ${dy.year}`;
+  if (b && dy) return t('lifespanBornDied', { birth: labelYear(b), death: dy.year });
+  if (b) return t('lifespanBornOnly', { year: labelYear(b) });
+  if (dy) return t('lifespanDiedOnly', { year: dy.year });
   return null;
 }
 
