@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Multilingual scaffold:** Initial `next-intl` routing config in `frontend/i18n/routing.ts` defining four locales (en/ru/uk/he) and `LOCALE_DIR` for `<html dir>`. Part of multilingual support foundation.
+
 - **Roadmap & plan-index drift guards + CLAUDE.md Rules 14/15**
   *(2026-05-17)*. Two new drift-detection test files mirror the
   agent-prompt drift test added under P0.1: `cli/test/roadmap-drift.test.ts`
