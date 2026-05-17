@@ -118,9 +118,10 @@ Quality:
                               Tab-separated output for grep / sort.
   i18n sync <slug> <locale>   Translate pages/en/<slug>.md into <locale>,
                               writing pages/<locale>/<slug>.md and the sibling
-                              <slug>.translation.talk.md. Plan 3 ships with a
-                              stub translator (echoes canonical body); the real
-                              agent pipeline lands in Plan 3 Task 11.
+                              <slug>.translation.talk.md. Default invokes the
+                              editor agent via the harness adapter.
+        [--stub]                Use the offline echo translator (skips the
+                              harness; for tests / dry runs).
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -479,18 +480,22 @@ async function main(): Promise<number> {
           const slug = args.positional[1];
           const locale = args.positional[2];
           if (!slug || !locale) {
-            process.stderr.write('Usage: wai i18n sync <slug> <locale>\n');
+            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub]\n');
             return 2;
           }
-          // Plan 3 Task 10 ships the stub translator only. Task 11 will
-          // import the real agent translator and flip the default; until
-          // then there is one path.
-          const { stubTranslator } = await import('./commands/i18n-sync-stub.js');
+          // Default: the real agent translator invokes the harness
+          // (`writing-articles` / `translate` template). `--stub` flips
+          // back to the offline echo translator for tests, dry runs,
+          // and CI where no harness is available.
+          const useStub = !!args.flags.stub;
+          const translator = useStub
+            ? (await import('./commands/i18n-sync-stub.js')).stubTranslator
+            : (await import('./commands/agent-translator.js')).agentTranslator;
           await runI18nSync({
             rootDir: root,
             slug,
             locale,
-            translator: stubTranslator,
+            translator,
             write,
           });
           return 0;

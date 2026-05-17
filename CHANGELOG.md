@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Agent translator (default for `wai i18n sync`):** the command now invokes the editor agent via the harness adapter (`writing-articles` skill, new `translate` prompt template) and writes the resulting translation + talk file. Pass `--stub` to fall back to the offline echo translator (tests, dry runs, CI without a harness). Prompt template lives at `plugins/whoami/skills/writing-articles/prompt-templates/translate.md`. Completes Plan 3 Task 11.
+
 - **`wai i18n sync <slug> <locale>`:** new CLI command writes `pages/{locale}/<slug>.md` + `pages/{locale}/<slug>.translation.talk.md` from the canonical EN article, stamping translation frontmatter (`translation_of`, `canonical_sha`, `translated_at`, `lang`) and a sibling talk file with `## Unresolved` / `## Resolved` sections. Plan 3 ships with a stub translator (echoes canonical body); the real agent pipeline lands in Plan 3 Task 11.
 
 - **`wai i18n status`:** new CLI command lists every (slug × target-locale) pair with its computed translation status (`current` / `stale` / `review` / `missing`) and unresolved translation-talk-entry count. Tab-separated output (`slug\tlocale\tstatus\tunresolved`) for grep / sort / awk. Standalone — reads `$WHOAMI_ROOT/pages/{en,ru,uk,he}/` directly and shells out to `git log -1` for the canonical-EN head SHA.
