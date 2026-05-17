@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Per-locale PageStore reads:** `PageStore.read(slug, { locale })` reads from `pages/{locale}/<slug>.md`. Existing callers (no locale) unchanged.
+
 - **Translation talk parser:** `core/src/i18n/translation-talk.ts` parses `<slug>.translation.talk.md` files into unresolved/resolved entry counts. Foundation for the translation accuracy review gate.
 
 - **Translation status helper:** `core/src/i18n/status.ts` computes `current | stale | review | missing` from `(translation canonical_sha, head canonical_sha, unresolved-talk-entries)`. Status is computed, not stored.

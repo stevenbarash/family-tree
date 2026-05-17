@@ -53,8 +53,17 @@ export interface PageStoreConfig {
   pagesDir: string;
 }
 
+export interface PageReadOptions {
+  /**
+   * Read from `<repoRoot>/pages/<locale>/<slug>.md` instead of the
+   * default `pagesDir`. Used by translation tooling to fetch a
+   * non-canonical-language page; canonical reads pass no opts.
+   */
+  locale?: string;
+}
+
 export interface PageStore {
-  read(slug: string): Promise<Page>;
+  read(slug: string, opts?: PageReadOptions): Promise<Page>;
   write(slug: string, page: Page, author: AuthorIdentity, summary: string): Promise<void>;
   list(): Promise<PageMetaSummary[]>;
   history(slug: string, limit?: number): Promise<Revision[]>;
@@ -66,10 +75,14 @@ export function createPageStore(cfg: PageStoreConfig): PageStore {
     return join(cfg.pagesDir, `${slug}.md`);
   }
 
+  function pathForLocale(slug: string, locale: string): string {
+    return join(cfg.repoRoot, 'pages', locale, `${slug}.md`);
+  }
+
   return {
-    async read(slug: string): Promise<Page> {
+    async read(slug: string, opts?: PageReadOptions): Promise<Page> {
       assertValidSlug(slug);
-      const path = pathFor(slug);
+      const path = opts?.locale ? pathForLocale(slug, opts.locale) : pathFor(slug);
       if (!existsSync(path)) throw new PageNotFoundError(slug);
       return parsePage(slug, readFileSync(path, 'utf-8'));
     },
