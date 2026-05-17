@@ -149,7 +149,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
             <ul className="space-y-2">
               {filtered.map(r => (
                 <li key={r.slug}>
-                  <Link href={`/${r.slug}`} className="text-blue-600 hover:underline font-medium">{r.title}</Link>
+                  <Link href={`/${r.slug}`} className="text-blue-600 hover:underline font-medium"><bdi>{r.title}</bdi></Link>
                 </li>
               ))}
             </ul>
@@ -167,7 +167,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                     <ul className="space-y-1">
                       {items.map(r => (
                         <li key={r.slug}>
-                          <Link href={`/${r.slug}`} className="text-blue-600 hover:underline font-medium">{r.title}</Link>
+                          <Link href={`/${r.slug}`} className="text-blue-600 hover:underline font-medium"><bdi>{r.title}</bdi></Link>
                         </li>
                       ))}
                     </ul>

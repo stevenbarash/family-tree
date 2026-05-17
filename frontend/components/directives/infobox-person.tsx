@@ -144,7 +144,7 @@ function PersonList({ items }: { items: { record: string; name: string }[] }) {
             href={`/${toSlug(p.name)}`}
             className="font-medium text-infobox-accent decoration-infobox-accent/40 underline-offset-4 transition-colors hover:underline"
           >
-            {p.name}
+            <bdi>{p.name}</bdi>
           </Link>
         </span>
       ))}

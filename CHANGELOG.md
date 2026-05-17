@@ -80,6 +80,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   row can flip to ✅) and Rule 15 (when shipping / abandoning /
   renaming a plan, update the plan-index README in the same commit).
 
+- **`<bdi>` for inline person names:** infobox-person, on-this-day-ribbon, and search results now wrap inline person names in `<bdi>` for correct bidirectional rendering when mixing Latin and non-Latin scripts.
+
 - **`wai audit dates` — slash-date ambiguity report (P0.3)**
   *(2026-05-17)*. New CLI command that lists every ambiguous slash
   date (m/d/y vs d/m/y when both fields ≤ 12) across the GEDCOM

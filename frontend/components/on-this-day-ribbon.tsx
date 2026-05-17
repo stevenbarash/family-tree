@@ -15,11 +15,11 @@ function PersonLink({ person }: { person: TodayEventViewPerson }) {
         href={`/${person.slug}`}
         className="font-medium text-foreground underline-offset-4 hover:underline"
       >
-        {person.name}
+        <bdi>{person.name}</bdi>
       </Link>
     );
   }
-  return <span className="font-medium text-foreground">{person.name}</span>;
+  return <span className="font-medium text-foreground"><bdi>{person.name}</bdi></span>;
 }
 
 function EventLine({ event, t }: { event: TodayEventView; t: ReturnType<typeof useTranslations> }) {
