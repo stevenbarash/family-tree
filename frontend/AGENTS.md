@@ -90,3 +90,47 @@ owner's Tailscale node as a default and `WHOAMI_ALLOWED_DEV_ORIGINS`
 - **Adding business logic in components** — graph operations belong in
   `core/family/*`; page joins belong in `lib/family.ts`; components
   should consume already-shaped view data.
+
+## Internationalization (next-intl)
+
+The site is multilingual (en/ru/uk/he, Hebrew RTL). UI strings live
+in `messages/{locale}.json` namespaced by surface (Chrome, Page.*,
+Directives.*, Errors). Articles live in `~/whoami/pages/{locale}/`;
+Plan 1's PageStore is locale-blind (reads pages/en/), Plan 3 will
+add per-locale reads.
+
+**Hard rules:**
+
+- **`proxy.ts`, not `middleware.ts`.** Next 16 renamed it. Older
+  blog posts say `middleware.ts`; they are wrong for this codebase.
+- **`setRequestLocale(locale)` in every page and layout under
+  `app/[locale]/`** — before any other next-intl call. Forgetting
+  it silently degrades to dynamic rendering. The
+  `frontend/test/static-rendering.test.ts` test is the canary
+  (currently skipped — see Plan 1 follow-up about removing
+  `force-dynamic`).
+- **`Link` from `@/i18n/navigation`, NOT from `next/link`.** The
+  i18n wrapper preserves the active locale.
+- **`useTranslations('Namespace')`** uses the lowest-common-
+  denominator namespace per component to keep the client bundle
+  slice tight.
+- **Type-safe message keys:** if `t('foo.bar')` fails typecheck,
+  the key is missing from `messages/en.json` — add it there.
+  `messages/en.json` is the source of truth for the catalog shape;
+  other locales mirror its structure.
+- **ICU `select` for data unions, not N separate keys.** When a
+  variable selects between alternatives (e.g., `'paternal' | 'maternal'`),
+  prefer a single `{var, select, paternal {...} maternal {...} other {...}}`
+  message over N separate keys. Avoids translation-key sprawl;
+  keeps the alternatives visibly related to translators.
+- **ICU `plural` for counts.** English needs only `one/other`;
+  Russian/Ukrainian need `one/few/many/other`; Hebrew needs
+  `one/two/many/other`. Author all categories the language
+  requires. Don't use the `_plural`/`_zero` suffix style — it
+  silently breaks Slavic and Hebrew.
+- **Server vs client components:** server components can call
+  `useTranslations` directly (next-intl supports this in async
+  server components). Client components (`"use client"`) must
+  receive translated strings as props from server parents until
+  Plan 2 introduces the scoped `<NextIntlClientProvider messages={pick(...)}>`
+  pattern.
