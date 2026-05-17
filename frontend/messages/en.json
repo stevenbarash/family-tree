@@ -180,6 +180,11 @@
     "onThisDay": {}
   },
   "Errors": {
-    "notFound": "Page not found"
+    "notFound": "Page not found",
+    "notFoundHeading": "That page isn’t in the registry.",
+    "notFoundHelp": "It may have been renamed, archived, or never existed. If you were looking for a person, search by their name — the wiki indexes aliases and GEDCOM-derived fields, so it often finds people whose canonical page slug isn’t obvious.",
+    "searchPlaceholder": "Search for a name…",
+    "linkHome": "← Home",
+    "linkFamilyTree": "Family tree →"
   }
 }
