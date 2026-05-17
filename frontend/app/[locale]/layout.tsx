@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
-import "./globals.css";
+import { routing, LOCALE_DIR, type Locale } from "@/i18n/routing";
+import "../globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,19 +22,33 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
 export const metadata: Metadata = {
   title: "Whoami Wiki",
   description: "Family-shared genealogy wiki",
 };
 
-export default function RootLayout({
+export default async function LocaleLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
+  const { locale } = await params;
+  if (!hasLocale(routing.locales, locale)) notFound();
+  setRequestLocale(locale);
+
+  const t = await getTranslations({ locale, namespace: "Chrome" });
+  const typedLocale = locale as Locale;
+
   return (
     <html
-      lang="en"
+      lang={typedLocale}
+      dir={LOCALE_DIR[typedLocale]}
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -38,10 +56,10 @@ export default function RootLayout({
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-foreground focus:px-3 focus:py-2 focus:text-background focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-foreground"
         >
-          Skip to content
+          {t("skipToContent")}
         </a>
         <div id="main-content" tabIndex={-1} className="contents">
-          {children}
+          <NextIntlClientProvider>{children}</NextIntlClientProvider>
         </div>
       </body>
     </html>

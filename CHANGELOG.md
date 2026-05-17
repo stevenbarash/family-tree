@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Locale-prefixed routes:** Root layout moved to `app/[locale]/layout.tsx`; sets `<html lang dir>`, `setRequestLocale`, `NextIntlClientProvider`. Static rendering preserved via `generateStaticParams` over all four locales.
+
 - **Locale-aware routing:** `frontend/proxy.ts` wires `next-intl` middleware; `/` redirects to `/{detected-locale}/`. API and asset routes are excluded (locale-agnostic).
 
 - **Multilingual scaffold:** Initial `next-intl` routing config in `frontend/i18n/routing.ts` defining four locales (en/ru/uk/he) and `LOCALE_DIR` for `<html dir>`. Part of multilingual support foundation.
