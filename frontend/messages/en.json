@@ -28,7 +28,6 @@
     "Article": {},
     "Family": {
       "navIndex": "Index",
-      "title": "Family",
       "noDataTitle": "Family",
       "noDataDescription": "No derived data found for the configured perspective record. Run <code>POST /api/gedcom/sync</code> to populate <code>genealogy/derived/</code>.",
       "pageTitle": "Family lines",
@@ -43,7 +42,6 @@
       "genFallback": "Generation {n}",
       "paternalLine": "Paternal line",
       "maternalLine": "Maternal line",
-      "perspective": "Perspective",
       "unknown": "unknown",
       "bornDate": "b. {date}",
       "diedDate": "d. {date}",
