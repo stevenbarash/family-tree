@@ -32,7 +32,14 @@
       "allArticles": "All articles ({count})",
       "talkPages": "Talk pages ({count})"
     },
-    "Article": {},
+    "Article": {
+      "banners": {
+        "stale": "This translation reflects an earlier version of the article. An updated translation is in progress.",
+        "review": "This translation is under review. The agent flagged {count, plural, one {# editorial choice} other {# editorial choices}} for your confirmation.",
+        "missing": "This article hasn't been translated to {language} yet. Showing the English version.",
+        "viewCanonical": "View the English version"
+      }
+    },
     "Family": {
       "navIndex": "Index",
       "noDataTitle": "Family",
