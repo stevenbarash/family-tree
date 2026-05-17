@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
-import createNextIntlPlugin from 'next-intl/plugin';
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Browsing the dev server through Tailscale (100.x.x.x) is the project's
 // access pattern. Next 16 blocks cross-origin static assets by default, so
@@ -19,8 +19,8 @@ const envOrigins = (process.env.WHOAMI_ALLOWED_DEV_ORIGINS ?? '')
 const allowedDevOrigins = envOrigins.length > 0 ? envOrigins : DEFAULT_DEV_ORIGINS;
 
 const withNextIntl = createNextIntlPlugin({
-  requestConfig: './i18n/request.ts',
-  experimental: { createMessagesDeclaration: './messages/en.json' }
+  requestConfig: "./i18n/request.ts",
+  experimental: { createMessagesDeclaration: "./messages/en.json" }
 });
 
 const nextConfig: NextConfig = {
