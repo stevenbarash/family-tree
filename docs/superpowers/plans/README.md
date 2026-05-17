@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| 🚧 | [`2026-05-17-gedcom-7-upgrade.md`](./2026-05-17-gedcom-7-upgrade.md) | GEDCOM 5.5.1 → 7.0.18 upgrade | Convert source `barash-tree.ged` via `gedcom7code/c-converter`; swap parser from `parse-gedcom@2.0.1` to `gedcom-ts@^2026.5.2`; rewrite `core/src/gedcom/parser.ts` normalization layer; verify derived-YAML parity. Coupled migration (file + parser must land together). Backup at `genealogy/barash-tree.ged.5.5.1-backup-20260517-190228`. |
 | ✅ | [`2026-05-17-multilingual-support-plan-3-translation-pipeline.md`](./2026-05-17-multilingual-support-plan-3-translation-pipeline.md) | Multilingual support — Plan 3: Translation pipeline | Per-locale PageStore reads, translation frontmatter (`translation_of` / `canonical_sha` / `translated_at`), computed status (current/stale/review/missing), `wai i18n status` + `wai i18n sync` CLI, agent translator via harness adapter (`writing-articles` / `translate` template; `--stub` for offline), translation banner component, missing-translation fallback to canonical EN. Places + cite-vault + Collator deferred to Plan 3.5. |
 | ✅ | [`2026-05-17-multilingual-support-plan-2-chrome-translations.md`](./2026-05-17-multilingual-support-plan-2-chrome-translations.md) | Multilingual support — Plan 2: Chrome translations + RTL | LLM-drafted ru/uk/he message files (Slavic and Hebrew ICU plural categories), Tailwind directional-class sweep to logical properties, family-tree RTL mirroring, `<bdi>` patterns on person-name renders, language switcher mounted in layout. Shipped on `feat/multilingual-chrome-translations` (~14 commits). Site chrome reads in all four languages; Hebrew renders RTL. |
 | ✅ | [`2026-05-17-multilingual-support-plan-1-foundation.md`](./2026-05-17-multilingual-support-plan-1-foundation.md) | Multilingual support — Plan 1: Foundation | `next-intl` install, `[locale]` routing, `proxy.ts` middleware, UI-string extraction to `messages/en.json`, content migration to `pages/en/`. Site stays English-only in content but architecturally multilingual. First of four plans toward en/ru/uk/he support. Shipped on `feat/multilingual-foundation` (26 commits). Static-rendering test skipped pending `force-dynamic` removal. |
@@ -75,7 +76,7 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
 | ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 42 plans** — 37 shipped (✅), 0 in-progress (🚧), 4 sketches (📝), 1 index (🗂), 0 abandoned (📦).
+**Total: 43 plans** — 37 shipped (✅), 1 in-progress (🚧), 4 sketches (📝), 1 index (🗂), 0 abandoned (📦).
 
 ---
 
