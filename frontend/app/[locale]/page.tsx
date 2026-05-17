@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
+import type { Locale } from '@/i18n/routing';
 import { getCachedList, getCachedSnapshots, getRecentlyRevised } from '@/lib/server-services';
 import { getFamilyTree } from '@/lib/family';
 import { GENEALOGY_DIR, PAGES_DIR, SELF_RECORD } from '@/lib/env';
@@ -28,7 +29,7 @@ function snapshotAgeDays(date: string | undefined): number | null {
 export default async function HomePage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);

@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
+import type { Locale } from '@/i18n/routing';
 import { searchAndJoin } from '@/lib/server-services';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ q?: string; type?: string; place?: string }>;
 }
 

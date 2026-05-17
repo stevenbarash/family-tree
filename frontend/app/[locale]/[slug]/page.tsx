@@ -9,6 +9,7 @@ import {
   buildNotesView,
 } from '@/lib/server-services';
 import { routing } from '@/i18n/routing';
+import type { Locale } from '@/i18n/routing';
 import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
@@ -26,7 +27,7 @@ import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PageRoute({ params }: { params: Promise<{ locale: string; slug: string }> }) {
+export default async function PageRoute({ params }: { params: Promise<{ locale: Locale; slug: string }> }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();

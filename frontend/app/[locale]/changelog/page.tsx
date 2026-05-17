@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
 import { setRequestLocale } from 'next-intl/server';
+import type { Locale } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { getChangelog, renderChangelogMarkdown } from '@/lib/changelog';
 import { VersionBlock } from '@/components/changelog/version-block';
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   description: 'Revision history of whoami.wiki, kept in sync with the repository CHANGELOG.md.',
 };
 
-export default async function ChangelogPage({ params }: { params: Promise<{ locale: string }> }): Promise<ReactElement> {
+export default async function ChangelogPage({ params }: { params: Promise<{ locale: Locale }> }): Promise<ReactElement> {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = useTranslations('Page.Changelog');

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
+import type { Locale } from '@/i18n/routing';
 import { ArrowLeft, Home } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { CommandPalette } from '@/components/command-palette';
@@ -32,7 +33,7 @@ import { ResearchNotesPanel } from '@/components/research-notes/panel';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ person?: string; from?: string }>;
 }
 

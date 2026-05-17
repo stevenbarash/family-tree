@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { setRequestLocale } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
+import type { Locale } from '@/i18n/routing';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getFamily, type AncestorView } from '@/lib/family';
 
@@ -64,7 +65,7 @@ function PersonCard({
 export default async function FamilyPage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: Locale }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
