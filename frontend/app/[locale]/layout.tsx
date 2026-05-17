@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
-import { routing, LOCALE_DIR, type Locale } from "@/i18n/routing";
+import { routing, LOCALE_DIR } from "@/i18n/routing";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -43,12 +43,11 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: "Chrome" });
-  const typedLocale = locale as Locale;
 
   return (
     <html
-      lang={typedLocale}
-      dir={LOCALE_DIR[typedLocale]}
+      lang={locale}
+      dir={LOCALE_DIR[locale]}
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
