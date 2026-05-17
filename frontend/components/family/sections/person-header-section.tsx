@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { FileText } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import type { FamilyTreeView } from '@/lib/family';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function PersonHeaderSection({ view, ancestorCount, generationCount }: Props) {
+  const t = useTranslations('Page.FamilyTree.person');
   const person = view.root;
   const dates = formatDates(person);
   const { parents, spouses, children } = view.selectedRelations;
@@ -23,7 +25,7 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
     >
       <div className="min-w-0">
         <p className="font-display text-[0.66rem] uppercase tracking-[0.32em] text-muted-foreground">
-          Folio · {person.record}
+          {t('folio', { record: person.record })}
         </p>
         <h1 className="mt-2 font-display text-[2.4rem] font-medium leading-[1.05] tracking-[-0.01em] text-balance text-foreground sm:text-[3rem]">
           {person.name}
@@ -40,17 +42,20 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
           <p className="mt-1.5 font-display text-[0.72rem] uppercase tracking-[0.18em] text-muted-foreground">
             {view.relationship.label}{' '}
             <span className="text-muted-foreground/60">
-              · to {view.relationship.perspective.isMe ? 'me' : view.relationship.perspective.name}
+              {t('perspectiveSuffix', {
+                isMe: view.relationship.perspective.isMe ? 'true' : 'false',
+                name: view.relationship.perspective.name,
+              })}
             </span>
           </p>
         ) : null}
 
         <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 border-t rule-hair pt-4 sm:max-w-lg sm:grid-cols-5">
-          <Stat label="Parents" value={parents.length} />
-          <Stat label="Siblings" value={siblings.length} />
-          <Stat label="Spouses" value={spouses.length} />
-          <Stat label="Children" value={children.length} />
-          <Stat label="Ancestors" value={ancestorCount} sub={`${generationCount} gens`} />
+          <Stat label={t('statParents')} value={parents.length} />
+          <Stat label={t('statSiblings')} value={siblings.length} />
+          <Stat label={t('statSpouses')} value={spouses.length} />
+          <Stat label={t('statChildren')} value={children.length} />
+          <Stat label={t('statAncestors')} value={ancestorCount} sub={t('statGenerations', { n: generationCount })} />
         </dl>
       </div>
 
@@ -61,7 +66,7 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
             className={buttonVariants({ variant: 'default', size: 'sm' })}
           >
             <FileText data-icon="inline-start" />
-            Article
+            {t('buttonArticle')}
           </Link>
         </div>
       ) : null}

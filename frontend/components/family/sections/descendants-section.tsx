@@ -1,27 +1,35 @@
+import { useTranslations } from 'next-intl';
 import { AncestorTile } from '@/components/family/ancestor-tile';
 import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { BrowserDescendantView, FamilyTreeView } from '@/lib/family';
 import { MobileDisclosure } from './mobile-disclosure';
-import { DESCENDANT_HEADING, GenerationHeader, SectionHeader, familyTreeHref } from './shared';
+import { GenerationHeader, SectionHeader, familyTreeHref } from './shared';
 
 interface Props {
   view: FamilyTreeView;
 }
 
 export function DescendantsSection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.descendants');
+  const tDisclosure = useTranslations('Page.FamilyTree.disclosure');
   if (view.descendants.total === 0) return null;
 
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '120ms' }}>
-      <SectionHeader title="Descendants" count={view.descendants.total} />
-      <MobileDisclosure storageKey="descendants">
+      <SectionHeader title={t('title')} count={view.descendants.total} />
+      <MobileDisclosure
+        storageKey="descendants"
+        showLabel={tDisclosure('show')}
+        hideLabel={tDisclosure('hide')}
+      >
         <RegistryCard>
           {view.descendants.byGeneration.map(group => (
             <DescendantsBlock
               key={`desc-${group.generation}`}
               generation={group.generation}
               people={group.people}
+              t={t}
             />
           ))}
         </RegistryCard>
@@ -33,11 +41,13 @@ export function DescendantsSection({ view }: Props) {
 function DescendantsBlock({
   generation,
   people,
+  t,
 }: {
   generation: number;
   people: BrowserDescendantView[];
+  t: ReturnType<typeof useTranslations>;
 }) {
-  const heading = DESCENDANT_HEADING[generation] ?? `Generation +${generation}`;
+  const heading = t('headings', { n: generation });
   return (
     <section className="border-b rule-hair last:border-b-0">
       <GenerationHeader
@@ -51,7 +61,7 @@ function DescendantsBlock({
             key={`desc-${p.record}-${i}`}
             href={familyTreeHref(p.record)}
             name={p.name}
-            meta={[p.detail, `via ${p.via}`].filter(Boolean).join('  ·  ')}
+            meta={[p.detail, t('viaMeta', { via: p.via })].filter(Boolean).join('  ·  ')}
             ordinal={roman(i + 1).toLowerCase()}
             portrait={p.portrait}
           />

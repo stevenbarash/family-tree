@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { LifespanBar } from '@/components/family/lifespan-bar';
 import { RegistryCard } from '@/components/family/registry-card';
 import type { FamilyTreeView } from '@/lib/family';
@@ -9,21 +10,27 @@ interface Props {
 }
 
 export function LifespansSection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.lifespans');
+  const tDisclosure = useTranslations('Page.FamilyTree.disclosure');
   const { timeline } = view;
   if (timeline.entries.length === 0 || !timeline.range) return null;
 
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '110ms' }}>
       <SectionHeader
-        title="Lifespans"
+        title={t('title')}
         count={timeline.entries.length}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {timeline.range.minYear} – {timeline.range.maxYear}
+            {t('range', { min: timeline.range.minYear, max: timeline.range.maxYear })}
           </p>
         }
       />
-      <MobileDisclosure storageKey="lifespans">
+      <MobileDisclosure
+        storageKey="lifespans"
+        showLabel={tDisclosure('show')}
+        hideLabel={tDisclosure('hide')}
+      >
         <RegistryCard>
           <div className="divide-y rule-hair">
             {timeline.entries.map(e => (

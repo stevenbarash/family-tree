@@ -1,26 +1,29 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { FamilyTreeView } from '@/lib/family';
-import { GENERATION_HEADING, SectionHeader, familyTreeHref } from './shared';
+import { SectionHeader, familyTreeHref } from './shared';
 
 interface Props {
   view: FamilyTreeView;
 }
 
 export function CoverageSection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.coverage');
+  const tLineage = useTranslations('Page.FamilyTree.lineage');
   const { coverage } = view;
   if (coverage.knownTotal === 0) return null;
 
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '100ms' }}>
       <SectionHeader
-        title="Coverage"
+        title={t('title')}
         count={coverage.knownTotal}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {coverage.knownTotal} / {coverage.possibleTotal} known
+            {t('knownOfPossible', { known: coverage.knownTotal, possible: coverage.possibleTotal })}
           </p>
         }
       />
@@ -28,7 +31,7 @@ export function CoverageSection({ view }: Props) {
         <RegistryCard>
           <header className="border-b rule-hair bg-muted/40 px-3 py-2">
             <h3 className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-              Per generation
+              {t('perGeneration')}
             </h3>
           </header>
           <ul className="divide-y rule-hair">
@@ -41,7 +44,7 @@ export function CoverageSection({ view }: Props) {
                   {roman(g.generation)}
                 </span>
                 <span className="flex-1 truncate font-display tracking-tight text-foreground">
-                  {GENERATION_HEADING[g.generation] ?? `Generation ${g.generation}`}
+                  {tLineage('headings', { n: g.generation })}
                 </span>
                 <span className={g.known === g.possible ? 'text-foreground' : 'text-muted-foreground'}>
                   {String(g.known).padStart(2, '0')} / {String(g.possible).padStart(2, '0')}
@@ -55,7 +58,7 @@ export function CoverageSection({ view }: Props) {
           <RegistryCard>
             <header className="border-b rule-hair bg-muted/40 px-3 py-2 flex items-baseline justify-between gap-3">
               <h3 className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-                Research frontier
+                {t('researchFrontier')}
               </h3>
               <span className="font-mono text-[0.62rem] tabular-nums text-muted-foreground/70">
                 {String(coverage.frontier.length).padStart(2, '0')}
@@ -75,7 +78,7 @@ export function CoverageSection({ view }: Props) {
                       {f.name}
                     </span>
                     <span className="font-display text-[0.62rem] uppercase tracking-[0.18em] text-muted-foreground">
-                      missing {f.missing === 'both' ? 'parents' : f.missing}
+                      {t('missing', { what: f.missing })}
                     </span>
                   </Link>
                 </li>
@@ -85,7 +88,7 @@ export function CoverageSection({ view }: Props) {
         ) : (
           <Card className="flex items-center justify-center p-6 shadow-none ring-foreground/12">
             <p className="font-display text-sm text-muted-foreground">
-              Lineage is complete to the configured depth.
+              {t('complete')}
             </p>
           </Card>
         )}

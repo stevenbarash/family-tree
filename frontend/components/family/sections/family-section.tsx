@@ -1,15 +1,9 @@
+import { useTranslations } from 'next-intl';
 import { GroupedList } from '@/components/family/grouped-list';
 import { PersonRow } from '@/components/family/person-row';
 import { roman } from '@/lib/utils';
 import type { FamilyTreeView } from '@/lib/family';
-import type { PedigreeKind } from '@core/gedcom/types.ts';
 import { RelationLabel, SectionHeader, familyTreeHref, joinMeta, relationMeta } from './shared';
-
-const PEDIGREE_FAMILY_LABEL: Record<PedigreeKind, string> = {
-  adopted: 'Adoptive family',
-  foster: 'Foster family',
-  sealing: 'Sealed family',
-};
 
 interface Props {
   view: FamilyTreeView;
@@ -18,12 +12,14 @@ interface Props {
 function MarriageMeta({
   marriedDate,
   marriedPlace,
+  t,
 }: {
   marriedDate: string | null;
   marriedPlace: string | null;
+  t: ReturnType<typeof useTranslations>;
 }) {
   const text = joinMeta([
-    marriedDate ? `m. ${marriedDate}` : null,
+    marriedDate ? t('marriedOn', { date: marriedDate }) : null,
     marriedPlace,
   ]);
   if (!text) return null;
@@ -35,6 +31,7 @@ function MarriageMeta({
 }
 
 export function FamilySection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.family');
   const { familyOfOrigin, marriages } = view.selectedFamilies;
   const stepFamilies = view.selectedStepFamilies;
   const cousins = view.cohort.cousins;
@@ -64,30 +61,34 @@ export function FamilySection({ view }: Props) {
   if (total === 0) return null;
 
   const fooHeader = (foo: FamilyTreeView['selectedFamilies']['familyOfOrigin'][number], idx: number) => {
-    const base = foo.pedigree ? PEDIGREE_FAMILY_LABEL[foo.pedigree] : 'Family of origin';
-    return familyOfOrigin.length > 1 ? `${base} (${roman(idx + 1).toLowerCase()})` : base;
+    const base = t('familyOfOriginPedigree', { kind: foo.pedigree ?? 'other' });
+    return familyOfOrigin.length > 1
+      ? t('familyOfOriginNumbered', { base, ordinal: roman(idx + 1).toLowerCase() })
+      : base;
   };
   const marrLabel = (idx: number) =>
-    marriages.length > 1 ? `Marriage (${roman(idx + 1).toLowerCase()})` : 'Marriage';
+    marriages.length > 1
+      ? t('marriageNumbered', { ordinal: roman(idx + 1).toLowerCase() })
+      : t('marriage');
   const stepLabel = (sf: FamilyTreeView['selectedStepFamilies'][number]) => {
-    const base = sf.via.role === 'father' ? "Father's other marriage" : "Mother's other marriage";
+    const base = t('otherMarriage', { role: sf.via.role });
     const sameParentCount = stepFamilies.filter(s => s.via.record === sf.via.record).length;
     if (sameParentCount === 1) return base;
     const idxAmongParent = stepFamilies
       .filter(s => s.via.record === sf.via.record)
       .findIndex(s => s.fam === sf.fam);
-    return `${base} (${roman(idxAmongParent + 1).toLowerCase()})`;
+    return t('otherMarriageNumbered', { base, ordinal: roman(idxAmongParent + 1).toLowerCase() });
   };
 
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '80ms' }}>
-      <SectionHeader title="Family" count={total} />
+      <SectionHeader title={t('title')} count={total} />
       <div className="flex flex-col gap-6">
         {familyOfOrigin.map((foo, idx) => (
           <GroupedList
             key={`foo-${foo.fam}`}
             title={fooHeader(foo, idx)}
-            action={<MarriageMeta marriedDate={foo.marriedDate} marriedPlace={foo.marriedPlace} />}
+            action={<MarriageMeta marriedDate={foo.marriedDate} marriedPlace={foo.marriedPlace} t={t} />}
           >
             {foo.father ? (
               <PersonRow
@@ -95,7 +96,7 @@ export function FamilySection({ view }: Props) {
                 name={foo.father.name}
                 meta={relationMeta(foo.father)}
                 portrait={foo.father.portrait}
-                trailing={<RelationLabel>father</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'father' })}</RelationLabel>}
               />
             ) : null}
             {foo.mother ? (
@@ -104,7 +105,7 @@ export function FamilySection({ view }: Props) {
                 name={foo.mother.name}
                 meta={relationMeta(foo.mother)}
                 portrait={foo.mother.portrait}
-                trailing={<RelationLabel>mother</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'mother' })}</RelationLabel>}
               />
             ) : null}
             {foo.siblings.map((s, i) => (
@@ -115,7 +116,7 @@ export function FamilySection({ view }: Props) {
                 ordinal={roman(i + 1).toLowerCase()}
                 meta={relationMeta(s)}
                 portrait={s.portrait}
-                trailing={<RelationLabel>sibling</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'sibling' })}</RelationLabel>}
               />
             ))}
           </GroupedList>
@@ -125,7 +126,7 @@ export function FamilySection({ view }: Props) {
           <GroupedList
             key={`marr-${m.fam}`}
             title={marrLabel(idx)}
-            action={<MarriageMeta marriedDate={m.marriedDate} marriedPlace={m.marriedPlace} />}
+            action={<MarriageMeta marriedDate={m.marriedDate} marriedPlace={m.marriedPlace} t={t} />}
           >
             {m.spouse ? (
               <PersonRow
@@ -133,7 +134,7 @@ export function FamilySection({ view }: Props) {
                 name={m.spouse.name}
                 meta={relationMeta(m.spouse)}
                 portrait={m.spouse.portrait}
-                trailing={<RelationLabel>spouse</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'spouse' })}</RelationLabel>}
               />
             ) : null}
             {m.children.map((c, i) => (
@@ -144,19 +145,19 @@ export function FamilySection({ view }: Props) {
                 ordinal={roman(i + 1).toLowerCase()}
                 meta={relationMeta(c)}
                 portrait={c.portrait}
-                trailing={<RelationLabel>child</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'child' })}</RelationLabel>}
               />
             ))}
           </GroupedList>
         ))}
 
         {stepFamilies.map(sf => {
-          const stepRole = sf.via.role === 'father' ? 'step-mother' : 'step-father';
+          const stepRole = sf.via.role === 'father' ? 'stepMother' : 'stepFather';
           return (
             <GroupedList
               key={`step-${sf.fam}`}
               title={stepLabel(sf)}
-              action={<MarriageMeta marriedDate={sf.marriedDate} marriedPlace={sf.marriedPlace} />}
+              action={<MarriageMeta marriedDate={sf.marriedDate} marriedPlace={sf.marriedPlace} t={t} />}
             >
               {sf.stepParent ? (
                 <PersonRow
@@ -164,7 +165,7 @@ export function FamilySection({ view }: Props) {
                   name={sf.stepParent.name}
                   meta={relationMeta(sf.stepParent)}
                   portrait={sf.stepParent.portrait}
-                  trailing={<RelationLabel>{stepRole}</RelationLabel>}
+                  trailing={<RelationLabel>{t('relation', { kind: stepRole })}</RelationLabel>}
                 />
               ) : null}
               {sf.halfSiblings.map((h, i) => (
@@ -175,7 +176,7 @@ export function FamilySection({ view }: Props) {
                   ordinal={roman(i + 1).toLowerCase()}
                   meta={relationMeta(h)}
                   portrait={h.portrait}
-                  trailing={<RelationLabel>half-sibling</RelationLabel>}
+                  trailing={<RelationLabel>{t('relation', { kind: 'halfSibling' })}</RelationLabel>}
                 />
               ))}
             </GroupedList>
@@ -183,7 +184,7 @@ export function FamilySection({ view }: Props) {
         })}
 
         {standaloneHalfSiblings.length > 0 ? (
-          <GroupedList title={`Half-siblings (${standaloneHalfSiblings.length})`}>
+          <GroupedList title={t('halfSiblingsTitle', { count: standaloneHalfSiblings.length })}>
             {standaloneHalfSiblings.map((s, i) => (
               <PersonRow
                 key={`half-${s.record}`}
@@ -192,23 +193,23 @@ export function FamilySection({ view }: Props) {
                 ordinal={roman(i + 1).toLowerCase()}
                 meta={s.detail}
                 portrait={s.portrait}
-                trailing={<RelationLabel>half-sibling</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'halfSibling' })}</RelationLabel>}
               />
             ))}
           </GroupedList>
         ) : null}
 
         {cousins.length > 0 ? (
-          <GroupedList title={`First cousins (${cousins.length})`}>
+          <GroupedList title={t('cousinsTitle', { count: cousins.length })}>
             {cousins.map((c, i) => (
               <PersonRow
                 key={`cousin-${c.record}`}
                 href={familyTreeHref(c.record)}
                 name={c.name}
                 ordinal={roman(i + 1).toLowerCase()}
-                meta={[c.detail, `via ${c.via}`].filter(Boolean).join('  ·  ')}
+                meta={[c.detail, t('viaMeta', { via: c.via })].filter(Boolean).join('  ·  ')}
                 portrait={c.portrait}
-                trailing={<RelationLabel>cousin</RelationLabel>}
+                trailing={<RelationLabel>{t('relation', { kind: 'cousin' })}</RelationLabel>}
               />
             ))}
           </GroupedList>

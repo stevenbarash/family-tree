@@ -6,10 +6,12 @@ import { ChevronDown } from 'lucide-react';
 
 interface Props {
   storageKey: string;
+  showLabel: string;
+  hideLabel: string;
   children: ReactNode;
 }
 
-export function MobileDisclosure({ storageKey, children }: Props) {
+export function MobileDisclosure({ storageKey, showLabel, hideLabel, children }: Props) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function MobileDisclosure({ storageKey, children }: Props) {
         aria-expanded={open}
         className="-mt-1 mb-2 flex w-full items-center justify-between font-display text-[0.62rem] uppercase tracking-[0.18em] text-muted-foreground/70 sm:hidden"
       >
-        <span>{open ? 'Hide' : 'Show'}</span>
+        <span>{open ? hideLabel : showLabel}</span>
         <ChevronDown
           className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden

@@ -48,7 +48,94 @@
       "bornDiedDate": "{birth} - {death}",
       "lineSide": "{side, select, paternal {Paternal line} maternal {Maternal line} other {Perspective}}"
     },
-    "FamilyTree": {},
+    "FamilyTree": {
+      "navFamily": "Family",
+      "registry": "The Registry",
+      "lineagePathAria": "Lineage path",
+      "buttonMe": "Me",
+      "emptyState": "No related records yet.",
+      "person": {
+        "folio": "Folio · {record}",
+        "perspectiveSuffix": "· to {isMe, select, true {me} other {{name}}}",
+        "statParents": "Parents",
+        "statSiblings": "Siblings",
+        "statSpouses": "Spouses",
+        "statChildren": "Children",
+        "statAncestors": "Ancestors",
+        "statGenerations": "{n, plural, one {# gen} other {# gens}}",
+        "buttonArticle": "Article"
+      },
+      "family": {
+        "title": "Family",
+        "familyOfOrigin": "Family of origin",
+        "familyOfOriginPedigree": "{kind, select, adopted {Adoptive family} foster {Foster family} sealing {Sealed family} other {Family of origin}}",
+        "familyOfOriginNumbered": "{base} ({ordinal})",
+        "marriage": "Marriage",
+        "marriageNumbered": "Marriage ({ordinal})",
+        "otherMarriage": "{role, select, father {Father's other marriage} mother {Mother's other marriage} other {Other marriage}}",
+        "otherMarriageNumbered": "{base} ({ordinal})",
+        "marriedOn": "m. {date}",
+        "halfSiblingsTitle": "Half-siblings ({count})",
+        "cousinsTitle": "First cousins ({count})",
+        "viaMeta": "via {via}",
+        "relation": "{kind, select, father {father} mother {mother} sibling {sibling} spouse {spouse} child {child} stepMother {step-mother} stepFather {step-father} halfSibling {half-sibling} cousin {cousin} other {relative}}"
+      },
+      "conflicts": {
+        "title": "Conflicts",
+        "unresolved": "{n, plural, one {# unresolved} other {# unresolved}}",
+        "resolved": "resolved",
+        "weight": "weight {value}",
+        "field": "{field, select, birthDate {Birth date} birthPlace {Birthplace} deathDate {Death date} deathPlace {Place of death} marriageDate {Marriage date} marriagePlace {Marriage place} other {{raw}}}"
+      },
+      "coverage": {
+        "title": "Coverage",
+        "knownOfPossible": "{known} / {possible} known",
+        "perGeneration": "Per generation",
+        "researchFrontier": "Research frontier",
+        "missing": "missing {what, select, father {father} mother {mother} both {parents} other {{what}}}",
+        "complete": "Lineage is complete to the configured depth."
+      },
+      "descendants": {
+        "title": "Descendants",
+        "generationFallback": "Generation +{n}",
+        "viaMeta": "via {via}",
+        "headings": "{n, select, 1 {Children} 2 {Grandchildren} 3 {Great-grandchildren} 4 {2× Great-grandchildren} 5 {3× Great-grandchildren} other {Generation +{n}}}"
+      },
+      "lifespans": {
+        "title": "Lifespans",
+        "range": "{min} – {max}"
+      },
+      "lineage": {
+        "title": "Lineage",
+        "legendPaternal": "Paternal",
+        "legendMaternal": "Maternal",
+        "columnLine": "line",
+        "generationFallback": "Generation {n}",
+        "absentia": "— absentia —",
+        "headings": "{n, select, 1 {Parents} 2 {Grandparents} 3 {Great-grandparents} 4 {2× Great-grandparents} 5 {3× Great-grandparents} 6 {4× Great-grandparents} 7 {5× Great-grandparents} 8 {6× Great-grandparents} other {Generation {n}}}"
+      },
+      "media": {
+        "title": "Media",
+        "primary": "primary",
+        "fallbackTitle": "Media {record}"
+      },
+      "places": {
+        "title": "Places of birth",
+        "located": "{n} located",
+        "unlocated": " · {n} unlocated",
+        "unmappedHeading": "Unmapped places",
+        "unmappedHelp": "These places aren't yet in <code>genealogy/places-coords.yml</code>. Add an entry there to bring them onto the map. See <code>research-plans/places-research.md</code> for current research notes."
+      },
+      "dates": {
+        "bornDate": "b. {date}",
+        "diedDate": "d. {date}",
+        "bornDiedDate": "{birth} – {death}"
+      },
+      "disclosure": {
+        "show": "Show",
+        "hide": "Hide"
+      }
+    },
     "Search": {},
     "Changelog": {}
   },
