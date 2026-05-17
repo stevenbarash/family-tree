@@ -42,6 +42,13 @@ const PageMetaSchema = z.object({
     z.date().transform(d => d.toISOString().slice(0, 10))
   ]).optional(),
   corrections: z.array(CorrectionSchema).default([]),
+  lang: z.string().min(1).optional(),
+  translationOf: z.string().min(1).optional(),
+  canonicalSha: z.string().min(1).optional(),
+  translatedAt: z.union([
+    z.string().regex(ISO_DATE, 'expected YYYY-MM-DD'),
+    z.date().transform(d => d.toISOString().slice(0, 10))
+  ]).optional(),
 });
 
 // Compile-time guarantee that the schema's output matches PageMeta.

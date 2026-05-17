@@ -43,6 +43,14 @@ export interface PageMeta {
   created: string;
   deletedAt?: string;
   corrections: Correction[];
+  /** ISO 639 language code. Omitted on canonical EN files; set on translations (e.g. "ru"). */
+  lang?: string;
+  /** Set on translation files only — points to the canonical slug. */
+  translationOf?: string;
+  /** Git SHA of the canonical EN file at translation time. Translation files only. */
+  canonicalSha?: string;
+  /** ISO date (YYYY-MM-DD) when this translation was generated. Translation files only. */
+  translatedAt?: string;
 }
 
 export interface Page {

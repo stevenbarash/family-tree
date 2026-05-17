@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Translation frontmatter:** `translation_of`, `canonical_sha`, `translated_at`, `lang` fields now parse off translation files into `PageMeta` (as `translationOf`, `canonicalSha`, `translatedAt`, `lang`). All optional — canonical EN files continue to parse cleanly. `serializePage` round-trips them in snake_case form on disk. No schema-version bump needed.
+
 - **Per-locale PageStore reads:** `PageStore.read(slug, { locale })` reads from `pages/{locale}/<slug>.md`. Existing callers (no locale) unchanged.
 
 - **Translation talk parser:** `core/src/i18n/translation-talk.ts` parses `<slug>.translation.talk.md` files into unresolved/resolved entry counts. Foundation for the translation accuracy review gate.

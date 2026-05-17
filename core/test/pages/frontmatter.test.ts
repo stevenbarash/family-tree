@@ -139,6 +139,80 @@ body`;
   assert.equal(page.meta.schemaVersion, CURRENT_SCHEMA_VERSION);
 });
 
+test('parsePage: extracts translation frontmatter from translation file', () => {
+  const md = `---
+schemaVersion: 1
+title: Эбби
+lang: ru
+translation_of: abby-rickelman
+canonical_sha: a3f2c19abc
+translated_at: '2026-05-17'
+owner: x
+editors: []
+type: person
+aliases: []
+categories: []
+created: '2026-05-01'
+corrections: []
+---
+русский body`;
+  const page = parsePage('abby-rickelman', md);
+  assert.equal(page.meta.translationOf, 'abby-rickelman');
+  assert.equal(page.meta.canonicalSha, 'a3f2c19abc');
+  assert.equal(page.meta.translatedAt, '2026-05-17');
+  assert.equal(page.meta.lang, 'ru');
+});
+
+test('parsePage: canonical EN file has undefined translation fields', () => {
+  const md = `---
+schemaVersion: 1
+title: Abby
+owner: x
+editors: []
+type: person
+aliases: []
+categories: []
+created: '2026-05-01'
+corrections: []
+---
+body`;
+  const page = parsePage('abby', md);
+  assert.equal(page.meta.translationOf, undefined);
+  assert.equal(page.meta.canonicalSha, undefined);
+  assert.equal(page.meta.translatedAt, undefined);
+  assert.equal(page.meta.lang, undefined);
+});
+
+test('serializePage: round-trips translation frontmatter', () => {
+  const page = {
+    slug: 'abby-rickelman',
+    meta: {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      title: 'Эбби',
+      owner: 'x',
+      editors: [],
+      type: 'person' as const,
+      aliases: [],
+      categories: [],
+      created: '2026-05-01',
+      corrections: [],
+      lang: 'ru',
+      translationOf: 'abby-rickelman',
+      canonicalSha: 'a3f2c19abc',
+      translatedAt: '2026-05-17',
+    },
+    body: 'русский body\n',
+  };
+  const serialized = serializePage(page);
+  // Disk form is snake_case for translation_of/canonical_sha/translated_at.
+  assert.match(serialized, /^lang: ru$/m);
+  assert.match(serialized, /^translation_of: abby-rickelman$/m);
+  assert.match(serialized, /^canonical_sha: a3f2c19abc$/m);
+  assert.match(serialized, /^translated_at: '?2026-05-17'?$/m);
+  const round = parsePage(page.slug, serialized);
+  assert.deepEqual(round.meta, page.meta);
+});
+
 test('parsePage throws FutureSchemaVersionError for too-new pages', () => {
   const raw = `---
 schemaVersion: ${CURRENT_SCHEMA_VERSION + 1}
