@@ -66,7 +66,7 @@ the talk page of the relevant plan, not silently re-ordered.
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ⏳ ready | **P0.2** Living-person privacy gate (`RESN` parsing, age heuristic, `derived.privacy`, search default-filter, `wai export --redact-living`, frontmatter `restricted: bool`) | M | [Review §P0.2](./reviews/2026-05-07-platform-review.md#p02--no-living-person-privacy-gate) |
+| ✅ shipped | **P0.2** Living-person privacy gate (`RESN` parsing, age heuristic, `derived.privacy`, search default-filter, `wai export --redact-living`, frontmatter `restricted: bool`) | M | [Review §P0.2](./reviews/2026-05-07-platform-review.md#p02--no-living-person-privacy-gate) — *Shipped 2026-05-15 across four sub-items: (1) deriver `Privacy { restricted, reason }` from RESN + 110-year living heuristic; (2) `wai search` privacy filter with `--include-living` opt-in; (3) `wai export --redact-living` standalone; (4) frontend `RestrictedNotice` gating in the renderer. Pages-export and `lang=` opt-back-in deferred. Gate is currently disabled by default via `WHOAMI_PRIVACY_GATE` env flag for development; user will re-enable.* |
 | 🚧 carry-over | **P1.5** Conflict-resolution schema (continues from Now) | M | [Review §P1.5](./reviews/2026-05-07-platform-review.md#p15--no-conflict-resolution-schema-in-the-data-model) |
 | ⏳ ready | **P0.4** Resolve Ancestry `_APID` codes to source titles; surface `sources_unresolved`; add source-coverage metric to Coverage section | M | [Review §P0.4](./reviews/2026-05-07-platform-review.md#p04--source-coverage-in-derived-records-is-sparse) |
 

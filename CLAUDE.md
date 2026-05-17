@@ -82,3 +82,31 @@ commits are not backups. If a session ends with N local-only commits,
 that's N commits' worth of work the user could lose to a laptop
 incident. Default: `git push` after each plan task or each bug-fix
 batch unless the user explicitly says otherwise.
+
+## Rule 14 — Roadmap–CHANGELOG–ROADMAP triad
+When you ship a roadmap item identified by a `P#.#` (e.g. `P0.3`),
+update **both** `docs/ROADMAP.md` (flip the row to `✅ shipped` with a
+brief shipped-summary appendix) **and** `CHANGELOG.md` (entry naming
+the P-ID inline) — in the same commit. The `roadmap-drift` test in
+`cli/test/roadmap-drift.test.ts` enforces both directions: every
+`✅ shipped` row must have its P-ID mentioned in CHANGELOG, and every
+CHANGELOG "closes P#.#" / "completes P#.#" / "ships P#.#" claim must
+land in a ✅ roadmap row.
+
+Use **"addresses" / "lands" / "starts"** for partial / sub-item work
+that doesn't yet justify flipping the roadmap row. Reserve
+**"closes" / "completes" / "ships"** for entries that warrant the
+status bump. The test ignores "Partial close" prefixes; everything
+else triggers.
+
+## Rule 15 — Plan-index keeps pace
+When you ship, abandon, or rename a plan under
+`docs/superpowers/plans/`, update its row in
+`docs/superpowers/plans/README.md` in the **same commit**. New plan
+file → add a row. Plan finished → flip to `✅`. Plan superseded →
+flip to `📦`. The `plan-index-drift` test in
+`cli/test/plan-index-drift.test.ts` enforces (A) every plan file has
+a row, (B) every row references an existing file, (C) no `🚧`
+in-progress plan has all its `Create: \`<path>\`` files already on
+disk (file-existence is the strongest evidence of shipping), and
+(D) the `**Total: N plans**` footer matches the actual counts.
