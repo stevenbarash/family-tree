@@ -80,3 +80,66 @@ test('wai i18n sync: errors on unknown locale', async () => {
 
   await rm(root, { recursive: true });
 });
+
+test('wai i18n sync: passes related-translation context to translator', async () => {
+  const root = join(tmpdir(), `whoami-i18n-related-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await mkdir(join(root, 'pages', 'ru'), { recursive: true });
+  // Canonical references three wikilinks; two have existing ru translations.
+  await writeFile(
+    join(root, 'pages', 'en', 'faina-krasnova.md'),
+    "---\nschemaVersion: 1\ntitle: Faina Krasnova\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nFaina was sister of [[Boris Krasnov]] and [[Eduard Krasnov]] and a member of the [[Krasnov family]] line.",
+  );
+  await writeFile(
+    join(root, 'pages', 'en', 'boris-krasnov.md'),
+    "---\nschemaVersion: 1\ntitle: Boris Krasnov\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\n",
+  );
+  await writeFile(
+    join(root, 'pages', 'ru', 'boris-krasnov.md'),
+    "---\nschemaVersion: 1\ntitle: Борис Краснов\nlang: ru\ntranslation_of: boris-krasnov\ncanonical_sha: abc\ntranslated_at: '2026-05-17'\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\n",
+  );
+  await writeFile(
+    join(root, 'pages', 'en', 'eduard-krasnov.md'),
+    "---\nschemaVersion: 1\ntitle: Eduard Krasnov\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\n",
+  );
+  await writeFile(
+    join(root, 'pages', 'ru', 'eduard-krasnov.md'),
+    "---\nschemaVersion: 1\ntitle: Эдуард Краснов\nlang: ru\ntranslation_of: eduard-krasnov\ncanonical_sha: abc\ntranslated_at: '2026-05-17'\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\n",
+  );
+  // [[Krasnov family]] has no ru translation — should be silently skipped.
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  let captured: { relatedTranslations?: unknown } | null = null;
+  const captureTranslator: Translator = async (req) => {
+    captured = { relatedTranslations: req.relatedTranslations };
+    return {
+      body: req.canonicalBody,
+      talk: '## Unresolved\n\n## Resolved\n',
+      titleTranslation: `[${req.locale}] captured`,
+    };
+  };
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root,
+    slug: 'faina-krasnova',
+    locale: 'ru',
+    translator: captureTranslator,
+    write: (s) => { stdout += s; },
+  });
+
+  assert.ok(captured, 'translator should have been called');
+  const related = (captured as { relatedTranslations?: { slug: string; enTitle: string; localeTitle: string }[] }).relatedTranslations;
+  assert.ok(Array.isArray(related), 'relatedTranslations should be an array');
+  assert.equal(related!.length, 2, 'two of three wikilinked slugs have ru translations');
+  const slugs = related!.map((r) => r.slug).sort();
+  assert.deepEqual(slugs, ['boris-krasnov', 'eduard-krasnov']);
+  const boris = related!.find((r) => r.slug === 'boris-krasnov');
+  assert.equal(boris?.enTitle, 'Boris Krasnov');
+  assert.equal(boris?.localeTitle, 'Борис Краснов');
+  assert.match(stdout, /2 related translation/);
+
+  await rm(root, { recursive: true });
+});

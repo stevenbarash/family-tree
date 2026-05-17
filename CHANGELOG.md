@@ -29,6 +29,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Translation prompt enriched with related-slug context:** `wai i18n sync` now scans the canonical for `[[wikilinks]]`, looks up which referenced slugs already have a translation in the target locale, and passes the (English title → locale title) pairs as `RELATED_TRANSLATIONS_OR_NONE` context to the translator. Lets the agent mirror established surname/given-name renderings across sibling articles instead of inventing fresh transliterations and creating cross-page drift. Acts at generation time — prevents drift rather than detecting it. Closes the highest-leverage gap in the translation-backfill methodology surfaced by the 78-article first pass.
+
 - **Sex-aware translation pipeline:** `DerivedRecord.sex` (M/F/U) now surfaced from the GEDCOM `SEX` tag through to the translator prompt. `wai i18n sync` looks up the linked GEDCOM record's sex and passes it via the `SUBJECT_SEX` template variable so future translations pick gendered past-tense verbs correctly per language (Russian `родилась` vs `родился`, Hebrew `נפטרה` vs `נפטר`, etc.). The 23 already-translated articles default masculine until re-sync.
 
 - **Agent translator (default for `wai i18n sync`):** the command now invokes the editor agent via the harness adapter (`writing-articles` skill, new `translate` prompt template) and writes the resulting translation + talk file. Pass `--stub` to fall back to the offline echo translator (tests, dry runs, CI without a harness). Prompt template lives at `plugins/whoami/skills/writing-articles/prompt-templates/translate.md`. Completes Plan 3 Task 11.

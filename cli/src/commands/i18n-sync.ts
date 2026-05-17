@@ -21,11 +21,25 @@
  */
 
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { parsePage } from '@core/pages/frontmatter.ts';
+import { toSlug } from '@core/pages/slug.ts';
 import { isLocale, TARGET_LOCALES, type Locale } from '@core/i18n/index.ts';
+
+/**
+ * A previously-established (English title → target-locale title) pair
+ * for a slug that appears as a [[wikilink]] in the canonical we're now
+ * translating. Passed to the translator so it can mirror surname/given-
+ * name renderings already settled by sibling articles instead of
+ * inventing fresh transliterations and creating cross-page drift.
+ */
+export interface RelatedTranslation {
+  slug: string;
+  enTitle: string;
+  localeTitle: string;
+}
 
 export interface TranslateRequest {
   canonicalBody: string;
@@ -36,6 +50,10 @@ export interface TranslateRequest {
    *  gendered verb forms in languages that require it (Russian past tense,
    *  Hebrew past tense, etc.). */
   subjectSex?: 'M' | 'F' | 'U';
+  /** Title pairs for wikilinked slugs that have already been translated
+   *  into this locale. Lets the translator follow established conventions
+   *  (e.g. surname renderings) instead of drifting. */
+  relatedTranslations?: RelatedTranslation[];
   existingTranslation?: string;
   existingTalkResolved?: string;
 }
@@ -107,13 +125,24 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
     ? extractResolvedSection(await readFile(existingTalkPath, 'utf8'))
     : undefined;
 
+  const relatedTranslations = collectRelatedTranslations(
+    opts.rootDir,
+    canonicalPage.body,
+    opts.locale as Locale,
+    opts.slug,
+  );
+
   opts.write(`translating ${opts.slug} -> ${opts.locale}...\n`);
+  if (relatedTranslations.length > 0) {
+    opts.write(`  ${relatedTranslations.length} related translation(s) found in ${opts.locale}\n`);
+  }
 
   const response = await opts.translator({
     canonicalBody: canonicalPage.body,
     canonicalMeta: canonicalPage.meta as unknown as Record<string, unknown>,
     locale: opts.locale as Locale,
     subjectSex,
+    relatedTranslations,
     existingTranslation,
     existingTalkResolved,
   });
@@ -160,4 +189,64 @@ ${response.talk}
 function extractResolvedSection(talkBody: string): string | undefined {
   const match = talkBody.match(/##\s+Resolved\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   return match ? match[1]!.trim() : undefined;
+}
+
+/**
+ * Walk every [[wikilink]] in the canonical body. For each slug, check
+ * whether a translation already exists at pages/{locale}/<slug>.md. If
+ * yes, extract its English canonical title + its translated title, so
+ * the translator can mirror naming conventions across the article set
+ * instead of inventing fresh renderings.
+ */
+function collectRelatedTranslations(
+  rootDir: string,
+  canonicalBody: string,
+  locale: Locale,
+  currentSlug: string,
+): RelatedTranslation[] {
+  // Wiki convention: [[Display Title]] OR [[slug|Display Title]]. The
+  // first form requires slugification; the second pre-slugified form is
+  // taken as-is. toSlug() handles both (it's idempotent on slug input).
+  const wikilinkRe = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
+  const slugs = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = wikilinkRe.exec(canonicalBody)) !== null) {
+    const raw = m[1]?.trim().replace(/\.md$/, '');
+    if (!raw || raw.startsWith('#')) continue;
+    const slug = toSlug(raw);
+    if (!slug || slug === currentSlug) continue;
+    slugs.add(slug);
+  }
+
+  const out: RelatedTranslation[] = [];
+  for (const slug of slugs) {
+    const enPath = join(rootDir, 'pages', 'en', `${slug}.md`);
+    const localePath = join(rootDir, 'pages', locale, `${slug}.md`);
+    if (!existsSync(enPath) || !existsSync(localePath)) continue;
+
+    const enTitle = extractTitle(enPath);
+    const localeTitle = extractTitle(localePath);
+    if (!enTitle || !localeTitle) continue;
+
+    out.push({ slug, enTitle, localeTitle });
+  }
+
+  out.sort((a, b) => a.slug.localeCompare(b.slug));
+  return out;
+}
+
+/**
+ * Read just the `title:` line out of a markdown frontmatter without
+ * pulling in a YAML parser. The format is stable enough that a regex
+ * on the first ~4KB is sufficient and keeps the CLI dep-free.
+ */
+function extractTitle(path: string): string | undefined {
+  try {
+    const head = readFileSync(path, 'utf8').slice(0, 4096);
+    const titleMatch = head.match(/^title:\s*(.+?)\s*$/m);
+    if (!titleMatch) return undefined;
+    return titleMatch[1]?.trim().replace(/^['"]|['"]$/g, '');
+  } catch {
+    return undefined;
+  }
 }

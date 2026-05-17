@@ -22,6 +22,16 @@ When the subject sex is `unknown`, default to masculine forms but log
 the default as a `[name-transliteration]` or `[other]` talk entry so a
 human reviewer can correct it if the subject's sex becomes known.
 
+## Related translations already in this locale
+
+{{RELATED_TRANSLATIONS_OR_NONE}}
+
+These pairs are the project's established conventions for surname and
+given-name rendering. Use them. If this article introduces a NEW name
+(no related-translation match), pick the most natural rendering for
+this locale and log the choice as a `[name-transliteration]` talk
+entry — your choice becomes the convention for future siblings.
+
 ## Source article
 
 Title: {{TITLE}}
