@@ -25,6 +25,7 @@ import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
 import { runGrepClaims } from './commands/grep-claims.js';
 import { runAuditDates } from './commands/audit-dates.js';
+import { runI18nStatus } from './commands/i18n-status.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
@@ -110,6 +111,10 @@ Quality:
                               records, and page prose. Exits 1 when any are
                               found, so it can run in pre-commit / CI.
         [--json]                Machine-readable output
+  i18n status                 List every (slug × target-locale) pair with its
+                              computed translation status (current / stale /
+                              review / missing) and unresolved talk-entry count.
+                              Tab-separated output for grep / sort.
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -454,6 +459,18 @@ async function main(): Promise<number> {
           write,
         });
         return code;
+      }
+      case 'i18n': {
+        const sub = args.positional[0];
+        if (sub !== 'status') {
+          process.stderr.write(`i18n: unknown subcommand '${sub ?? ''}'. Known: status.\n`);
+          return 2;
+        }
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        await runI18nStatus({ rootDir: root, write });
+        return 0;
       }
       case 'grep-claims': {
         const root = process.env.WHOAMI_ROOT
