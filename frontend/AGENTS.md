@@ -143,3 +143,13 @@ add per-locale reads.
 - **Directional icons mirror under RTL.** Add `rtl:scale-x-[-1]` to chevrons, arrows, and other directional iconography. Non-directional icons (clock, search magnifier, calendar) do NOT mirror — leave them alone.
 - **Family-tree spatial mirroring.** Siblings flow horizontally; under `dir="rtl"`, default `flex-row` reverses automatically. Vertical relationships (ancestors above, descendants below) are unaffected. `flex-row-reverse` is a hardcoded reversal that does NOT auto-flip — use only when you want the reverse-from-natural ordering regardless of locale.
 - **Hebrew calendar dates** are NOT default. `Intl.DateTimeFormat("he", { ... })` renders Gregorian dates in Hebrew script — that's the current default. Hebrew calendar (`{ calendar: 'hebrew' }`) is per-page or per-event opt-in (e.g., yahrzeit dates).
+
+**Translation pipeline (Plan 3):**
+
+- **Translation file frontmatter** carries `translation_of: <slug>`, `canonical_sha: <full-git-sha>`, `translated_at: <iso-date>`, `lang: <locale>`. `translation_status` is COMPUTED at render time, not stored.
+- **Status is computed** by `core/src/i18n/status.ts` from `(translation canonical_sha, head canonical_sha, unresolved-talk-entries)`. Returns `current | stale | review | missing`.
+- **Talk files** at `pages/{locale}/<slug>.translation.talk.md` are English-only audit logs of agent editorial choices. Users resolve entries by ticking `[ ]` → `[x]`. Once unresolved-count hits zero, status flips to `current` on next render.
+- **Missing translations fall back** to canonical EN content; rendered with a missing-translation banner.
+- **Use `getTranslationInfo(slug, locale)` from `lib/server-services`** when rendering an article — it returns `{ status, unresolvedCount, page }` ready to pass to the banner + body.
+- **`messages/{locale}.d.json.ts` is auto-generated** by next-intl's `createMessagesDeclaration` plugin during `next build` / `next dev`. It's gitignored. If you add a new namespace to `en.json` and tsc complains the path doesn't exist, run `next build` (or restart dev server) to regenerate the declaration. This is a known sharp edge that occasionally trips agents.
+- **`wai i18n status`** lists every (slug × locale) with its computed status. `wai i18n sync <slug> <locale>` invokes the editor agent via the harness adapter to produce a translation + talk file. Pass `--stub` for offline / dry-run testing (echoes canonical content with placeholder talk entry).
