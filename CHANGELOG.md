@@ -29,6 +29,7 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 - **Russian translation:** `frontend/messages/ru.json` — LLM-drafted translation of all UI chrome strings; Slavic ICU plural categories (one/few/many/other). Human review pending.
 - **Ukrainian translation:** `frontend/messages/uk.json` — LLM-drafted; Slavic ICU plural categories (one/few/many/other). Human review pending.
+- **Hebrew translation:** `frontend/messages/he.json` — LLM-drafted; Hebrew ICU plural categories (one/two/many/other); RTL script. Human review pending.
 
 - **Content migration:** `PAGES_DIR` flipped from `$WHOAMI_ROOT/pages` to `$WHOAMI_ROOT/pages/en`. All article and talk-page files in the data repo were `git mv`d under `pages/en/` in a separate commit there. The frontend's article loader (PageStore) stays locale-blind in Plan 1 — Plan 3 will add per-locale reads.
 
