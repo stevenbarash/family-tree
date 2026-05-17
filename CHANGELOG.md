@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Fixed
 
+- **Async pages use `getTranslations`, not `useTranslations`:** all async server components under `frontend/app/[locale]/` were calling `useTranslations()` which is only valid in sync server components or client components — runtime crash with `Error: useTranslations is not callable within an async component`. Converted to `await getTranslations({ locale, namespace })` from `next-intl/server`. Affected: HomePage, ChangelogPage, FamilyPage, SearchPage, FamilyTreePage. The static-rendering canary test (skipped pending force-dynamic removal) would have caught this earlier.
+
 - **CLI pages path:** `core/src/paths.ts` and `cli/src/index.ts` default `pagesDir` flipped from `pages/` to `pages/en/`. Closes a regression from the multilingual content migration where `wai read <slug>` looked at the pre-migration path.
 
 ### Added

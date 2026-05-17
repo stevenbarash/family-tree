@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { setRequestLocale } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { getCachedList, getCachedSnapshots, getRecentlyRevised } from '@/lib/server-services';
 import { getFamilyTree } from '@/lib/family';
@@ -33,8 +32,10 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = useTranslations('Page.Home');
-  const tMonths = useTranslations('Months.long');
+  const [t, tMonths] = await Promise.all([
+    getTranslations({ locale, namespace: 'Page.Home' }),
+    getTranslations({ locale, namespace: 'Months.long' }),
+  ]);
 
   const { list } = await getCachedList();
   const live = list.filter(p => !p.isTalk && !p.isArchived);

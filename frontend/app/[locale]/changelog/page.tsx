@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import type { ReactElement } from 'react';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
 import { getChangelog, renderChangelogMarkdown } from '@/lib/changelog';
 import { VersionBlock } from '@/components/changelog/version-block';
 import { GroupBlock } from '@/components/changelog/group-block';
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
 export default async function ChangelogPage({ params }: { params: Promise<{ locale: Locale }> }): Promise<ReactElement> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = useTranslations('Page.Changelog');
+  const t = await getTranslations({ locale, namespace: 'Page.Changelog' });
 
   const doc = await getChangelog();
   const intro = doc.intro ? await renderChangelogMarkdown(doc.intro) : null;

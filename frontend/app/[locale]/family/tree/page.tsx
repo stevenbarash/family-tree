@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { ArrowLeft, Home } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
@@ -64,7 +63,7 @@ function abridgeCrumbs(crumbs: Crumb[]): AbridgedCrumb[] {
 export default async function FamilyTreePage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = useTranslations('Page.FamilyTree');
+  const t = await getTranslations({ locale, namespace: 'Page.FamilyTree' });
 
   const sp = await searchParams;
   const rootRecord = sp.person ?? SELF_RECORD;

@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { setRequestLocale } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
 import { searchAndJoin } from '@/lib/server-services';
 
@@ -24,7 +23,7 @@ function titleCasePlace(bucket: string): string {
 export default async function SearchPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = useTranslations('Page.Search');
+  const t = await getTranslations({ locale, namespace: 'Page.Search' });
 
   const { q = '', type, place: placeRaw } = await searchParams;
   const trimmed = q.trim();
