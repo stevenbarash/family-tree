@@ -181,6 +181,8 @@ wai check                                # run drift detectors
 wai check --fix --only format,schema     # auto-fix safe categories
 wai check --only consistency             # opt-in talk-vs-live drift detector
                                          #   (citation is also opt-in via --only)
+wai audit dates                          # list ambiguous slash dates needing
+                                         #   manual disambiguation
 wai healthz                              # check server reachability
 wai doctor                               # diagnose dev-env (server, version, paths)
 wai config server <url>                  # set the wiki server URL

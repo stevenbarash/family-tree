@@ -23,6 +23,23 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai audit dates` — slash-date ambiguity report (P0.3)**
+  *(2026-05-17)*. New CLI command that lists every ambiguous slash
+  date (m/d/y vs d/m/y when both fields ≤ 12) across the GEDCOM
+  source (`genealogy/barash-tree.ged`), the derived YAMLs
+  (`genealogy/derived/*.yml`), and page prose (`pages/**/*.md`).
+  Output is grouped by source with file path, line, column, and a
+  trimmed context snippet; `--json` for tooling; exit code 1 when
+  any ambiguous date is found, so the command is wireable into
+  pre-commit hooks or CI. Closes the third leg of P0.3 — slash
+  ambiguity detection in `core/src/format/dates.ts` and the `?`
+  glyph in `frontend/components/directives/infobox-person.tsx` were
+  already shipped; this adds the listing report the roadmap called
+  for. Pure scanner lives at `core/src/checks/ambiguous-dates.ts`;
+  CLI wrapper at `cli/src/commands/audit-dates.ts`. Current user
+  data has zero hits, so the command lands as a forward-looking
+  guardrail rather than a remediation report.
+
 - **Agent prompts refreshed against the live CLI surface (P0.1)**
   *(2026-05-17)*. `plugins/whoami/CLAUDE.md` and
   `plugins/whoami/agents/editor.md` previously documented only the

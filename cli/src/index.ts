@@ -24,6 +24,7 @@ import { runHealthz } from './commands/healthz.js';
 import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
 import { runGrepClaims } from './commands/grep-claims.js';
+import { runAuditDates } from './commands/audit-dates.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
@@ -104,6 +105,11 @@ Quality:
         [--json]                 Machine-readable output
                                  Categories: format, data, schema, coverage, consistency, citation
                                  Default set: format, data, schema, coverage (NOT consistency, NOT citation)
+  audit dates                 List every ambiguous slash date (m/d/y vs d/m/y
+                              when both fields ≤ 12) across the GEDCOM, derived
+                              records, and page prose. Exits 1 when any are
+                              found, so it can run in pre-commit / CI.
+        [--json]                Machine-readable output
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -430,6 +436,22 @@ async function main(): Promise<number> {
           write,
           writeErr: (s) => process.stderr.write(s),
           writeFile: (file, content) => writeFileSync(file, content),
+        });
+        return code;
+      }
+      case 'audit': {
+        const sub = args.positional[0];
+        if (sub !== 'dates') {
+          process.stderr.write(`audit: unknown subcommand '${sub ?? ''}'. Known: dates.\n`);
+          return 2;
+        }
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        const code = runAuditDates({
+          rootDir: root,
+          json: !!args.flags.json,
+          write,
         });
         return code;
       }

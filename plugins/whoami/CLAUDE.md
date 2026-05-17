@@ -107,6 +107,10 @@ wai history <slug>              # pipeline-relevant commits for the page;
 wai check                       # run drift detectors (see below).
                                 #   --fix, --only A,B, --fail-on A,B,
                                 #   --min-severity info|warn|error
+wai audit dates                 # list every ambiguous slash date (m/d/y vs
+                                #   d/m/y when both fields ≤ 12) across the
+                                #   GEDCOM, derived records, and page prose.
+                                #   Exits 1 when any are found.
 ```
 
 ## Removed in the v2 markdown migration
