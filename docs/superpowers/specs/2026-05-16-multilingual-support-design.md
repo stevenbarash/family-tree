@@ -53,6 +53,14 @@ right-to-left layout.
    Type-safe message keys. ICU pluralization that handles Russian
    and Ukrainian (`one/few/many/other`) and Hebrew (`one/two/many/
    other`) correctly from day one.
+7. **Translation accuracy is auditable.** Every translation carries
+   a per-locale talk file where the agent logs every non-trivial
+   editorial choice it made (name transliterations, idiom
+   handling, register selection, ambiguous places). The talk file
+   is a living checklist: until you tick every entry off, the
+   translation is not considered `current` — the site renders a
+   review banner and `wai i18n status` reports it. This is the
+   mechanism that turns "translated" into "accurately translated."
 
 ## Non-goals
 
@@ -62,9 +70,12 @@ right-to-left layout.
 - **Editorial guide / plugin translation.** Agent-authoring guides
   in `plugins/whoami/` stay English — they're written for the
   authoring agent, not the wiki reader.
-- **Talk page translation.** Talk pages are an internal research
-  log, append-only, agent-facing. They stay English. Revisit if a
-  human research collaborator needs them in another language.
+- **Talk page translation.** Article talk pages (`<slug>.talk.md`,
+  the research log) are an internal research log, append-only,
+  agent-facing. They stay English. Revisit if a human research
+  collaborator needs them in another language. (Distinct from the
+  per-translation *translation talk file* introduced below, which
+  is part of the translation review pipeline.)
 - **Machine translation at runtime.** Articles are agent-translated
   with full editorial care, not Google-Translated on the fly. The
   whole point of the wiki is encyclopedic quality; runtime MT
@@ -407,7 +418,7 @@ lang: ru
 translation_of: abby-rickelman   # slug; identifies the canonical
 canonical_sha: a3f2c19           # git hash of pages/en/abby-rickelman.md at translation time
 translated_at: 2026-05-16
-translation_status: current      # current | stale
+# translation_status is NOT stored — it's computed (see below).
 # All other frontmatter (owner, type, gedcom, categories, aliases)
 # is read from the canonical file at load time — not duplicated here.
 ```
@@ -419,6 +430,19 @@ tracking fields. This keeps structural data single-sourced — if the
 GEDCOM record ID or article type changes on canonical, the change
 takes effect across all language versions without per-translation
 edits.
+
+**Translation status is computed, not stored.** Three states, each
+derivable from disk state:
+
+| State        | Condition                                                                                       |
+|--------------|--------------------------------------------------------------------------------------------------|
+| `current`    | `canonical_sha` matches `HEAD:pages/en/<slug>.md` AND the translation talk file has zero unresolved entries |
+| `stale`      | `canonical_sha` does not match `HEAD:pages/en/<slug>.md` (regardless of talk file)              |
+| `review`     | `canonical_sha` matches HEAD AND the translation talk file has one or more unresolved entries   |
+
+Computing-not-storing the status means the talk file is always
+authoritative: the user resolving entries (ticking `[ ]` → `[x]`)
+flips the rendered status without requiring a metadata edit.
 
 When the canonical changes (any commit touching
 `pages/en/<slug>.md`), `wai i18n status` detects which translations
@@ -467,9 +491,128 @@ The agent produces a faithful translation that:
   hash and `translation_status: current`
 
 The agent does **not** machine-translate at runtime. Translations
-are committed files, version-controlled, reviewable in PRs. First
-10-20 translations get human review before merge; trust grows
-from there.
+are committed files, version-controlled, reviewable in PRs. Every
+translation lands with a paired translation talk file capturing
+the agent's editorial choices (see next section); the user clears
+the talk file before the translation is considered `current`.
+
+### Translation talk files — the accuracy review pipeline
+
+Goal: every translation reflects the canonical accurately, and
+every editorial choice the agent made is auditable.
+
+**One translation talk file per translation:**
+
+```
+pages/ru/abby-rickelman.md                       # the translation
+pages/ru/abby-rickelman.translation.talk.md      # paired talk file
+```
+
+The talk file is **English-only** (same as article talk files) so
+a reader can review the agent's reasoning without being fluent in
+the target language. It's created or updated by `wai i18n sync`
+in the same operation that writes the translation.
+
+**Logging threshold: all non-trivial choices.** The agent appends
+an entry every time it made a deliberate editorial decision —
+name transliteration variants, idiom translations, register
+selection, ambiguous place names, citations whose nuance shifted,
+date format choices, anything where a careful human translator
+would pause. Routine sentence-level translation (no real choice
+to make) produces no entry. Empty talk file = the agent reports
+no deviations to flag.
+
+**File format:**
+
+```markdown
+---
+type: translation-talk
+translation_of: abby-rickelman
+lang: ru
+canonical_sha_when_logged: a3f2c19
+synced_at: 2026-05-17
+---
+
+# Translation notes — Russian (Эбби Рикельман)
+
+## Unresolved
+
+- [ ] **[name-transliteration]** Translated "Abby" as "Эбби" (phonetic).
+  Alternative: "Абигейл" (formal full name). Chose phonetic because the
+  canonical uses informal "Abby" throughout. Resolve by confirming Эбби
+  or editing the translation to "Абигейл" and ticking.
+
+- [ ] **[idiom]** Canonical: "She had a knack for languages." Translated
+  as "Ей легко давались языки." Lost the colloquial warmth of "knack."
+  Alternative: "У неё был дар к языкам" (more formal). Resolve by
+  confirming or editing.
+
+- [ ] **[place-historical]** Canonical mentions "Kiev" in a 1942 context.
+  Translated as "Киев" (standard Russian historical name; matches the
+  era's usage). Alternative: "Київ" (modern Ukrainian, anachronistic
+  for this period). Resolve by confirming or editing.
+
+## Resolved
+
+- [x] **[place-name]** Translated "Brooklyn" as "Бруклин" (standard
+  Russian transliteration). *Resolved 2026-05-17 by user.*
+```
+
+**Entry conventions:**
+
+- One bullet per choice, opening with `[ ]` (unresolved) or `[x]`
+  (resolved).
+- A bracketed kind tag (`[name-transliteration]`, `[idiom]`,
+  `[place-name]`, `[place-historical]`, `[register]`, `[date-format]`,
+  `[citation-nuance]`, `[cultural]`, `[other]`).
+- The canonical text, the chosen translation, the alternative
+  considered, and a one-sentence rationale.
+- A resolution instruction: how the user signals acceptance vs.
+  what to do if they want the alternative.
+- Resolved entries move into a `## Resolved` section with a date
+  and attribution.
+
+**Resolution mechanic — living checklist, status-gating:**
+
+The talk file is parsed at read time. Any `- [ ]` checkbox in the
+`## Unresolved` section counts. While that count is > 0, the
+translation is `review`, not `current`. The site renders:
+
+> *"This translation is under review. The agent flagged N
+> editorial choices for your confirmation."* (with link to talk file)
+
+The user resolves entries by editing the talk file: change `[ ]` →
+`[x]` (accept the agent's choice), or edit the translation file
+to use the alternative AND tick `[x]` (accept the alternative).
+Either way, the entry moves to `## Resolved` and the unresolved
+count drops. Once the count hits zero, the translation flips to
+`current` on next render — no `wai` command needed.
+
+**Re-sync workflow:**
+
+When the canonical changes and the user runs `wai i18n sync` on
+a stale translation, the agent:
+
+1. Reads the new canonical + the existing translation + the
+   existing talk file's `Resolved` section.
+2. Translates the canonical afresh, preferring resolved choices
+   from the prior talk file (so the user's earlier decisions
+   don't get re-litigated).
+3. Logs new unresolved entries for choices the prior talk file
+   didn't cover.
+4. Preserves the `## Resolved` history.
+
+This way the talk file is the wiki's institutional memory for
+"how do we translate this person's name, this idiom, this
+historical place reference."
+
+**Cost acknowledgement:** This is the rigor-first end of the
+spectrum. With 113 articles × 3 target languages, talk-file
+entries will accumulate — likely 5-20 entries per translation in
+the early going, settling down as recurring patterns get
+established. The translation experience is closer to "agent
+drafts; user reviews and resolves" than "agent ships; user spot-
+checks." That's the intentional trade for accuracy.
 
 ### Sources are language-independent
 
@@ -632,34 +775,80 @@ Acceptance: site chrome reads cleanly in all four languages;
 Hebrew rendering correct on all pages; manual smoke test of
 family tree under each locale.
 
-### Plan 3 — Article translation infrastructure (~3 days)
+### Plan 3 — Article translation infrastructure (~3-4 days)
 
-- `translation_of` + `canonical_sha` + `translation_status`
-  frontmatter spec
-- `wai i18n status` — lists stale and missing translations
+- `translation_of` + `canonical_sha` + `translated_at` frontmatter
+  spec on translation files (note: `translation_status` is
+  computed, not stored)
+- Translation talk file format spec (`<slug>.translation.talk.md`
+  with `## Unresolved` / `## Resolved` sections, bracketed kind
+  tags, checkbox-driven resolution)
+- Talk-file parser in `core/`: counts `- [ ]` entries in
+  `## Unresolved`; returns `{ unresolved: N, resolved: M, entries: [...] }`
+- Computed-status helper in `core/`: returns `current | stale |
+  review | missing` from `(canonical_sha, talk-file unresolved
+  count)`
+- `wai i18n status` — lists every (slug × locale) with its
+  computed state and unresolved-entry count
 - `wai i18n sync <slug> [<locale>]` — agent-driven translation
+  that:
+  - reads canonical, prior translation (if any), prior talk file's
+    `## Resolved` section
+  - emits the translation
+  - emits a fresh `## Unresolved` block in the talk file (carrying
+    forward unresolved entries from prior sync where still
+    applicable); preserves the `## Resolved` history
+  - updates `canonical_sha` and `translated_at`
 - Stale-translation banner component on article pages
-- Missing-translation fallback (renders EN with banner)
-- `~/whoami/genealogy/places-i18n.yml` lookup integrated
-  through infobox, tree, and prose
-- Multilingual cite-vault rendering: original in `<bdi lang>`
-  above translation in active language
+- **Review-translation banner** component: "This translation is
+  under review. The agent flagged N editorial choices for your
+  confirmation." (with link to talk file)
+- Missing-translation fallback (renders canonical EN with banner)
+- `~/whoami/genealogy/places-i18n.yml` lookup integrated through
+  infobox, tree, and prose
+- Multilingual cite-vault rendering: original in `<bdi lang>` above
+  translation in active language; cite-vault schema migration
 - `Intl.Collator(locale)` for all sorted lists in `core/` and
   `frontend/`
-- `alternates.languages` excludes missing translations
+- `alternates.languages` excludes missing AND `review` translations
+  from hreflang (a translation under review shouldn't claim
+  authoritative status)
+- Editor agent prompt update: documents the talk-file logging
+  threshold (all non-trivial choices), kind-tag taxonomy, and the
+  resolution-preservation contract for re-syncs
 
 Acceptance: an article translated via `wai i18n sync` round-trips
-end-to-end: agent reads canonical, writes translation, file
-commits to data repo, `wai i18n status` shows `current`, site
-renders cleanly under `/{locale}/<slug>`, hreflang correct.
+end-to-end. Agent reads canonical, writes translation + talk file,
+files commit to data repo. `wai i18n status` reports the translation
+as `review` with N unresolved entries. User ticks the checkboxes
+in the talk file; `wai i18n status` flips to `current`. Site renders
+cleanly under `/{locale}/<slug>` with no banner; hreflang correct.
 
 ### Plan 4 — Article backfill (ongoing content workflow)
 
-Not a code plan. A user-driven workflow where the editor agent
-translates canonical articles into ru / uk / he as the user
-prioritizes them, with `wai i18n sync` doing the heavy lifting.
-The first batch (10-20 articles) gets human review before merge;
-trust grows from there.
+Not a code plan. A user-driven workflow:
+
+1. User picks a slug (or `wai i18n status --missing` surfaces
+   priorities).
+2. `wai i18n sync <slug> <locale>` runs; agent writes the
+   translation + talk file.
+3. User reviews the talk file's `## Unresolved` entries, edits
+   the translation as needed, ticks `[ ]` → `[x]`.
+4. Translation flips from `review` to `current` automatically
+   on next render. PR merges.
+
+Throughput rises as recurring patterns (name transliterations,
+historical place names, family-specific idioms) accumulate in
+`## Resolved` sections — re-syncs in the same language carry
+those resolutions forward, so the same call doesn't get re-made.
+Translation talk files become institutional memory.
+
+Open question (deferred to Plan 4): batch resolution. If 50
+translations all flag the same `[name-transliteration]` choice
+("translate Светлана as Svetlana, not Sveta"), the user
+shouldn't have to tick 50 boxes. A `wai i18n resolve --pattern
+'name-transliteration: Светлана'` batch command may emerge.
+Hold off until the pattern is observed.
 
 ## Open questions (deferred)
 
