@@ -382,6 +382,28 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Changed
 
+- **`changelog-nudge.sh` hook hardened from warning to enforcement for
+  feat/fix commits** *(2026-05-17)*. The PreToolUse hook on
+  `git commit` previously emitted a soft warning when code files were
+  staged without `CHANGELOG.md`. It now BLOCKS the commit
+  (`permissionDecision: deny`) when the commit subject is
+  `feat:` / `feat(scope):` / `fix:` / `fix(scope):` and CHANGELOG.md
+  isn't staged. Other prefixes (`chore:` / `refactor:` / `docs:` /
+  `test:` / `release:`) keep the soft-warn behavior. Unparseable
+  commit messages (editor buffers, `-F file`) also fall back to the
+  soft warn to avoid false positives. Codifies the new CLAUDE.md
+  Rule 13 ("Commit hygiene").
+
+- **CLAUDE.md Rule 13 — Commit hygiene** *(2026-05-17)*. Three
+  disciplines added to the project's 12-rule template: (a) commit at
+  logical units, not at end of session, (b) feat/fix commits MUST
+  include the CHANGELOG entry in the same commit (enforced by the
+  hardened nudge hook above), (c) push after each batch (local
+  commits are not backups). Codifies friction observed in the
+  2026-05-16/17 marathon session where ~49 files accumulated
+  uncommitted, the CHANGELOG had to be patched up at the end, and
+  nothing reached origin until the closing slicing pass.
+
 - **`findDatesInLine` + `normalizeDatesInBody` exported from
   `core/src/format/dates.ts`** *(2026-05-17)*. The `findDatesInLine`
   date-substring matcher previously lived as a private function in

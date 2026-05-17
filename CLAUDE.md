@@ -62,3 +62,23 @@ If you genuinely think a convention is harmful, surface it. Don't fork silently.
 "Completed" is wrong if anything was skipped silently.
 "Tests pass" is wrong if any were skipped.
 Default to surfacing uncertainty, not hiding it.
+
+## Rule 13 — Commit hygiene
+**Commit at logical units, not at end of session.** When a fix or feature
+task is complete, commit it immediately. Don't leave a working unit
+sitting in working tree — it accumulates with other in-flight work and
+forces a painful slicing pass later.
+
+**`feat:` / `fix:` commits MUST include the CHANGELOG entry in the same
+commit.** The `changelog-nudge.sh` hook enforces this — feat/fix without
+a staged `CHANGELOG.md` is blocked, not warned. If the change has no
+user-facing impact, retitle as `chore:` / `refactor:` / `docs:` /
+`test:` (those prefixes are exempt). The user reads the CHANGELOG to
+understand what shipped; missing entries mean missing visibility.
+
+**Push after each batch.** A meaningful commit (or a small cluster of
+related commits) goes to `origin` before the next batch starts. Local
+commits are not backups. If a session ends with N local-only commits,
+that's N commits' worth of work the user could lose to a laptop
+incident. Default: `git push` after each plan task or each bug-fix
+batch unless the user explicitly says otherwise.
