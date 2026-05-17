@@ -147,7 +147,17 @@
       "placesHeading": "Places",
       "clearPlaces": "clear ×"
     },
-    "Changelog": {}
+    "Changelog": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Revision history",
+      "subtitle": "A complete record of notable changes to —",
+      "heading": "Changelog",
+      "statRevisions": "{count, plural, one {# revision} other {# revisions}}",
+      "statReleased": "{count} released",
+      "statEntries": "{count} entries",
+      "statUpdated": "updated {date}",
+      "onThisPage": "On this page"
+    }
   },
   "Months": {
     "long": {
