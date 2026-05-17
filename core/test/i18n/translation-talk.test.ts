@@ -36,9 +36,13 @@ test("parseTranslationTalk: parses entry kind tags", () => {
 `;
   const result = parseTranslationTalk(body);
   assert.equal(result.entries.length, 2);
-  assert.equal(result.entries[0].kind, "name-transliteration");
-  assert.equal(result.entries[0].resolved, false);
-  assert.equal(result.entries[1].kind, "idiom");
+  const e0 = result.entries[0];
+  const e1 = result.entries[1];
+  assert.ok(e0, "entry 0 exists");
+  assert.ok(e1, "entry 1 exists");
+  assert.equal(e0.kind, "name-transliteration");
+  assert.equal(e0.resolved, false);
+  assert.equal(e1.kind, "idiom");
 });
 
 test("parseTranslationTalk: entries outside sections are ignored", () => {
@@ -62,5 +66,7 @@ test("parseTranslationTalk: malformed entries (no kind tag) are skipped", () => 
 `;
   const result = parseTranslationTalk(body);
   assert.equal(result.unresolved, 1);
-  assert.equal(result.entries[0].kind, "valid");
+  const e0 = result.entries[0];
+  assert.ok(e0, "entry 0 exists");
+  assert.equal(e0.kind, "valid");
 });

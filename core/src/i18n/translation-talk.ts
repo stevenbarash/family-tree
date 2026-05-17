@@ -29,8 +29,8 @@ function extractSections(body: string): { unresolved: string; resolved: string }
   const unresolvedMatch = body.match(/##\s+Unresolved\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   const resolvedMatch = body.match(/##\s+Resolved\s*\n([\s\S]*?)(?=\n##\s|$)/i);
   return {
-    unresolved: unresolvedMatch ? unresolvedMatch[1] : "",
-    resolved: resolvedMatch ? resolvedMatch[1] : "",
+    unresolved: unresolvedMatch ? (unresolvedMatch[1] ?? "") : "",
+    resolved: resolvedMatch ? (resolvedMatch[1] ?? "") : "",
   };
 }
 
@@ -40,8 +40,8 @@ function parseEntries(section: string, sectionResolved: boolean): TalkEntry[] {
   for (const line of lines) {
     const m = line.match(/^-\s*\[([ x])\]\s*\*\*\[([a-z][\w-]*)\]\*\*/i);
     if (!m) continue;
-    const checked = m[1].toLowerCase() === "x";
-    const kind = m[2];
+    const checked = (m[1] ?? "").toLowerCase() === "x";
+    const kind = m[2] ?? "";
     out.push({ kind, resolved: sectionResolved ? true : checked });
   }
   return out;
