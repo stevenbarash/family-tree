@@ -1,25 +1,6 @@
 import type { ReactNode } from 'react';
 import type { BrowserPersonView, BrowserRelationView } from '@/lib/family';
 
-export const GENERATION_HEADING: Record<number, string> = {
-  1: 'Parents',
-  2: 'Grandparents',
-  3: 'Great-grandparents',
-  4: '2× Great-grandparents',
-  5: '3× Great-grandparents',
-  6: '4× Great-grandparents',
-  7: '5× Great-grandparents',
-  8: '6× Great-grandparents',
-};
-
-export const DESCENDANT_HEADING: Record<number, string> = {
-  1: 'Children',
-  2: 'Grandchildren',
-  3: 'Great-grandchildren',
-  4: '2× Great-grandchildren',
-  5: '3× Great-grandchildren',
-};
-
 export function familyTreeHref(person: string): string {
   return `/family/tree?person=${encodeURIComponent(person)}`;
 }
