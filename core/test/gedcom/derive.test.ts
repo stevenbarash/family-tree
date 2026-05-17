@@ -18,6 +18,30 @@ test('deriveIndividual: extracts name and birth', async () => {
   assert.equal(derived.death, null);
 });
 
+test('deriveIndividual: surfaces SEX as M / F / U', async () => {
+  const result = await parseGedcomFile(FIX('tiny.ged'));
+  const m = deriveIndividual(result.individuals.get('I1')!, 'I1', result);
+  const f = deriveIndividual(result.individuals.get('I2')!, 'I2', result);
+  assert.equal(m.sex, 'M');
+  assert.equal(f.sex, 'F');
+});
+
+test('deriveIndividual: missing or invalid SEX → U', () => {
+  // Build a minimal GedcomNode without the SEX tag.
+  const noSexNode = { tag: 'INDI', data: undefined, tree: [{ tag: 'NAME', data: 'Pat /Doe/', tree: [] }] };
+  const garbageSexNode = { tag: 'INDI', data: undefined, tree: [
+    { tag: 'NAME', data: 'Pat /Doe/', tree: [] },
+    { tag: 'SEX', data: 'XYZ', tree: [] },
+  ]};
+  const emptyCtx = { individuals: new Map(), families: new Map(), sources: new Map(), media: new Map() };
+  // @ts-expect-error — minimal ctx shape sufficient for sex derivation
+  const noSex = deriveIndividual(noSexNode, 'IX', emptyCtx);
+  // @ts-expect-error — minimal ctx shape sufficient for sex derivation
+  const garbageSex = deriveIndividual(garbageSexNode, 'IY', emptyCtx);
+  assert.equal(noSex.sex, 'U');
+  assert.equal(garbageSex.sex, 'U');
+});
+
 test('deriveIndividual: name handles "/Surname/" wrapper', async () => {
   const result = await parseGedcomFile(FIX('tiny.ged'));
   const i2 = result.individuals.get('I2')!;

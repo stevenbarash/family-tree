@@ -20,6 +20,7 @@ export function redactRecord(rec: DerivedRecord): DerivedRecord {
   return {
     record: rec.record,
     name: toInitials(rec.name),
+    sex: rec.sex,
     birth: yearOnlyEvent(rec.birth?.date),
     death: null,
     parents: [],

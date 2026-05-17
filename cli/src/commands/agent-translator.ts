@@ -23,6 +23,7 @@ export const agentTranslator: Translator = async (req) => {
       SLUG: string;
       FRONTMATTER_JSON: string;
       BODY: string;
+      SUBJECT_SEX: string;
       EXISTING_TRANSLATION_OR_NONE: string;
       EXISTING_TALK_RESOLVED_OR_NONE: string;
     },
@@ -40,6 +41,7 @@ export const agentTranslator: Translator = async (req) => {
       SLUG: String((req.canonicalMeta as { slug?: unknown }).slug ?? ''),
       FRONTMATTER_JSON: JSON.stringify(req.canonicalMeta, null, 2),
       BODY: req.canonicalBody,
+      SUBJECT_SEX: subjectSexLabel(req.subjectSex),
       EXISTING_TRANSLATION_OR_NONE: req.existingTranslation ?? '(none)',
       EXISTING_TALK_RESOLVED_OR_NONE: req.existingTalkResolved ?? '(none)',
     },
@@ -64,3 +66,15 @@ export const agentTranslator: Translator = async (req) => {
     talk: response.result.talk,
   };
 };
+
+/**
+ * Translate the M/F/U sex code into a human-readable label the prompt
+ * embeds. Non-person articles pass undefined → 'not-a-person', signaling
+ * the translator that gendered-verb concerns don't apply for this article.
+ */
+function subjectSexLabel(sex: 'M' | 'F' | 'U' | undefined): string {
+  if (sex === 'M') return 'male (use masculine past-tense verbs)';
+  if (sex === 'F') return 'female (use feminine past-tense verbs)';
+  if (sex === 'U') return 'unknown (default to masculine and log the choice in talk)';
+  return 'not-a-person (no gendered verb concerns for this article)';
+}

@@ -2,6 +2,26 @@
 
 You are translating an article from English (canonical) into {{LOCALE}}.
 
+## Subject sex (for gendered verb forms)
+
+Subject sex: **{{SUBJECT_SEX}}**
+
+Russian, Ukrainian, Hebrew, and other languages encode subject gender on
+past-tense verbs. Use the form indicated above. Examples:
+
+- Russian "born" — male: `родился`; female: `родилась`
+- Ukrainian "married" — male: `одружився`; female: `одружилася`
+- Hebrew "died" — male: `נפטר`; female: `נפטרה`
+
+When the subject sex is `not-a-person` (this is a family/event/meta
+article rather than an individual's biography), gender-aware verb forms
+don't apply — translate naturally without a single grammatical subject
+needing a gender marker.
+
+When the subject sex is `unknown`, default to masculine forms but log
+the default as a `[name-transliteration]` or `[other]` talk entry so a
+human reviewer can correct it if the subject's sex becomes known.
+
 ## Source article
 
 Title: {{TITLE}}

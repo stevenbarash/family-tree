@@ -31,6 +31,11 @@ export interface TranslateRequest {
   canonicalBody: string;
   canonicalMeta: Record<string, unknown>;
   locale: Locale;
+  /** 'M' / 'F' / 'U' from the linked GEDCOM record, or undefined for non-
+   *  person articles (family, event, meta). Translator uses this to pick
+   *  gendered verb forms in languages that require it (Russian past tense,
+   *  Hebrew past tense, etc.). */
+  subjectSex?: 'M' | 'F' | 'U';
   existingTranslation?: string;
   existingTalkResolved?: string;
 }
@@ -74,6 +79,25 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
     { encoding: 'utf8' },
   ).trim();
 
+  // Look up sex from the linked GEDCOM-derived record, when this article
+  // represents a person. Non-person articles (family/event/meta) won't have
+  // a gedcom.record and the translator gets undefined — correct: there's
+  // no individual subject whose verb forms need gendering.
+  //
+  // Regex extraction (over full YAML parsing) keeps the CLI dep-free; the
+  // derived YAML format is stable and `sex: <code>` is always on its own
+  // line at the top level of the file.
+  const gedcomRecord = (canonicalPage.meta as { gedcom?: { record?: string } }).gedcom?.record;
+  let subjectSex: 'M' | 'F' | 'U' | undefined = undefined;
+  if (gedcomRecord) {
+    const derivedPath = join(opts.rootDir, 'genealogy', 'derived', `${gedcomRecord}.yml`);
+    if (existsSync(derivedPath)) {
+      const body = await readFile(derivedPath, 'utf8');
+      const match = body.match(/^sex:\s*([MFU])\s*$/m);
+      if (match) subjectSex = match[1] as 'M' | 'F' | 'U';
+    }
+  }
+
   const existingTranslationPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.md`);
   const existingTalkPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.translation.talk.md`);
   const existingTranslation = existsSync(existingTranslationPath)
@@ -89,6 +113,7 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
     canonicalBody: canonicalPage.body,
     canonicalMeta: canonicalPage.meta as unknown as Record<string, unknown>,
     locale: opts.locale as Locale,
+    subjectSex,
     existingTranslation,
     existingTalkResolved,
   });
