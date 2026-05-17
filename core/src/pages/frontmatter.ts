@@ -77,8 +77,10 @@ function renderFrontmatter(meta: PageMeta): string {
   const lines: string[] = ['---'];
   lines.push(`schemaVersion: ${meta.schemaVersion}`);
   lines.push(`title: ${yamlScalar(meta.title)}`);
-  lines.push(`owner: ${meta.owner}`);
-  lines.push(`editors: ${flowArray(meta.editors)}`);
+  if (meta.author) lines.push(`author: ${yamlScalar(meta.author)}`);
+  // owner/editors are deprecated; preserve on round-trip when present.
+  if (meta.owner) lines.push(`owner: ${meta.owner}`);
+  if (meta.editors !== undefined) lines.push(`editors: ${flowArray(meta.editors)}`);
   lines.push(`type: ${meta.type}`);
   lines.push(`aliases: ${flowArray(meta.aliases)}`);
   lines.push(`categories: ${flowArray(meta.categories)}`);

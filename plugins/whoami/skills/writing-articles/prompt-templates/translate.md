@@ -72,6 +72,19 @@ Body (markdown):
 
 5. PRESERVE the prior `## Resolved` section verbatim (don't re-litigate decisions the user already made).
 
+## Authorship attribution
+
+The pipeline will record this translation's authorship in the
+output frontmatter as `author: <model name>`. You do NOT need to
+write that line yourself — the pipeline injects it from the
+`WAI_AUTHOR_MODEL` env var (default `Claude Opus 4.7`). Just return
+the body without any `author:` / `owner:` / `editors:` fields.
+
+If you produce additional frontmatter blocks inside the body (e.g.
+copying the canonical's `type:` / `categories:` / `gedcom:` block),
+do NOT include `owner:` or `editors:` — those have been retired in
+favor of the pipeline-injected `author:`.
+
 ## Output format
 
 Return a JSON object with three keys (no markdown fence, just the JSON):

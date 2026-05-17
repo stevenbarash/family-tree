@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ## [Unreleased] — v2 development
 
+### Changed
+
+- **LLM-author attribution replaces `owner`/`editors`:** new `author` frontmatter field records the actual LLM model that wrote a page (e.g. `Claude Opus 4.7`). `owner` and `editors` are now deprecated but still parse for backwards compatibility; the serializer preserves them on round-trip. `wai i18n sync` injects `author:` into both the translation file and the translation-talk file from `WAI_AUTHOR_MODEL` (default `Claude Opus 4.7`). Existing translations + canonical EN articles backfilled to `Claude Opus 4.7` in the same session (data-repo commits `f877ced` and `4ac54fb`). Schema: `core/src/pages/types.ts` adds `author?: string`; `owner` and `editors` made optional. Frontend strip shows the new `author:` line. Prompt template (`plugins/whoami/skills/writing-articles/prompt-templates/translate.md`) documents the new convention so the translator agent doesn't re-introduce `owner:`.
+
 ### Fixed
 
 - **Async pages use `getTranslations`, not `useTranslations`:** all async server components under `frontend/app/[locale]/` were calling `useTranslations()` which is only valid in sync server components or client components — runtime crash with `Error: useTranslations is not callable within an async component`. Converted to `await getTranslations({ locale, namespace })` from `next-intl/server`. Affected: HomePage, ChangelogPage, FamilyPage, SearchPage, FamilyTreePage. The static-rendering canary test (skipped pending force-dynamic removal) would have caught this earlier.

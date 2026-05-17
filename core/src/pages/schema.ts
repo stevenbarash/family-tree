@@ -26,8 +26,11 @@ const CorrectionSchema = z.object({
 const PageMetaSchema = z.object({
   schemaVersion: z.number().int().positive().default(CURRENT_SCHEMA_VERSION),
   title: z.string().min(1),
-  owner: z.string().min(1),
-  editors: z.array(z.string()),
+  // LLM model attribution. Older pages used owner/editors; both kept
+  // optional during the transition so legacy data still parses.
+  author: z.string().min(1).optional(),
+  owner: z.string().min(1).optional(),
+  editors: z.array(z.string()).optional(),
   type: z.enum(['person', 'family', 'event', 'tree', 'meta']),
   aliases: z.array(z.string()),
   categories: z.array(z.string()),

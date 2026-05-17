@@ -148,9 +148,12 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
   });
 
   const today = new Date().toISOString().slice(0, 10);
+  // LLM-authored content records the actual model. Override via WAI_AUTHOR_MODEL.
+  const authorModel = process.env.WAI_AUTHOR_MODEL ?? 'Claude Opus 4.7';
   const frontmatter = `---
 schemaVersion: ${canonicalPage.meta.schemaVersion}
 title: ${response.titleTranslation}
+author: ${authorModel}
 lang: ${opts.locale}
 translation_of: ${opts.slug}
 canonical_sha: ${canonicalSha}
@@ -160,6 +163,7 @@ translated_at: '${today}'
   const translationFile = `${frontmatter}${response.body}`;
   const talkFile = `---
 type: translation-talk
+author: ${authorModel}
 translation_of: ${opts.slug}
 lang: ${opts.locale}
 canonical_sha_when_logged: ${canonicalSha}
