@@ -134,3 +134,12 @@ add per-locale reads.
   receive translated strings as props from server parents until
   Plan 2 introduces the scoped `<NextIntlClientProvider messages={pick(...)}>`
   pattern.
+
+**RTL conventions (Hebrew):**
+
+- **Use logical Tailwind utilities only.** `ms-`/`me-` not `ml-`/`mr-`; `ps-`/`pe-` not `pl-`/`pr-`; `text-start`/`text-end` not `text-left`/`text-right`; `start-`/`end-` not `left-`/`right-`; `border-s`/`border-e` not `border-l`/`border-r`. The grep test in `frontend/test/rtl-tailwind-sweep.test.ts` blocks new directional usages. The single intentional exception is `components/ui/sheet.tsx` (its `data-[side=left|right]` patterns name a component prop, not layout direction).
+- **`<bdi>` for inline embedded foreign-script text.** Person names, place names, GEDCOM IDs, dates, and any other strings that may render in a different script than the surrounding text must be wrapped in `<bdi>`. Plain `<span dir="ltr">` does NOT isolate — it lets neighboring strong-directional characters bleed in. (Source: W3C "Inline markup and bidirectional text in HTML".)
+- **`<span lang="...">` for embedded foreign-language text.** A Russian name in an English paragraph: `<span lang="ru">Светлана</span>`. Affects screen readers, hyphenation, font selection, and search indexing.
+- **Directional icons mirror under RTL.** Add `rtl:scale-x-[-1]` to chevrons, arrows, and other directional iconography. Non-directional icons (clock, search magnifier, calendar) do NOT mirror — leave them alone.
+- **Family-tree spatial mirroring.** Siblings flow horizontally; under `dir="rtl"`, default `flex-row` reverses automatically. Vertical relationships (ancestors above, descendants below) are unaffected. `flex-row-reverse` is a hardcoded reversal that does NOT auto-flip — use only when you want the reverse-from-natural ordering regardless of locale.
+- **Hebrew calendar dates** are NOT default. `Intl.DateTimeFormat("he", { ... })` renders Gregorian dates in Hebrew script — that's the current default. Hebrew calendar (`{ calendar: 'hebrew' }`) is per-page or per-event opt-in (e.g., yahrzeit dates).
