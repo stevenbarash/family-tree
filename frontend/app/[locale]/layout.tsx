@@ -4,6 +4,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import { routing, LOCALE_DIR } from "@/i18n/routing";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -57,9 +58,14 @@ export default async function LocaleLayout({
         >
           {t("skipToContent")}
         </a>
-        <div id="main-content" tabIndex={-1} className="contents">
-          <NextIntlClientProvider>{children}</NextIntlClientProvider>
-        </div>
+        <NextIntlClientProvider>
+          <div className="border-b border-foreground/10 px-4 py-2 flex justify-end">
+            <LanguageSwitcher />
+          </div>
+          <div id="main-content" tabIndex={-1} className="contents">
+            {children}
+          </div>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
