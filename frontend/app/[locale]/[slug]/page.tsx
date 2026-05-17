@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
 import {
   getPageStore,
   getCachedList,
@@ -7,6 +8,7 @@ import {
   readTalkBody,
   buildNotesView,
 } from '@/lib/server-services';
+import { routing } from '@/i18n/routing';
 import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
@@ -24,8 +26,9 @@ import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PageRoute({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function PageRoute({ params }: { params: Promise<{ locale: string; slug: string }> }) {
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
   const store = getPageStore();
@@ -231,4 +234,13 @@ async function readBodiesForSlugs(
     }),
   );
   return new Map(entries.filter((e): e is [string, string] => e !== null));
+}
+
+export async function generateStaticParams() {
+  const store = getPageStore();
+  const list = await store.list();
+  const slugs = list.filter(p => !p.isTalk && !p.isArchived).map(p => p.slug);
+  return routing.locales.flatMap(locale =>
+    slugs.map(slug => ({ locale, slug })),
+  );
 }

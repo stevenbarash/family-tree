@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Article routes under [locale]/:** `app/[slug]/page.tsx` → `app/[locale]/[slug]/page.tsx`. `generateStaticParams` enumerates all (locale, slug) pairs for static prebuild.
+
 - **Home page localized:** `app/page.tsx` moved to `app/[locale]/page.tsx`; hardcoded English strings ("The Registry", "Continue research", "Recently revised", "All articles", "Talk pages", nav labels, month names, frontier meta, GEDCOM stale-snapshot warning) extracted into `messages/en.json` under `Page.Home` and `Months.long`. Pluralized counts (ancestors, generations, articles, snapshot age in days) use ICU `plural` syntax. The stale-snapshot warning uses `t.rich()` to preserve the inline `<code>` element.
 
 - **Locale-prefixed routes:** Root layout moved to `app/[locale]/layout.tsx`; sets `<html lang dir>`, `setRequestLocale`, `NextIntlClientProvider`. Static rendering preserved via `generateStaticParams` over all four locales.
