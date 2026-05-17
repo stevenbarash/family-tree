@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Content migration:** `PAGES_DIR` flipped from `$WHOAMI_ROOT/pages` to `$WHOAMI_ROOT/pages/en`. All article and talk-page files in the data repo were `git mv`d under `pages/en/` in a separate commit there. The frontend's article loader (PageStore) stays locale-blind in Plan 1 — Plan 3 will add per-locale reads.
+
 - **Directive labels localized:** `infobox-person` and `on-this-day-ribbon` directives now read labels from `Directives.infoboxPerson` and `Directives.onThisDay` namespaces. These render on every article page, so they're the highest-volume translation targets.
 
 - **Changelog page localized:** moved under `[locale]/`; strings extracted to `Page.Changelog`.
