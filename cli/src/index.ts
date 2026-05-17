@@ -26,6 +26,7 @@ import { runCheck } from './commands/check.js';
 import { runGrepClaims } from './commands/grep-claims.js';
 import { runAuditDates } from './commands/audit-dates.js';
 import { runI18nStatus } from './commands/i18n-status.js';
+import { runI18nSync } from './commands/i18n-sync.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
@@ -115,6 +116,11 @@ Quality:
                               computed translation status (current / stale /
                               review / missing) and unresolved talk-entry count.
                               Tab-separated output for grep / sort.
+  i18n sync <slug> <locale>   Translate pages/en/<slug>.md into <locale>,
+                              writing pages/<locale>/<slug>.md and the sibling
+                              <slug>.translation.talk.md. Plan 3 ships with a
+                              stub translator (echoes canonical body); the real
+                              agent pipeline lands in Plan 3 Task 11.
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -462,15 +468,35 @@ async function main(): Promise<number> {
       }
       case 'i18n': {
         const sub = args.positional[0];
-        if (sub !== 'status') {
-          process.stderr.write(`i18n: unknown subcommand '${sub ?? ''}'. Known: status.\n`);
-          return 2;
-        }
         const root = process.env.WHOAMI_ROOT
           ? resolve(process.env.WHOAMI_ROOT)
           : resolve(process.env.HOME!, 'whoami');
-        await runI18nStatus({ rootDir: root, write });
-        return 0;
+        if (sub === 'status') {
+          await runI18nStatus({ rootDir: root, write });
+          return 0;
+        }
+        if (sub === 'sync') {
+          const slug = args.positional[1];
+          const locale = args.positional[2];
+          if (!slug || !locale) {
+            process.stderr.write('Usage: wai i18n sync <slug> <locale>\n');
+            return 2;
+          }
+          // Plan 3 Task 10 ships the stub translator only. Task 11 will
+          // import the real agent translator and flip the default; until
+          // then there is one path.
+          const { stubTranslator } = await import('./commands/i18n-sync-stub.js');
+          await runI18nSync({
+            rootDir: root,
+            slug,
+            locale,
+            translator: stubTranslator,
+            write,
+          });
+          return 0;
+        }
+        process.stderr.write(`i18n: unknown subcommand '${sub ?? ''}'. Known: status, sync.\n`);
+        return 2;
       }
       case 'grep-claims': {
         const root = process.env.WHOAMI_ROOT

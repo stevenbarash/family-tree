@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **`wai i18n sync <slug> <locale>`:** new CLI command writes `pages/{locale}/<slug>.md` + `pages/{locale}/<slug>.translation.talk.md` from the canonical EN article, stamping translation frontmatter (`translation_of`, `canonical_sha`, `translated_at`, `lang`) and a sibling talk file with `## Unresolved` / `## Resolved` sections. Plan 3 ships with a stub translator (echoes canonical body); the real agent pipeline lands in Plan 3 Task 11.
+
 - **`wai i18n status`:** new CLI command lists every (slug × target-locale) pair with its computed translation status (`current` / `stale` / `review` / `missing`) and unresolved translation-talk-entry count. Tab-separated output (`slug\tlocale\tstatus\tunresolved`) for grep / sort / awk. Standalone — reads `$WHOAMI_ROOT/pages/{en,ru,uk,he}/` directly and shells out to `git log -1` for the canonical-EN head SHA.
 
 - **Article translation status detection:** `app/[locale]/[slug]/page.tsx` now resolves translation status per request via `getTranslationInfo(slug, locale)` and renders the appropriate banner. Missing translations fall back to canonical EN content with a "not translated yet" banner.
