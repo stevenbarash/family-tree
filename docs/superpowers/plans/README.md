@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| 🚧 | [`2026-05-17-multilingual-support-plan-2-chrome-translations.md`](./2026-05-17-multilingual-support-plan-2-chrome-translations.md) | Multilingual support — Plan 2: Chrome translations + RTL | LLM-drafted ru/uk/he message files (Slavic and Hebrew ICU plural categories), Tailwind directional-class sweep to logical properties, family-tree RTL mirroring, `<bdi>` patterns on person-name renders, language switcher mounted in layout. After Plan 2 the site chrome reads in all four languages and Hebrew renders RTL. |
 | ✅ | [`2026-05-17-multilingual-support-plan-1-foundation.md`](./2026-05-17-multilingual-support-plan-1-foundation.md) | Multilingual support — Plan 1: Foundation | `next-intl` install, `[locale]` routing, `proxy.ts` middleware, UI-string extraction to `messages/en.json`, content migration to `pages/en/`. Site stays English-only in content but architecturally multilingual. First of four plans toward en/ru/uk/he support. Shipped on `feat/multilingual-foundation` (26 commits). Static-rendering test skipped pending `force-dynamic` removal. |
 | ✅ | [`2026-05-16-cross-page-consistency-detector.md`](./2026-05-16-cross-page-consistency-detector.md) | Cross-page consistency detector | Talk-page-vs-live-page quoted-claim drift detector in `consistency-drift.ts`; catches the Boris/Kelman mix-up class. |
 | ✅ | [`2026-05-16-wikilink-hover-cards.md`](./2026-05-16-wikilink-hover-cards.md) | Wikilink hover-cards | 200ms-delayed page preview on hover over any internal link; portrait + dates + lead, all precomputed at SSR. |
@@ -73,7 +74,7 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
 | ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 40 plans** — 35 shipped (✅), 0 in-progress (🚧), 4 sketches (📝), 1 index (🗂), 0 abandoned (📦).
+**Total: 41 plans** — 35 shipped (✅), 1 in-progress (🚧), 4 sketches (📝), 1 index (🗂), 0 abandoned (📦).
 
 ---
 
