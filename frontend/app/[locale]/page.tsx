@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { getCachedList, getCachedSnapshots, getRecentlyRevised } from '@/lib/server-services';
 import { getFamilyTree } from '@/lib/family';
 import { GENEALOGY_DIR, PAGES_DIR, SELF_RECORD } from '@/lib/env';
@@ -12,6 +14,10 @@ const STALE_SNAPSHOT_DAYS = 30;
 const RECENT_LIMIT = 6;
 const FRONTIER_LIMIT = 4;
 
+type MonthKey = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
+type SideKey = 'sidePaternal' | 'sideMaternal';
+type MissingKey = 'missingFather' | 'missingMother' | 'missingBoth';
+
 function snapshotAgeDays(date: string | undefined): number | null {
   if (!date) return null;
   const ts = new Date(date).getTime();
@@ -19,7 +25,16 @@ function snapshotAgeDays(date: string | undefined): number | null {
   return Math.floor((Date.now() - ts) / 86400000);
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = useTranslations('Page.Home');
+  const tMonths = useTranslations('Months.long');
+
   const { list } = await getCachedList();
   const live = list.filter(p => !p.isTalk && !p.isArchived);
   const talk = list.filter(p => p.isTalk && !p.isArchived);
@@ -32,8 +47,8 @@ export default async function HomePage() {
 
   const now = new Date();
   const todayEvents = getEventsForToday(live, now);
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const dayLabel = `${monthNames[now.getUTCMonth()]} ${now.getUTCDate()}`;
+  const monthKey = String(now.getUTCMonth() + 1) as MonthKey;
+  const dayLabel = t('dayLabel', { month: tMonths(monthKey), day: now.getUTCDate() });
 
   const latestSnap = snapshots[snapshots.length - 1];
   const snapAge = snapshotAgeDays(latestSnap?.date);
@@ -51,33 +66,37 @@ export default async function HomePage() {
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:py-10">
       <header className="mb-10 border-b pb-7">
         <p className="font-display text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground/80">
-          The Registry
+          {t('registry')}
         </p>
         <h1 className="mt-2 text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
           whoami.wiki
         </h1>
         <p className="mt-3 font-mono text-[0.75rem] uppercase tracking-[0.08em] text-muted-foreground/85">
           {joinMeta([
-            ancestors > 0 ? `${ancestors} ancestors across ${generations} generations` : null,
-            `${live.length} ${live.length === 1 ? 'article' : 'articles'}`,
-            snapDate ? `GEDCOM ${snapDate}` : null,
+            ancestors > 0 ? t('ancestorsAcrossGenerations', { ancestors, generations }) : null,
+            t('articlesCount', { count: live.length }),
+            snapDate ? t('gedcomSync', { date: snapDate }) : null,
           ])}
         </p>
         <nav className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <Link href="/family" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Family →</Link>
-          <Link href="/family/tree" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Tree →</Link>
-          <Link href="/search" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Search →</Link>
-          <Link href="/changelog" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Changelog →</Link>
+          <Link href="/family" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navFamily')}</Link>
+          <Link href="/family/tree" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navTree')}</Link>
+          <Link href="/search" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navSearch')}</Link>
+          <Link href="/changelog" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navChangelog')}</Link>
         </nav>
       </header>
 
-      {snapAge !== null && snapAge > STALE_SNAPSHOT_DAYS ? (
+      {snapAge !== null && snapAge > STALE_SNAPSHOT_DAYS && snapDate ? (
         <div className="mb-8 rounded-md border border-amber-300/60 bg-amber-50/60 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-          GEDCOM snapshot is {snapAge} days old (last sync {snapDate}). Run{' '}
-          <code className="rounded bg-amber-100/70 px-1.5 py-0.5 font-mono text-xs dark:bg-amber-500/20">
-            wai sync-gedcom --ged-file ... --notes "refresh"
-          </code>{' '}
-          when you have changes to import.
+          {t.rich('snapshotStale', {
+            days: snapAge,
+            date: snapDate,
+            code: chunks => (
+              <code className="rounded bg-amber-100/70 px-1.5 py-0.5 font-mono text-xs dark:bg-amber-500/20">
+                {chunks}
+              </code>
+            ),
+          })}
         </div>
       ) : null}
 
@@ -86,22 +105,31 @@ export default async function HomePage() {
       {frontier.length > 0 ? (
         <section className="mb-10">
           <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            Continue research
+            {t('continueResearch')}
           </h2>
           <ul className="flex flex-col gap-1.5">
-            {frontier.map(f => (
-              <li key={f.record} className="text-sm">
-                <Link
-                  href={`/family/tree?person=${encodeURIComponent(f.record)}`}
-                  className="underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  {f.name}
-                </Link>{' '}
-                <span className="font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/80">
-                  · gen {f.generation} · {f.side} · missing {f.missing}
-                </span>
-              </li>
-            ))}
+            {frontier.map(f => {
+              const sideKey: SideKey = f.side === 'paternal' ? 'sidePaternal' : 'sideMaternal';
+              const missingKey: MissingKey =
+                f.missing === 'father' ? 'missingFather' : f.missing === 'mother' ? 'missingMother' : 'missingBoth';
+              return (
+                <li key={f.record} className="text-sm">
+                  <Link
+                    href={`/family/tree?person=${encodeURIComponent(f.record)}`}
+                    className="underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    {f.name}
+                  </Link>{' '}
+                  <span className="font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/80">
+                    {t('frontierMeta', {
+                      generation: f.generation,
+                      side: t(sideKey),
+                      missing: t(missingKey),
+                    })}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
@@ -109,7 +137,7 @@ export default async function HomePage() {
       {recent.length > 0 ? (
         <section className="mb-10">
           <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            Recently revised
+            {t('recentlyRevised')}
           </h2>
           <ul className="flex flex-col gap-1.5">
             {recent.map(p => (
@@ -131,7 +159,7 @@ export default async function HomePage() {
 
       <section className="mb-10">
         <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-          All articles ({live.length})
+          {t('allArticles', { count: live.length })}
         </h2>
         <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
           {live.map(p => (
@@ -147,7 +175,7 @@ export default async function HomePage() {
       {talk.length > 0 ? (
         <section>
           <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            Talk pages ({talk.length})
+            {t('talkPages', { count: talk.length })}
           </h2>
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
             {talk.map(p => (
