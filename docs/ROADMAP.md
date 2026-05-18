@@ -4,7 +4,7 @@
 > [May 2026 platform review](./reviews/2026-05-07-platform-review.md)
 > and the in-flight work in the current working tree.
 
-**Last updated:** 2026-05-07
+**Last updated:** 2026-05-18
 **Cadence:** revisit at the end of each completed band, or when a new
 review document lands. Status lines are the source of truth — keep
 them honest.
@@ -22,25 +22,56 @@ the platform review's `S / M / L` shorthand (sittings, days, weeks).
 
 ---
 
-## Now (in working tree, week of 2026-05-04)
+## Now (working tree clean as of 2026-05-18)
 
-The current working tree has four overlapping themes. The PM read is
-that this is **above healthy WIP** and the closing move should be to
-land each theme as its own commit boundary, not a single mega-merge.
+The working tree is empty. Every theme that was open on 2026-05-07
+has either landed (conflicts, redlinks, sex-aware translation,
+family-section refactor) or been superseded by a larger piece of
+work (GEDCOM normalize → full 5.5.1 → 7.0.18 upgrade). See
+[Shipped outside the plan-of-record](#shipped-outside-the-plan-of-record-since-2026-05-07)
+below for the full list.
 
-| Status | Item | Lift | Source | Notes |
-|---|---|---|---|---|
-| 🔧 closing | Note edit-history polish (byline spacing, dead branches) | S | [`research-notes-edits`](./superpowers/plans/2026-05-06-research-notes-edits.md) | Implementation has shipped over 2 weeks; closing the last fixes (commit `1e1ac7b`). **Recommend: tag and call done.** |
-| 🚧 in flight | **P1.5** Conflict-resolution schema | M | [Review §P1.5](./reviews/2026-05-07-platform-review.md#p15--no-conflict-resolution-schema-in-the-data-model) | New: `core/src/family/conflicts.ts`, `frontend/components/family/sections/conflicts-section.tsx`. Land this first — it gates every other P1 data-model item. |
-| 🚧 in flight | **P2.2** Red-links flow | S | [Review §P2.2](./reviews/2026-05-07-platform-review.md#p22--red-links-exist-but-offer-no-creation-flow) | New: `cli/src/commands/redlinks.ts`, `frontend/app/api/redlinks/`, `core/src/pages/redlinks.ts`. Self-contained; can ship as its own PR after conflicts. |
-| 🚧 in flight | GEDCOM normalize layer | S | n/a (pre-emptive) | New: `core/src/gedcom/normalize.ts`, `core/test/gedcom/normalize.test.ts`. Likely the foundation for P0.3 (date ambiguity) and P2.3 (residence overlap merge). **Recommend: write a one-paragraph plan in `plans/` before merging — what is this for?** |
-| 🚧 in flight | Family-section refactor (descendants, family, lifespans, infobox-shell) | S–M | n/a | Multiple frontend section components touched. Looks like UX iteration; **recommend bundling into a single `feat: refactor family sections` commit and noting motivation in the message** so it isn't archaeology later. |
-| 🚧 in flight | **Sex-aware translation pipeline** | S | n/a (sub-item of multilingual support) | Pipeline shipped on `feat/sex-aware-translation`: `sex` field exposed on every `DerivedRecord` from the GEDCOM `SEX` tag, threaded through `wai i18n sync` to the translator prompt so future translations pick gendered past-tense verbs correctly (`родилась`/`נפטרה` for female subjects instead of masculine-default). **What remains:** (a) 2 GEDCOM SEX-tag duplicates in `barash-tree.ged` need dedupe (lines 142, 294 — explicit user authorization required); (b) the 23 already-translated articles need re-sync to pick up the new gendered forms (`wai i18n sync <slug> <locale>` for each); (c) consider Sex-aware ICU `select` on `messages/*.json` strings that currently default masculine. |
+Next pull should be from **Wave 1 (remaining: P2.1)** before moving
+into Wave 2 or Wave 3 — see waves below. The 2026-05-07 PM call to
+reduce WIP from four themes to one was satisfied by 2026-05-15.
 
-> **PM call:** WIP is the single biggest risk in the current branch.
-> Land conflicts → redlinks → normalize → family-sections as separable
-> commits this week. Do **not** start a new theme until the working
-> tree is empty.
+---
+
+## Shipped outside the plan-of-record (since 2026-05-07)
+
+These landed in the 11 days after the platform review but were not on
+the roadmap's wave plan. Listed for honest accounting (Rule 12) and
+because several materially change what's left to do in the planned
+waves — most notably, P3.4 (document evidence as first-class object)
+is now substantially groundwork-complete via the article pipeline,
+and Wave 3's P1.3 / P1.9 reading-surface work has unplanned overlap
+with the home-page ribbon, hover-cards, and relationship strip.
+
+| Item | Plan | Notes |
+|---|---|---|
+| **GEDCOM 5.5.1 → 7.0.18 upgrade** | [plan](./superpowers/plans/2026-05-17-gedcom-7-upgrade.md) | Parser swap to vendored `js-gedcom`; v7 EXID + DATE.PHRASE conventions. Superseded the pre-emptive `GEDCOM normalize layer` row from the old Now band. Unblocks P3.4 features that need richer source/event metadata. |
+| **Multilingual support — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-17-multilingual-support-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-17-multilingual-support-plan-2-chrome-translations.md) · [3](./superpowers/plans/2026-05-17-multilingual-support-plan-3-translation-pipeline.md) | `next-intl` + `[locale]` routing + ru/uk/he chrome translations + per-locale article pipeline (`wai i18n status` / `wai i18n sync`, translation banner). Hebrew renders RTL. **Implication:** the deferred `lang=` work in P2.5 is now a natural follow-on with real surface to attach to. |
+| **Sex-aware translation pipeline** | (no standalone plan) | `sex` field on every `DerivedRecord` threaded through `wai i18n sync` so translations use gendered past-tense forms. Was the last item in the old Now band; merged as PR #10. |
+| **Author/attribution frontmatter** | (no standalone plan; PR #11) | New `author:` PageMeta field for LLM model name. Made `editors[]` optional. Closes the data-model half of P1.2. |
+| **Article pipeline — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-10-article-pipeline-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-10-article-pipeline-plan-2-author-core.md) · [3](./superpowers/plans/2026-05-10-article-pipeline-plan-3-cohort-review.md) | Evidence-drawer commands (`wai narrative`, `wai transcribe`, `wai interview`), `wai author <slug>` orchestrator, `wai author --cohort`, `wai revert`, `wai history`. Materially advances P3.4 (document evidence) and reframes how P3.1 (research frontier) would be operationalized. |
+| **Quality checks Pass 2** | [plan](./superpowers/plans/2026-05-18-quality-checks-pass-2.md) | 4 new `wai check` detectors (NameTranDrift, StaleCanonicalSha — surfaced 534 real stale translations on first run, InfoboxNameDrift, PipelineFrontmatterDrift). + DerivedRecord schema at write boundary + 5-layer frontmatter-drift defense. |
+| **Cross-page consistency detector** | [plan](./superpowers/plans/2026-05-16-cross-page-consistency-detector.md) | Talk-page-vs-live-page quoted-claim drift detector — catches the Boris/Kelman mix-up class of error. |
+| **Wikilink hover-cards** | [plan](./superpowers/plans/2026-05-16-wikilink-hover-cards.md) | 200ms-delayed page preview on hover; portrait + dates + lead, precomputed at SSR. Overlaps P1.3 / P1.9 reading-surface work. |
+| **"This day in family history" ribbon** | [plan](./superpowers/plans/2026-05-16-this-day-in-family-history-ribbon.md) | Home-page almanac — today's births / deaths / marriages from the tree. Partial overlap with P1.3. |
+| **Relationship strip on person pages** | [plan](./superpowers/plans/2026-05-16-relationship-strip-on-person-pages.md) | "Your <relation>" subtitle below every person-page H1, computed server-side from SELF_RECORD. |
+| **`wai doctor` + actionable connection errors** | [plan](./superpowers/plans/2026-05-09-wai-doctor.md) | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
+| **Conflict-resolution schema** | (no standalone plan) | Listed for completeness — fully tracked as P1.5 ✅ in Wave 2 below. |
+| **Red-links flow** | (no standalone plan) | Listed for completeness — fully tracked as P2.2 ✅ in Wave 1 above. |
+| **Commit-slicing pass** | [plan](./superpowers/plans/2026-05-16-commit-slicing.md) | One-off slicing of ~49 uncommitted files into 13 focused commits. Led directly to CLAUDE.md Rule 13 (commit at logical units). |
+
+> **PM read on the unplanned work:** the bulk of it is content/quality
+> infrastructure (article pipeline, multilingual, drift detectors,
+> GEDCOM 7) — not new reader-facing features. The reader-facing
+> exceptions (hover-cards, relationship strip, ribbon) are small
+> drive-bys, not strategy shifts. The plan-of-record's overall
+> sequencing (Waves 3–5 next) is still the right call; the unplanned
+> work strengthens the foundation those waves sit on rather than
+> redirecting them.
 
 ---
 
@@ -57,26 +88,27 @@ the talk page of the relevant plan, not silently re-ordered.
 | ✅ shipped | **P0.1** Strip removed CLI commands from `plugins/whoami/CLAUDE.md` and `agents/editor.md`; add eval smoke test for prompt/CLI drift | S | [Review §P0.1](./reviews/2026-05-07-platform-review.md#p01--agent-prompts-reference-removed-cli-commands) — *Shipped 2026-05-17. Prompts now document the full agent-facing surface (added `author`, `narrative`, `transcribe`, `interview`, `grep-claims`, `redlinks`, `delete`, `note --kind`); pre-existing stale `--include` flag references in editorial-guide also fixed; smoke test at `cli/test/prompt-drift.test.ts` extracts every `wai <cmd>` and `--flag` from the prompts and asserts each is a live CLI surface element.* |
 | ✅ shipped | **P0.3** Flag slash-date ambiguity in `core/src/family/dates.ts`; add `wai audit dates`; render `?` glyph in infobox | S | [Review §P0.3](./reviews/2026-05-07-platform-review.md#p03--slash-date-ambiguity-is-unresolved) — *Shipped 2026-05-17. Detection already existed in `core/src/format/dates.ts` (`normalizeDate` returns `{ ambiguous: true }` for m/d/y vs d/m/y when both ≤ 12) and the infobox `?` glyph at `frontend/components/directives/infobox-person.tsx:180-196` was already wired; this PR closed the remaining gap by adding the **`wai audit dates`** CLI command — a pure `core/src/checks/ambiguous-dates.ts` scanner over the GEDCOM source, derived YAMLs, and page prose, plus a thin CLI wrapper that groups hits by source and exits non-zero on any find. Current user data has zero hits, so the command lands as a forward-looking guardrail for the next batch of raw input.* |
 | ⏳ ready | **P2.1** Move citation directives to design tokens; verify dark-mode contrast | S | [Review §P2.1](./reviews/2026-05-07-platform-review.md#p21--citation-directives-are-visually-disconnected-and-dark-mode-broken) |
-| ⏳ ready | **P2.5** Accessibility hotfix bundle: skip-to-content, alt text on portraits/avatars, `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps) |
+| 🔧 partial | **P2.5** Accessibility hotfix bundle: skip-to-content, alt text on portraits/avatars, `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps) — *Skip-to-content link landed 2026-05-15 (`frontend/app/layout.tsx`); alt text was already correct via `AvatarMonogram`'s `alt=""` + `aria-hidden`. `lang=` on multilingual name spans still deferred — natural follow-on now that the multilingual pipeline (Plans 1–3) is live and per-locale name renders exist.* |
+| ✅ shipped | **P2.2** Red-links flow (`wai redlinks` + `/api/redlinks` + `core/src/pages/redlinks.ts`) | S | [Review §P2.2](./reviews/2026-05-07-platform-review.md#p22--red-links-exist-but-offer-no-creation-flow) — *Shipped 2026-05-09 in commit `839a714`. Surfaces the want-list of unwritten articles for `wai author --cohort missing` and for human selection of the next page to write.* |
 
-> **P0.1 is the highest-priority single item in the project.** The
-> agent loop is the user's primary loop; it is currently broken. Do
-> this before anything else, including landing the in-flight WIP.
+> **Wave 1 status (2026-05-18):** 3 of 4 items shipped (P0.1, P0.3, P2.2),
+> P2.5 partial, only **P2.1** still ⏳. The agent loop is no longer
+> broken; pull P2.1 to close Wave 1, then move on to Wave 2.
 
 ### Wave 2 — Privacy & schema groundwork (weeks 2–3)
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
 | ✅ shipped | **P0.2** Living-person privacy gate (`RESN` parsing, age heuristic, `derived.privacy`, search default-filter, `wai export --redact-living`, frontmatter `restricted: bool`) | M | [Review §P0.2](./reviews/2026-05-07-platform-review.md#p02--no-living-person-privacy-gate) — *Shipped 2026-05-15 across four sub-items: (1) deriver `Privacy { restricted, reason }` from RESN + 110-year living heuristic; (2) `wai search` privacy filter with `--include-living` opt-in; (3) `wai export --redact-living` standalone; (4) frontend `RestrictedNotice` gating in the renderer. Pages-export and `lang=` opt-back-in deferred. Gate is currently disabled by default via `WHOAMI_PRIVACY_GATE` env flag for development; user will re-enable.* |
-| 🚧 carry-over | **P1.5** Conflict-resolution schema (continues from Now) | M | [Review §P1.5](./reviews/2026-05-07-platform-review.md#p15--no-conflict-resolution-schema-in-the-data-model) |
+| ✅ shipped | **P1.5** Conflict-resolution schema (focal-person view) | M | [Review §P1.5](./reviews/2026-05-07-platform-review.md#p15--no-conflict-resolution-schema-in-the-data-model) — *Shipped 2026-05-09 in commit `a8ff233`. `core/src/family/conflicts.ts` + `frontend/components/family/sections/conflicts-section.tsx` surface disagreeing sources on the focal person. Gates P3.2 (source-criticism mode); unblocks remaining P1 data-model items.* |
 | ⏳ ready | **P0.4** Resolve Ancestry `_APID` codes to source titles; surface `sources_unresolved`; add source-coverage metric to Coverage section | M | [Review §P0.4](./reviews/2026-05-07-platform-review.md#p04--source-coverage-in-derived-records-is-sparse) |
 
 ### Wave 3 — Reading & discovery surface (weeks 3–4)
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ⏳ ready | **P1.2** Article freshness/attribution metadata strip | S | [Review §P1.2](./reviews/2026-05-07-platform-review.md#p12--no-article-freshness-or-agent-attribution) |
-| ⏳ ready | **P1.3** Home page → research dashboard (frontier, recently revised, open gaps) | S | [Review §P1.3](./reviews/2026-05-07-platform-review.md#p13--home-page-is-a-bare-directory-listing) |
+| ✅ shipped | **P1.2** Article freshness/attribution metadata strip | S | [Review §P1.2](./reviews/2026-05-07-platform-review.md#p12--no-article-freshness-or-agent-attribution) — *Shipped iteratively across 2026-05-07 → 2026-05-17. `frontend/app/[locale]/[slug]/page.tsx:131-180` renders a uppercase mono strip below the title with `created`, `author:` (LLM model name from PR #11 `author-attribution`), `editors:`, `GEDCOM snapshot`, source count, live note count, and open-gap count — exactly the seven facts the review asked for. Closes the "core epistemic question" identified in the review.* |
+| ⏳ ready | **P1.3** Home page → research dashboard (frontier, recently revised, open gaps) | S | [Review §P1.3](./reviews/2026-05-07-platform-review.md#p13--home-page-is-a-bare-directory-listing) — *Partially started: "This day in family history" ribbon (2026-05-16, [`plan`](./superpowers/plans/2026-05-16-this-day-in-family-history-ribbon.md)) added an almanac surface to home. Frontier / recently-revised / open-gaps cards still to come.* |
 | ⏳ ready | **P1.9** Talk-page surfacing in article header | S | [Review §P1.9](./reviews/2026-05-07-platform-review.md#p19--talk-pages-are-invisible-to-readers) |
 | ⏳ ready | **P1.10** Empty / error / loading states (skeletons, custom 404, GEDCOM-stale banner) | S | [Review §P1.10](./reviews/2026-05-07-platform-review.md#p110--empty--error--loading-states-are-bare) |
 
@@ -148,11 +180,14 @@ when that signal fires, the item moves to **Next**, not before.
 These are deferrals or reductions I'd recommend on top of the platform
 review's sequencing.
 
-1. **Reduce in-flight WIP from 4 themes to 1 by end of week.** Land
-   conflicts, redlinks, normalize, and family-sections as separate
-   commits. Don't start P0.1 until the tree is clean — even though
-   P0.1 is the highest-priority single item, doing it on top of an
-   already-busy tree turns the hotfix into a merge problem.
+1. ~~**Reduce in-flight WIP from 4 themes to 1 by end of week.**~~
+   **✅ Done 2026-05-15.** Conflicts and redlinks landed as separate
+   commits (`a8ff233`, `839a714`); the GEDCOM normalize layer was
+   absorbed into the full GEDCOM 7 upgrade; sex-aware translation
+   shipped as PR #10; family-section refactor landed. P0.1 was then
+   tackled on a clean tree and shipped 2026-05-17. The discipline
+   of "land themes as separable commits" became CLAUDE.md Rule 13
+   (commit at logical units).
 
 2. **Reconcile the schema-migrations plan duplicate.** There are two
    files: `2026-05-03-schema-migrations.md` (sketch, "deferred") and
