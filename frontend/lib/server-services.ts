@@ -23,7 +23,7 @@ import {
   restoreResearchNote,
   NoteNotFoundError,
 } from '@core/pages/research-notes.ts';
-import { parseTalkThreads, type ThreadMarker } from '@core/pages/talk-threads.ts';
+import { parseTalkThreads, aggregateOpenGaps, type ThreadMarker, type OpenGapsRow } from '@core/pages/talk-threads.ts';
 import { findRedlinks, type RedlinkEntry } from '@core/pages/redlinks.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
 import { lastSegment } from '@core/family/places.ts';
@@ -91,6 +91,9 @@ export async function getCachedList(): Promise<{ list: PageMetaSummary[]; index:
 
 export function invalidateListCache(): void {
   _listCache = null;
+  _recentCache = null;
+  _gapsCache = null;
+  _redlinksCache = null;
 }
 
 // Snapshot manifest is read by the dashboard (age banner) and by every
@@ -133,6 +136,47 @@ export async function getRecentlyRevised(pagesDir: string, limit: number): Promi
   items.sort((a, b) => b.mtime - a.mtime);
   _recentCache = { items, expiresAt: now + LIST_TTL_MS };
   return items.slice(0, limit);
+}
+
+// Editorial-gaps top-N for the home dashboard. Walks every live page's
+// talk body (~50 reads today, ~500 at scale). 2s TTL collapses repeated
+// renders; invalidated whenever the list cache is invalidated (any page
+// write).
+let _gapsCache: { rows: OpenGapsRow[]; total: number; articles: number; expiresAt: number } | null = null;
+
+export interface OpenGapsView {
+  rows: OpenGapsRow[];
+  /** Total unresolved threads across the whole wiki. */
+  total: number;
+  /** Number of articles that have at least one unresolved thread. */
+  articles: number;
+}
+
+export async function getCachedOpenGaps(limit: number): Promise<OpenGapsView> {
+  const now = Date.now();
+  if (_gapsCache && _gapsCache.expiresAt > now) {
+    return { rows: _gapsCache.rows.slice(0, limit), total: _gapsCache.total, articles: _gapsCache.articles };
+  }
+  const { list } = await getCachedList();
+  const live = list.filter(p => !p.isTalk && !p.isArchived);
+
+  // Read every live page's talk body in parallel (silent on missing).
+  const withTalk = await Promise.all(
+    live.map(async p => ({
+      slug: p.slug,
+      title: p.title,
+      talkBody: await readTalkBody(toTalkSlug(p.slug)),
+    })),
+  );
+
+  // Full-list aggregate (for the footer) computed off the same data,
+  // then slice to `limit` for display.
+  const fullRows = aggregateOpenGaps(withTalk, Number.POSITIVE_INFINITY);
+  const total = fullRows.reduce((s, r) => s + r.count, 0);
+  const articles = fullRows.length;
+
+  _gapsCache = { rows: fullRows, total, articles, expiresAt: now + LIST_TTL_MS };
+  return { rows: fullRows.slice(0, limit), total, articles };
 }
 
 let _search: SearchIndex | null = null;
@@ -179,8 +223,14 @@ export async function persistSearchIndex(): Promise<void> {
 }
 
 // Talk + archived pages are skipped: notes and tombstones shouldn't
-// grow the want-list of articles to write.
+// grow the want-list of articles to write. Cached because the
+// fan-out read across every page body is the same cost as the gaps
+// walk; invalidated whenever any page is written.
+let _redlinksCache: { entries: RedlinkEntry[]; expiresAt: number } | null = null;
+
 export async function getRedlinks(): Promise<RedlinkEntry[]> {
+  const now = Date.now();
+  if (_redlinksCache && _redlinksCache.expiresAt > now) return _redlinksCache.entries;
   const { list, index } = await getCachedList();
   const live = list.filter(p => !p.isTalk && !p.isArchived);
   const store = getPageStore();
@@ -195,7 +245,9 @@ export async function getRedlinks(): Promise<RedlinkEntry[]> {
       }
     }),
   );
-  return findRedlinks(pages, new Set(index.byCanonical.keys()));
+  const entries = findRedlinks(pages, new Set(index.byCanonical.keys()));
+  _redlinksCache = { entries, expiresAt: now + LIST_TTL_MS };
+  return entries;
 }
 
 export async function rebuildSearchIndexFromDisk(): Promise<{ pages: number; ms: number }> {
