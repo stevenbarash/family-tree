@@ -141,6 +141,27 @@ the talk page of the relevant plan, not silently re-ordered.
 | **P2.7** Mobile density on `/family/tree` (collapse Lifespans/Descendants by default `< sm`) | S | [Review §P2.7](./reviews/2026-05-07-platform-review.md#p27--mobile-density-on-the-tree-page) |
 | **P2.8** Exercise the schema-migration registry with the first non-trivial migration (likely the `media[]` field from P1.7) | S | [Review §P2.8](./reviews/2026-05-07-platform-review.md#p28--schema-migrations-infrastructure-is-shipped-but-empty) |
 
+### Pedigree-chart follow-ons (extends P1.1)
+
+The pedigree chart shipped 2026-05-18 ([P1.1](#wave-4--the-tree-itself-weeks-45)).
+Manual testing surfaced three follow-on sub-projects that together
+deliver the "gap-as-frontier with talk-page candidate matching" idea —
+foundational groundwork for [P3.1](#p3-strategic-bets-12-month-horizon)
+(research frontier as central UI metaphor). Each ships independently;
+F → T → D is the recommended order.
+
+| Item | Lift | Spec | Notes |
+|---|---|---|---|
+| **F** Chart frontier slots | S | [`pedigree-frontier-slots-design`](./superpowers/specs/2026-05-18-pedigree-frontier-slots-design.md) | Dashed-border placeholder nodes in the chart for any missing parent of a present ancestor (up to MAX_GENERATION). Kinship label as title, click navigates to descendant's tree. Standalone — no talk-page integration. **Ship first.** |
+| **T** Talk-page candidates format + parser | M | (spec TBD when picked up) | `## Candidates` section convention in talk files; parser in `core/`; CLI surface (`wai candidates list <slug>`). Standalone data utility — no chart change required. **Ship second.** |
+| **D** Research drawer | M | (spec TBD when picked up) | Side-panel Sheet opened on click of any chart node (present or frontier). Shows kinship, parsed candidates from T if shipped, action buttons (search wiki, note this as a question, open talk page). **Ship third — depends on F + benefits from T.** |
+
+> **PM call:** F alone is a contained visual win that addresses the
+> gap-as-frontier UX hole directly. T standalone provides a useful
+> CLI surface for agents working on research backlog. D is where the
+> three become more than the sum — the chart node becomes the entry
+> point for active research, not just a view of state.
+
 ### P3 strategic bets (12-month horizon)
 
 These are *reframings*, not improvements. **PM call: do not start any
