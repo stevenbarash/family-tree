@@ -148,7 +148,10 @@
       "pedigree": {
         "title": "Pedigree",
         "emptyState": "No ancestors recorded yet.",
-        "navigateAria": "Ancestors by generation"
+        "navigateAria": "Ancestors by generation",
+        "selfLabel": "self",
+        "generationLabel": "generation {n}",
+        "mobileGenerationHeader": "Generation {n}"
       },
       "disclosure": {
         "show": "Show",

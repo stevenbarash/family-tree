@@ -57,7 +57,9 @@ export async function PedigreeSection({ view }: Props) {
     const person = byRecord.get(n.record);
     const name = person?.name ?? n.record;
     const years = person ? formatYears(person) : null;
-    const generationLabel = n.generation === 0 ? 'self' : `generation ${n.generation}`;
+    const generationLabel = n.generation === 0
+      ? t('selfLabel')
+      : t('generationLabel', { n: String(n.generation) });
     return {
       id: n.record,
       position: { x: n.x - NODE_HALF_WIDTH, y: n.y - NODE_HALF_HEIGHT },
@@ -95,7 +97,7 @@ export async function PedigreeSection({ view }: Props) {
           {view.byGeneration.slice(0, MAX_GENERATION).map(gen => (
             <li key={`pedigree-mobile-gen-${gen.generation}`}>
               <div className="mb-1 font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground">
-                Generation {gen.generation}
+                {t('mobileGenerationHeader', { n: String(gen.generation) })}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[...gen.paternal, ...gen.maternal].map((p, i) => (
