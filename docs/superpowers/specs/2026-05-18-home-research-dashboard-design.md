@@ -122,16 +122,17 @@ Ann B Seplowitz           4 open · talk →
 Lenya Ayzman              2 open · talk →
 Barash family             2 open · talk →
 
-156 open across 32 articles · all gaps →
+156 open across 32 articles
 ```
 
 - Row title links to the article (`/{slug}`).
 - "talk →" links to the article's editorial-discussion section
   (`/{slug}#talk-threads-heading` — the `id` on the `<h2>` rendered by
   P1.9's `TalkThreadsPanel` in `frontend/components/talk-threads/threads-panel.tsx:36`).
-- Aggregate footer "all gaps →" links to `/index` for now (no
-  dedicated gaps listing — P1.10 territory; if/when added, swap the
-  link target there).
+- Aggregate footer is informational only (no link target). The per-row
+  "talk →" links are the actual editor-entry CTAs. A dedicated `/gaps`
+  listing is out of scope for this spec; if added later, the aggregate
+  line gains an "all gaps →" anchor at that time.
 - Typography matches existing cards: heading `font-display text-xs
   uppercase tracking-[0.32em] text-muted-foreground`; rows
   `text-sm`; meta `font-mono text-[0.7rem] uppercase tracking-[0.08em]
@@ -196,7 +197,7 @@ All paths re-use existing primitives. Only two new things:
   `"{count, plural, one {# open} other {# open}} · talk →"`
 - `editorialGapsAggregate` — ICU plural over two vars (count of
   unresolved threads × count of articles):
-  `"{threads, plural, one {# open} other {# open}} across {articles, plural, one {# article} other {# articles}} · all gaps →"`
+  `"{threads, plural, one {# open} other {# open}} across {articles, plural, one {# article} other {# articles}}"`
 - `unwrittenPagesHeading` — `"Unwritten pages"`
 - `unwrittenPagesRowMeta` — ICU plural:
   `"{count, plural, one {# ref} other {# refs}}"`
