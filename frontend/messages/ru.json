@@ -156,7 +156,18 @@
         "selfLabel": "я",
         "generationLabel": "поколение {n}",
         "mobileGenerationHeader": "Поколение {n}",
-        "chartAriaLabel": "Родословная диаграмма, {n} предков"
+        "chartAriaLabel": "Родословная диаграмма, {n} предков",
+        "frontierMissing": "отсутствует",
+        "frontierAriaLabel": "{kinship} — отсутствует, открыть исследовательские заметки",
+        "kinship": {
+          "father": "Отец",
+          "mother": "Мать",
+          "paternalGrandfather": "Дед по отцу",
+          "paternalGrandmother": "Бабушка по отцу",
+          "maternalGrandfather": "Дед по матери",
+          "maternalGrandmother": "Бабушка по матери",
+          "unknownAncestor": "Пра-{n}-прародитель"
+        }
       }
     },
     "Search": {

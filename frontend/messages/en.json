@@ -152,7 +152,18 @@
         "selfLabel": "self",
         "generationLabel": "generation {n}",
         "mobileGenerationHeader": "Generation {n}",
-        "chartAriaLabel": "Pedigree chart with {n} ancestors"
+        "chartAriaLabel": "Pedigree chart with {n} ancestors",
+        "frontierMissing": "missing",
+        "frontierAriaLabel": "{kinship} — missing, open research notes",
+        "kinship": {
+          "father": "Father",
+          "mother": "Mother",
+          "paternalGrandfather": "Paternal grandfather",
+          "paternalGrandmother": "Paternal grandmother",
+          "maternalGrandfather": "Maternal grandfather",
+          "maternalGrandmother": "Maternal grandmother",
+          "unknownAncestor": "Unknown {n}-great-grandparent"
+        }
       },
       "disclosure": {
         "show": "Show",

@@ -40,7 +40,7 @@ export function PedigreeNode({ data }: NodeProps<PedigreeNodeType>) {
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
       <AvatarMonogram name={data.name} portrait={data.portrait} size="sm" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[0.78rem] font-medium leading-tight">
+        <div className="line-clamp-2 text-[0.78rem] font-medium leading-tight text-pretty">
           <bdi>{data.name}</bdi>
         </div>
         {data.years ? (

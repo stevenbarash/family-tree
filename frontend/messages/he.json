@@ -156,7 +156,18 @@
         "selfLabel": "אני",
         "generationLabel": "דור {n}",
         "mobileGenerationHeader": "דור {n}",
-        "chartAriaLabel": "אילן יוחסין, {n} אבות"
+        "chartAriaLabel": "אילן יוחסין, {n} אבות",
+        "frontierMissing": "חסר",
+        "frontierAriaLabel": "{kinship} — חסר, פתח רשימות מחקר",
+        "kinship": {
+          "father": "אבא",
+          "mother": "אמא",
+          "paternalGrandfather": "סבא מצד אבא",
+          "paternalGrandmother": "סבתא מצד אבא",
+          "maternalGrandfather": "סבא מצד אמא",
+          "maternalGrandmother": "סבתא מצד אמא",
+          "unknownAncestor": "אב קדמון לא ידוע ({n} דורות)"
+        }
       }
     },
     "Search": {

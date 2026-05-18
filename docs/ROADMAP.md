@@ -150,11 +150,11 @@ foundational groundwork for [P3.1](#p3-strategic-bets-12-month-horizon)
 (research frontier as central UI metaphor). Each ships independently;
 F → T → D is the recommended order.
 
-| Item | Lift | Spec | Notes |
-|---|---|---|---|
-| **F** Chart frontier slots | S | [`pedigree-frontier-slots-design`](./superpowers/specs/2026-05-18-pedigree-frontier-slots-design.md) | Dashed-border placeholder nodes in the chart for any missing parent of a present ancestor (up to MAX_GENERATION). Kinship label as title, click navigates to descendant's tree. Standalone — no talk-page integration. **Ship first.** |
-| **T** Talk-page candidates format + parser | M | (spec TBD when picked up) | `## Candidates` section convention in talk files; parser in `core/`; CLI surface (`wai candidates list <slug>`). Standalone data utility — no chart change required. **Ship second.** |
-| **D** Research drawer | M | (spec TBD when picked up) | Side-panel Sheet opened on click of any chart node (present or frontier). Shows kinship, parsed candidates from T if shipped, action buttons (search wiki, note this as a question, open talk page). **Ship third — depends on F + benefits from T.** |
+| Status | Item | Lift | Spec | Notes |
+|---|---|---|---|---|
+| ✅ shipped | **F** Chart frontier slots | S | [`pedigree-frontier-slots-design`](./superpowers/specs/2026-05-18-pedigree-frontier-slots-design.md) | *Shipped 2026-05-18 — recursive-midpoint layout now treats frontier slots as full leaves so asymmetric branches with detectable gaps spread spatially. Kinship labels in all 4 locales. Click navigates to descendant's tree; the research drawer (sub-project D) will later intercept the same click.* |
+| ⏳ ready | **T** Talk-page candidates format + parser | M | (spec TBD when picked up) | `## Candidates` section convention in talk files; parser in `core/`; CLI surface (`wai candidates list <slug>`). Standalone data utility — no chart change required. **Ship second.** |
+| ⏳ ready | **D** Research drawer | M | (spec TBD when picked up) | Side-panel Sheet opened on click of any chart node (present or frontier). Shows kinship, parsed candidates from T if shipped, action buttons (search wiki, note this as a question, open talk page). **Ship third — depends on F + benefits from T.** |
 
 > **PM call:** F alone is a contained visual win that addresses the
 > gap-as-frontier UX hole directly. T standalone provides a useful

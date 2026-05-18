@@ -2,31 +2,50 @@
 
 import { ReactFlow, Background, Controls, type Node, type Edge } from '@xyflow/react';
 import { PedigreeNode, type PedigreeNodeData } from './pedigree-node';
+import { PedigreeFrontierNode, type PedigreeFrontierNodeData } from './pedigree-frontier-node';
+
+/** Discriminated-union shape for the props — matches the layout's node kinds. */
+type PedigreeChartNode =
+  | {
+      id: string;
+      type: 'pedigree';
+      position: { x: number; y: number };
+      data: PedigreeNodeData;
+    }
+  | {
+      id: string;
+      type: 'frontier';
+      position: { x: number; y: number };
+      data: PedigreeFrontierNodeData;
+    };
 
 export interface PedigreeChartProps {
-  nodes: Array<{
+  nodes: PedigreeChartNode[];
+  edges: Array<{
     id: string;
-    position: { x: number; y: number };
-    data: PedigreeNodeData;
+    source: string;
+    target: string;
+    /** Marks edges originating from a frontier slot, for dashed styling. */
+    frontier?: boolean;
   }>;
-  edges: Array<{ id: string; source: string; target: string }>;
   ariaLabel: string;
 }
 
-const nodeTypes = { pedigree: PedigreeNode };
+const nodeTypes = {
+  pedigree: PedigreeNode,
+  frontier: PedigreeFrontierNode,
+};
 
 /**
  * Mounts React Flow with the pre-computed layout.
  * Read-only: nodes are not draggable; edges are not editable.
- * Pan and zoom are kept on — the chart is too wide for a 5-gen tree
- * to fit fully zoomed-in on most viewports, so users need to navigate it.
- * Clicks pass through to the per-node `<a href>`; React Flow's own
- * node-click handler is unused.
+ * Frontier edges (those originating from a frontier slot) render dashed
+ * to communicate "this edge is to a slot, not a person."
  */
 export default function PedigreeChart({ nodes, edges, ariaLabel }: PedigreeChartProps) {
-  const rfNodes: Node<PedigreeNodeData & Record<string, unknown>>[] = nodes.map(n => ({
+  const rfNodes: Node[] = nodes.map(n => ({
     id: n.id,
-    type: 'pedigree',
+    type: n.type,
     position: n.position,
     data: n.data,
     draggable: false,
@@ -38,7 +57,9 @@ export default function PedigreeChart({ nodes, edges, ariaLabel }: PedigreeChart
     source: e.source,
     target: e.target,
     type: 'smoothstep',
-    style: { stroke: 'var(--border)', strokeWidth: 1.5 },
+    style: e.frontier
+      ? { stroke: 'var(--border)', strokeWidth: 1.5, strokeDasharray: '4 4' }
+      : { stroke: 'var(--border)', strokeWidth: 1.5 },
   }));
 
   return (
