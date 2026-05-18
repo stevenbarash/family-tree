@@ -1,18 +1,20 @@
 import Link from 'next/link';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/routing';
-import { getCachedList, getCachedSnapshots, getRecentlyRevised } from '@/lib/server-services';
+import { getCachedList, getCachedSnapshots, getRecentlyRevised, getCachedOpenGaps } from '@/lib/server-services';
 import { getFamilyTree } from '@/lib/family';
 import { GENEALOGY_DIR, PAGES_DIR, SELF_RECORD } from '@/lib/env';
 import { joinMeta } from '@/components/family/sections/shared';
 import { getEventsForToday } from '@/lib/on-this-day-view';
 import { OnThisDayRibbon } from '@/components/on-this-day-ribbon';
+import { OpenGapsCard } from '@/components/dashboard/open-gaps-card';
 
 export const dynamic = 'force-dynamic';
 
 const STALE_SNAPSHOT_DAYS = 30;
 const RECENT_LIMIT = 6;
 const FRONTIER_LIMIT = 4;
+const GAPS_LIMIT = 5;
 
 type MonthKey = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
 type SideKey = 'sidePaternal' | 'sideMaternal';
@@ -41,10 +43,11 @@ export default async function HomePage({
   const live = list.filter(p => !p.isTalk && !p.isArchived);
   const talk = list.filter(p => p.isTalk && !p.isArchived);
 
-  const [tree, recent, snapshots] = await Promise.all([
+  const [tree, recent, snapshots, gaps] = await Promise.all([
     getFamilyTree(SELF_RECORD, null),
     getRecentlyRevised(PAGES_DIR, RECENT_LIMIT),
     getCachedSnapshots(GENEALOGY_DIR),
+    getCachedOpenGaps(GAPS_LIMIT),
   ]);
 
   const now = new Date();
@@ -135,6 +138,8 @@ export default async function HomePage({
           </ul>
         </section>
       ) : null}
+
+      <OpenGapsCard view={gaps} />
 
       {recent.length > 0 ? (
         <section className="mb-10">
