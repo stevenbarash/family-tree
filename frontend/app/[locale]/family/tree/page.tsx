@@ -25,6 +25,7 @@ import { LifespansSection } from '@/components/family/sections/lifespans-section
 import { LineageSection } from '@/components/family/sections/lineage-section';
 import { MediaSection } from '@/components/family/sections/media-section';
 import { PersonHeaderSection } from '@/components/family/sections/person-header-section';
+import { PedigreeSection } from '@/components/family/sections/pedigree-section';
 import { PlacesSection } from '@/components/family/sections/places-section';
 import { familyTreeHref } from '@/components/family/sections/shared';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
@@ -170,6 +171,7 @@ export default async function FamilyTreePage({ params, searchParams }: Props) {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
+        <PedigreeSection view={view} />
         <PersonHeaderSection view={view} ancestorCount={ancestorCount} generationCount={generationCount} />
         <FamilySection view={view} />
         <ConflictsSection view={view} />

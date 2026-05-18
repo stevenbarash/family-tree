@@ -116,7 +116,7 @@ the talk page of the relevant plan, not silently re-ordered.
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ⏳ ready | **P1.1** Pedigree chart on `/family/tree` (SVG, ~200 lines) | M | [Review §P1.1](./reviews/2026-05-07-platform-review.md#p11--familytree-is-a-list-not-a-tree) |
+| ✅ shipped | **P1.1** Pedigree chart on `/family/tree` | M | [Review §P1.1](./reviews/2026-05-07-platform-review.md#p11--familytree-is-a-list-not-a-tree) — *Shipped 2026-05-18. Interactive ancestor chart at the top of `/family/tree`, replacing the list-only layout. Pure layout function in `core/src/family/pedigree-layout.ts` (~95 lines, no `d3-hierarchy` dep) feeds React Flow (`@xyflow/react` v12.10.2); mobile falls back to a stacked generations list. The "tree, with directories below it" reframing the review asked for. Plan deviates from review's "use SVG, not a heavy lib" recommendation; the trade-off is React Flow's built-in pan/zoom/keyboard/touch in exchange for ~80 KB gzipped on a route-level chunk.* |
 | ⏳ ready | **P1.8** Breadcrumbs from relationship-calc path | S | [Review §P1.8](./reviews/2026-05-07-platform-review.md#p18--no-breadcrumbs-or-wayfinding-inside-the-tree) |
 | ⏳ ready | **P1.4** Search facets (place + decade); promote [`search-facets` plan](./superpowers/plans/2026-05-03-search-facets.md) follow-on | M | [Review §P1.4](./reviews/2026-05-07-platform-review.md#p14--search-lacks-faceting-and-reads-as-flat) |
 

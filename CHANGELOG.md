@@ -23,6 +23,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Pedigree chart on `/family/tree` (P1.1)** — interactive ancestor chart at the top of the page, replacing the list-only layout. Pure layout function in `core/src/family/pedigree-layout.ts` assigns positions from the binary path-from-root (no `d3-hierarchy` dep); React Flow (`@xyflow/react` v12.10.2) renders on `md+` with pan, zoom, click-to-navigate; mobile falls back to a stacked generations list (`< md`). Focal person highlighted; node clicks route via `familyTreeHref`. Closes platform-review P1.1 — the single biggest UX gap the review called out.
+
 - **Pipeline-fields validation on non-article pages:** Talk pages (`type: translation-talk`), meta pages, and any other non-article frontmatter carrying translation-pipeline fields (`lang`, `translation_of`, `canonical_sha`, `translated_at`) are now validated against the same regex constraints PageMeta uses. Surfaces via `RepoState.parseErrors` → `detectSchemaDrift`, same channel as article-page schema failures. New `parsePipelineFields()` helper in `core/src/pages/schema.ts` exposes the focused check; `load.ts` runs it in the catch branch where it used to silently drop non-article files. Motivation: the `rahil-moiseyevna-berezovskaya` translation-talk files carried the same `translation_of: en/<slug>` path-vs-slug bug as the article files but were invisible to `wai check` until now — the main schema rejects talk pages on type alone, so the focused validator never ran. 7 new tests; cumulative core 549 (was 542).
 
 ### Changed
