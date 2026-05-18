@@ -38,6 +38,13 @@
         "review": "התרגום בתהליך סקירה. הסוכן ציין {count, plural, one {החלטה עריכתית אחת} two {שתי החלטות עריכתיות} many {# החלטות עריכתיות} other {# החלטות עריכתיות}} לאישורך.",
         "missing": "המאמר טרם תורגם ל{language}. מוצגת הגרסה האנגלית.",
         "viewCanonical": "פתח את הגרסה האנגלית"
+      },
+      "TalkThreads": {
+        "title": "דיון עריכתי",
+        "viewFullTalk": "דף השיחה המלא ←",
+        "openCount": "{n, plural, one {שאלה פתוחה אחת} two {שתי שאלות פתוחות} many {# שאלות פתוחות} other {# שאלות פתוחות}}",
+        "resolvedCount": "{n, plural, one {נפתר אחד} two {שניים נפתרו} many {# נפתרו} other {# נפתרו}}",
+        "supersededCount": "{n, plural, one {הוחלף אחד} two {שניים הוחלפו} many {# הוחלפו} other {# הוחלפו}}"
       }
     },
     "Family": {

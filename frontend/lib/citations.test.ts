@@ -11,7 +11,7 @@ test('formatTalkLabel: singular/plural and empty', () => {
   assert.equal(formatTalkLabel(2, 3), '2 notes · 3 open gaps');
 });
 
-test('countOpenGaps: counts ::open threads, ignores closed/superseded', () => {
+test('countOpenGaps: counts ::open and ::gap threads, ignores ::closed and ::superseded', () => {
   const body = `## Open question A
 ::open
 
@@ -29,6 +29,22 @@ prose
 
 ## A gap
 ::gap
+`;
+  assert.equal(countOpenGaps(body), 3);
+});
+
+test('countOpenGaps: counts level-3 (###) threads too', () => {
+  const body = `## Section header (not a thread)
+
+### Open: Yad Vashem search
+::open
+
+prose
+
+### Open: USHMM databases
+::open
+
+prose
 `;
   assert.equal(countOpenGaps(body), 2);
 });

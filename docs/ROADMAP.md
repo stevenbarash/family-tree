@@ -4,7 +4,7 @@
 > [May 2026 platform review](./reviews/2026-05-07-platform-review.md)
 > and the in-flight work in the current working tree.
 
-**Last updated:** 2026-05-18
+**Last updated:** 2026-05-18 (P1.9 talk-page surfacing)
 **Cadence:** revisit at the end of each completed band, or when a new
 review document lands. Status lines are the source of truth — keep
 them honest.
@@ -109,7 +109,7 @@ the talk page of the relevant plan, not silently re-ordered.
 |---|---|---|---|
 | ✅ shipped | **P1.2** Article freshness/attribution metadata strip | S | [Review §P1.2](./reviews/2026-05-07-platform-review.md#p12--no-article-freshness-or-agent-attribution) — *Shipped iteratively across 2026-05-07 → 2026-05-17. `frontend/app/[locale]/[slug]/page.tsx:131-180` renders a uppercase mono strip below the title with `created`, `author:` (LLM model name from PR #11 `author-attribution`), `editors:`, `GEDCOM snapshot`, source count, live note count, and open-gap count — exactly the seven facts the review asked for. Closes the "core epistemic question" identified in the review.* |
 | ⏳ ready | **P1.3** Home page → research dashboard (frontier, recently revised, open gaps) | S | [Review §P1.3](./reviews/2026-05-07-platform-review.md#p13--home-page-is-a-bare-directory-listing) — *Partially started: "This day in family history" ribbon (2026-05-16, [`plan`](./superpowers/plans/2026-05-16-this-day-in-family-history-ribbon.md)) added an almanac surface to home. Frontier / recently-revised / open-gaps cards still to come.* |
-| ⏳ ready | **P1.9** Talk-page surfacing in article header | S | [Review §P1.9](./reviews/2026-05-07-platform-review.md#p19--talk-pages-are-invisible-to-readers) |
+| ✅ shipped | **P1.9** Talk-page surfacing in article header | S | [Review §P1.9](./reviews/2026-05-07-platform-review.md#p19--talk-pages-are-invisible-to-readers) — *Shipped 2026-05-18. Editorial `::open`/`::closed`/`::superseded`/`::gap` threads from the talk page now render inline as collapsible cards in a new "Editorial discussion" section beneath the article body (open default-expanded, resolved default-collapsed). Pure parser in `core/src/pages/talk-threads.ts`; `frontend/components/talk-threads/threads-panel.tsx` renders as a server component with i18n in all 4 locales. The freshness-strip `countOpenGaps` now delegates to the shared parser, fixing a level-3-heading undercount the legacy regex had (`wartime-catastrophe` now reports 43 open gaps instead of 0). Talk page itself, restricted pages, and pages with no threads correctly skip the panel.* |
 | ⏳ ready | **P1.10** Empty / error / loading states (skeletons, custom 404, GEDCOM-stale banner) | S | [Review §P1.10](./reviews/2026-05-07-platform-review.md#p110--empty--error--loading-states-are-bare) |
 
 ### Wave 4 — The tree itself (weeks 4–5)

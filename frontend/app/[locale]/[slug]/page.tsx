@@ -7,6 +7,7 @@ import {
   getCachedSnapshots,
   readTalkBody,
   buildNotesView,
+  buildTalkThreadsView,
   getTranslationInfo,
 } from '@/lib/server-services';
 import { TranslationBanner } from '@/components/translation-banner';
@@ -20,6 +21,7 @@ import { GENEALOGY_DIR, PRIVACY_GATE_ENABLED, SELF_RECORD, WHOAMI_ROOT } from '@
 import type { Page } from '@core/pages/index.ts';
 import type { TranslationStatus } from '@core/i18n/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
+import { TalkThreadsPanel } from '@/components/talk-threads/threads-panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
 import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
 import { getCachedDerivedRecords } from '@/lib/family';
@@ -118,11 +120,12 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
     : await readBodiesForSlugs(getPageStore(), linkedSlugs);
   const hoverDataBySlug = buildHoverDataBySlug(list, getCachedDerivedRecords(), bodiesBySlug);
 
-  const [tree, notes] = isRestricted
-    ? [null, []]
+  const [tree, notes, talkThreads] = isRestricted
+    ? [null, [], { open: [], resolved: [], superseded: [] }]
     : await Promise.all([
         renderMarkdown(page.body, index, { derived, hoverDataBySlug, currentSlug: slug }),
         buildNotesView(talkBody, index),
+        buildTalkThreadsView(talkBody, index),
       ]);
 
   const gedcomSnapshotDate = page.meta.gedcom?.snapshot
@@ -197,7 +200,10 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
             {tree}
           </article>
           {isTalkSlug(slug) ? null : (
-            <ResearchNotesPanel slug={slug} notes={notes} />
+            <>
+              <TalkThreadsPanel slug={slug} locale={locale} threads={talkThreads} />
+              <ResearchNotesPanel slug={slug} notes={notes} />
+            </>
           )}
         </>
       )}

@@ -23,6 +23,7 @@ import {
   restoreResearchNote,
   NoteNotFoundError,
 } from '@core/pages/research-notes.ts';
+import { parseTalkThreads, type ThreadMarker } from '@core/pages/talk-threads.ts';
 import { findRedlinks, type RedlinkEntry } from '@core/pages/redlinks.ts';
 import { toSlug, toTalkSlug, titleCaseFromSlug } from '@core/pages/slug.ts';
 import { lastSegment } from '@core/family/places.ts';
@@ -592,6 +593,46 @@ export async function buildNotesView(
     text: n.text,
     rendered: await renderMarkdown(n.text, index),
   })));
+}
+
+export interface TalkThreadView {
+  level: 2 | 3;
+  heading: string;
+  marker: ThreadMarker;
+  rendered: ReactElement;
+}
+
+export interface TalkThreadsView {
+  open: TalkThreadView[];        // marker: 'open' | 'gap'
+  resolved: TalkThreadView[];    // marker: 'closed'
+  superseded: TalkThreadView[];  // marker: 'superseded'
+}
+
+/**
+ * Parse the `::open`/`::closed`/`::superseded`/`::gap` threads from a
+ * talk-page body and pre-render each body to a React tree (with
+ * wikilinks resolved against the global slug index). Empty groups are
+ * empty arrays — the caller decides whether to render the panel.
+ */
+export async function buildTalkThreadsView(
+  talkBody: string,
+  index: SlugIndex,
+): Promise<TalkThreadsView> {
+  const threads = parseTalkThreads(talkBody);
+  if (threads.length === 0) {
+    return { open: [], resolved: [], superseded: [] };
+  }
+  const views = await Promise.all(threads.map(async (t): Promise<TalkThreadView> => ({
+    level: t.level,
+    heading: t.heading,
+    marker: t.marker,
+    rendered: await renderMarkdown(t.body, index),
+  })));
+  return {
+    open: views.filter(v => v.marker === 'open' || v.marker === 'gap'),
+    resolved: views.filter(v => v.marker === 'closed'),
+    superseded: views.filter(v => v.marker === 'superseded'),
+  };
 }
 
 export async function searchAndJoin(

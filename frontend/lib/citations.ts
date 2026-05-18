@@ -1,10 +1,13 @@
+import { countOpenThreads } from '@core/pages/index.ts';
+
 /**
- * Count open-gap threads in a talk-page body. A thread starts with a `##`
- * heading whose next non-blank line is the directive `::open`. `::closed`,
- * `::superseded`, and `::gap` threads are not counted.
+ * Count open-gap threads in a talk-page body — any level-2 or
+ * level-3 heading whose next non-blank line is `::open` or `::gap`.
+ * Delegates to the shared parser in core so this count cannot drift
+ * from the inline-rendered cards on the article page.
  */
 export function countOpenGaps(talkBody: string): number {
-  return (talkBody.match(/^## [^\n]+\n+::open\b/gm) ?? []).length;
+  return countOpenThreads(talkBody);
 }
 
 /** "talk: 3 notes · 2 open gaps" — singular/plural agreement; empty when

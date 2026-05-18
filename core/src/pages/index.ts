@@ -6,3 +6,4 @@ export * from './store.ts';
 export * from './migrations/index.ts';
 export * from './migrate-runner.ts';
 export * from './research-notes.ts';
+export * from './talk-threads.ts';
