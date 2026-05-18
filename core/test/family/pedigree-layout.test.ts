@@ -27,7 +27,7 @@ test('layoutPedigree: empty ancestors returns only the focal node at origin', ()
   const focal = makePerson('I1', 0, 'self', []);
   const result = layoutPedigree({ focal, ancestors: [], maxGeneration: 4 });
   assert.equal(result.nodes.length, 1);
-  assert.deepEqual(result.nodes[0], { record: 'I1', x: 0, y: 0, generation: 0, side: 'self' });
+  assert.deepEqual(result.nodes[0], { kind: 'present', record: 'I1', x: 0, y: 0, generation: 0, side: 'self' });
   assert.deepEqual(result.edges, []);
 });
 
@@ -37,8 +37,8 @@ test('layoutPedigree: 1 generation places father left, mother right', () => {
   const mother = makePerson('I3', 1, 'maternal', ['I3'], 'mother');
   const result = layoutPedigree({ focal, ancestors: [father, mother], maxGeneration: 4 });
 
-  const fatherNode = result.nodes.find(n => n.record === 'I2')!;
-  const motherNode = result.nodes.find(n => n.record === 'I3')!;
+  const fatherNode = result.nodes.find(n => n.kind === 'present' && n.record === 'I2')!;
+  const motherNode = result.nodes.find(n => n.kind === 'present' && n.record === 'I3')!;
 
   assert.ok(fatherNode.x < 0, `father should be left of center, got x=${fatherNode.x}`);
   assert.ok(motherNode.x > 0, `mother should be right of center, got x=${motherNode.x}`);
@@ -66,8 +66,8 @@ test('layoutPedigree: 3 generations spread monotonically by horizontal position'
   });
 
   // Generation 2 should be evenly spread, monotonic L→R: ff < fm < mf < mm
-  const g2 = result.nodes.filter(n => n.generation === 2).sort((a, b) => a.x - b.x);
-  assert.deepEqual(g2.map(n => n.record), ['I4', 'I5', 'I6', 'I7']);
+  const g2 = result.nodes.filter(n => n.kind === 'present' && n.generation === 2).sort((a, b) => a.x - b.x);
+  assert.deepEqual(g2.map(n => (n.kind === 'present' ? n.record : '')), ['I4', 'I5', 'I6', 'I7']);
   // Edges include child→parent at each step
   assert.ok(result.edges.some(e => e.source === 'I4' && e.target === 'I2'));
   assert.ok(result.edges.some(e => e.source === 'I7' && e.target === 'I3'));
@@ -85,6 +85,7 @@ test('layoutPedigree: asymmetric tree (only paternal line) collapses to a vertic
   // need" invariant — asymmetric trees don't waste horizontal whitespace
   // showing missing-ancestor slots.
   for (const node of result.nodes) {
+    if (node.kind !== 'present') continue;
     assert.equal(node.x, 0, `${node.record} should be on the focal's vertical column (x=0)`);
   }
 });
@@ -93,7 +94,7 @@ test('layoutPedigree: maxGeneration clamps the visible nodes', () => {
   const focal = makePerson('I1', 0, 'self', []);
   const deep = makePerson('I9', 6, 'paternal', ['a', 'b', 'c', 'd', 'e', 'I9'], 'father');
   const result = layoutPedigree({ focal, ancestors: [deep], maxGeneration: 4 });
-  assert.equal(result.nodes.find(n => n.record === 'I9'), undefined,
+  assert.equal(result.nodes.find(n => n.kind === 'present' && n.record === 'I9'), undefined,
     'ancestor beyond maxGeneration should be filtered out');
 });
 
@@ -104,7 +105,7 @@ test('layoutPedigree: a sole ancestor with no sibling is placed on the focal col
   const lone = makePerson('I2', 1, 'paternal', ['I2']);
   const result = layoutPedigree({ focal, ancestors: [lone], maxGeneration: 4 });
 
-  const node = result.nodes.find(n => n.record === 'I2')!;
+  const node = result.nodes.find(n => n.kind === 'present' && n.record === 'I2')!;
   assert.equal(node.x, 0,
     'a single ancestor with no sibling collapses to focal column under adaptive layout');
 });
@@ -121,7 +122,7 @@ test('layoutPedigree: edges from clamped-out ancestors are not constructed', () 
     maxGeneration: 4,
   });
 
-  assert.equal(result.nodes.find(n => n.record === 'I9'), undefined);
+  assert.equal(result.nodes.find(n => n.kind === 'present' && n.record === 'I9'), undefined);
   assert.ok(!result.edges.some(e => e.source === 'I9'),
     'no edge should originate from a clamped-out ancestor');
 });

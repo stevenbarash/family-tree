@@ -1,6 +1,6 @@
 import '@xyflow/react/dist/style.css';
 import { getTranslations } from 'next-intl/server';
-import { layoutPedigree, type PedigreeNode as LayoutNode } from '@core/family/pedigree-layout.ts';
+import { layoutPedigree } from '@core/family/pedigree-layout.ts';
 import type { BrowserPerson } from '@core/family/browser.ts';
 import type { FamilyTreeView, BrowserPersonView } from '@/lib/family';
 import PedigreeChart from '@/components/family/pedigree-chart-dynamic.client';
@@ -53,23 +53,31 @@ export async function PedigreeSection({ view }: Props) {
   byRecord.set(view.root.record, view.root);
   for (const a of ancestors) byRecord.set(a.record, a);
 
-  const nodes = layout.nodes.map((n: LayoutNode) => {
-    const person = byRecord.get(n.record);
-    const name = person?.name ?? n.record;
-    const years = person ? formatYears(person) : null;
-    return {
-      id: n.record,
-      position: { x: n.x - NODE_HALF_WIDTH, y: n.y - NODE_HALF_HEIGHT },
-      data: {
-        record: n.record,
-        name,
-        years,
-        portrait: person?.portrait,
-        isFocal: n.generation === 0,
-        href: familyTreeHref(n.record),
-      },
-    };
-  });
+  const nodes = layout.nodes
+    .map((n) => {
+      if (n.kind !== 'present') return null; // Task 6 handles 'frontier'
+      const person = byRecord.get(n.record);
+      const name = person?.name ?? n.record;
+      const years = person ? formatYears(person) : null;
+      const generationLabel = n.generation === 0
+        ? t('selfLabel')
+        : t('generationLabel', { n: String(n.generation) });
+      return {
+        id: n.record,
+        position: { x: n.x - NODE_HALF_WIDTH, y: n.y - NODE_HALF_HEIGHT },
+        type: 'pedigree' as const,
+        data: {
+          record: n.record,
+          name,
+          years,
+          portrait: person?.portrait,
+          isFocal: n.generation === 0,
+          href: familyTreeHref(n.record),
+        },
+        ariaLabel: `${name}, ${generationLabel}${years ? `, ${years}` : ''}`,
+      };
+    })
+    .filter((n): n is NonNullable<typeof n> => n !== null);
   const edges = layout.edges.map(e => ({
     id: `${e.source}->${e.target}`,
     source: e.source,
