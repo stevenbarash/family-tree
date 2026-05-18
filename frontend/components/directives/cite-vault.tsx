@@ -6,7 +6,7 @@ interface Props {
 
 export function CiteVault({ type, snapshot, note }: Props) {
   return (
-    <aside className="my-2 rounded-r border-l-2 border-l-border bg-muted p-2 text-xs text-muted-foreground">
+    <aside className="my-2 rounded-e border-s-2 border-s-border bg-muted p-2 text-xs text-muted-foreground">
       <div className="font-semibold mb-1">Vault citation</div>
       {type ? <div><span className="font-medium">type:</span> {type}</div> : null}
       {snapshot ? <div><span className="font-medium">snapshot:</span> <code className="text-[10px]">{snapshot}</code></div> : null}

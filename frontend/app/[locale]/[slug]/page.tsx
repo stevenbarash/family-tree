@@ -1,18 +1,24 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { setRequestLocale } from 'next-intl/server';
 import {
   getPageStore,
   getCachedList,
   getCachedSnapshots,
   readTalkBody,
   buildNotesView,
+  getTranslationInfo,
 } from '@/lib/server-services';
+import { TranslationBanner } from '@/components/translation-banner';
+import { routing } from '@/i18n/routing';
+import type { Locale } from '@/i18n/routing';
 import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
 import { isValidSlug, isTalkSlug, toTalkSlug } from '@core/pages/index.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
 import { GENEALOGY_DIR, PRIVACY_GATE_ENABLED, SELF_RECORD, WHOAMI_ROOT } from '@/lib/env';
 import type { Page } from '@core/pages/index.ts';
+import type { TranslationStatus } from '@core/i18n/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
 import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
@@ -24,16 +30,21 @@ import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PageRoute({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export default async function PageRoute({ params }: { params: Promise<{ locale: Locale; slug: string }> }) {
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
-  const store = getPageStore();
   const indexPromise = getCachedList();
 
   let page: Page;
+  let translationStatus: TranslationStatus;
+  let unresolvedCount: number;
   try {
-    page = await store.read(slug);
+    const info = await getTranslationInfo(slug, locale);
+    page = info.page;
+    translationStatus = info.status;
+    unresolvedCount = info.unresolvedCount;
   } catch (err) {
     if (err instanceof FutureSchemaVersionError) {
       return (
@@ -128,6 +139,12 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
       <Link href="/" className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
         ← Index
       </Link>
+      <TranslationBanner
+        status={translationStatus}
+        slug={slug}
+        unresolvedCount={unresolvedCount}
+        locale={locale}
+      />
       <header className="mt-7 mb-8 border-b pb-6">
         <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">
           {page.meta.type}
@@ -174,7 +191,7 @@ export default async function PageRoute({ params }: { params: Promise<{ slug: st
         <RestrictedNotice page={page} derived={derived} />
       ) : (
         <>
-          <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 prose-a:hover:decoration-primary prose-blockquote:rounded-r-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
+          <article className="wiki-article prose prose-stone dark:prose-invert max-w-none prose-headings:font-heading prose-headings:tracking-normal prose-h2:mt-12 prose-h2:text-2xl prose-h3:text-xl prose-p:leading-8 prose-li:my-1 prose-a:font-medium prose-a:decoration-primary/35 prose-a:hover:decoration-primary prose-blockquote:rounded-e-lg prose-blockquote:bg-muted/35 prose-blockquote:py-1 prose-blockquote:not-italic">
             {tree}
           </article>
           {isTalkSlug(slug) ? null : (
@@ -231,4 +248,13 @@ async function readBodiesForSlugs(
     }),
   );
   return new Map(entries.filter((e): e is [string, string] => e !== null));
+}
+
+export async function generateStaticParams() {
+  const store = getPageStore();
+  const list = await store.list();
+  const slugs = list.filter(p => !p.isTalk && !p.isArchived).map(p => p.slug);
+  return routing.locales.flatMap(locale =>
+    slugs.map(slug => ({ locale, slug })),
+  );
 }

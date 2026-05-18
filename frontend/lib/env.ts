@@ -1,10 +1,11 @@
+import { join } from 'node:path';
 import type { AuthorIdentity } from '@core/pages/index.ts';
 import { defaultWhoamiRoot, whoamiPaths } from '@core/paths.ts';
 
 export const WHOAMI_ROOT = defaultWhoamiRoot();
 
 const paths = whoamiPaths(WHOAMI_ROOT);
-export const PAGES_DIR = paths.pagesDir;
+export const PAGES_DIR = process.env.WHOAMI_PAGES_DIR ?? join(WHOAMI_ROOT, 'pages', 'en');
 export const DATA_DIR = paths.dataDir;
 export const GENEALOGY_DIR = paths.genealogyDir;
 export const DERIVED_DIR = paths.derivedDir;

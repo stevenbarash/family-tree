@@ -29,7 +29,7 @@ export function whoamiPaths(root: string): WhoamiPaths {
   const dataDir = join(root, 'data');
   return {
     root,
-    pagesDir: join(root, 'pages'),
+    pagesDir: join(root, 'pages', 'en'),
     dataDir,
     genealogyDir,
     derivedDir: join(genealogyDir, 'derived'),

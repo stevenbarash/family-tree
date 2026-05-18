@@ -129,9 +129,25 @@ export const PRIVACY_LIVING_THRESHOLD_YEARS = 110;
  *    siblings appear under the parent's other marriage). UI surfaces that
  *    want to render family unit cards consume these.
  */
+/**
+ * GEDCOM SEX values used by the pipeline. M/F come from the spec; we surface
+ * 'U' (unknown) when SEX is absent or unparseable. We deliberately do NOT
+ * represent every GEDCOM 7 value (X, N) — the downstream consumer that cares
+ * about this field today is the translator's gendered-verb form selection,
+ * for which only M/F/U is operationally meaningful. Extend the union if a
+ * future consumer needs more nuance.
+ */
+export type Sex = 'M' | 'F' | 'U';
+
 export interface DerivedRecord {
   record: string;                       // "I28906361734"
   name: string;                         // "Abby Rickelman"
+  /**
+   * Optional in the type for test-fixture ergonomics, but the derive
+   * pipeline always populates it (defaults to 'U' when GEDCOM has no SEX).
+   * Consumers should treat undefined as 'U'.
+   */
+  sex?: Sex;
   birth: DatedEvent | null;
   death: DatedEvent | null;
   parents: ParentRef[];

@@ -14,6 +14,7 @@ import {
   type PedigreeKind,
   type MediaRef,
   type Privacy,
+  type Sex,
 } from './types.ts';
 import { stripPointer, type ParseResult } from './parser.ts';
 import { parseGedcomYear } from '../family/dates.ts';
@@ -250,6 +251,18 @@ function deriveSources(node: GedcomNode, ctx: ParseResult): SourceRef[] {
     .map(s => deriveSourceRef(s.data!, ctx.sources));
 }
 
+/** Read the GEDCOM `1 SEX X` tag. Returns 'U' when absent, unparseable, or
+ *  any value other than M/F. If multiple SEX lines appear on one individual
+ *  (data hygiene issue), the FIRST is used and the rest ignored — matches
+ *  how readers behave when faced with duplicate single-cardinality tags. */
+export function deriveSex(node: GedcomNode): Sex {
+  const sex = node.tree.find(n => n.tag === 'SEX');
+  if (!sex?.data) return 'U';
+  const value = sex.data.trim().toUpperCase();
+  if (value === 'M' || value === 'F') return value;
+  return 'U';
+}
+
 export function deriveIndividual(
   node: GedcomNode,
   record: string,
@@ -262,6 +275,7 @@ export function deriveIndividual(
   return {
     record,
     name: deriveName(node),
+    sex: deriveSex(node),
     birth,
     death,
     parents: deriveParents(node, ctx),

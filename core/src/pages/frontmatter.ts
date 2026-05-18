@@ -15,10 +15,35 @@ import { migrate } from './migrations/index.ts';
  */
 export function parsePage(slug: string, raw: string): Page {
   const { data, content } = matter(raw);
-  const fromVersion = ((data as { schemaVersion?: unknown }).schemaVersion as number | undefined) ?? 1;
-  const migrated = migrate(data as Record<string, unknown>, fromVersion);
+  const normalized = normalizeTranslationKeys(data as Record<string, unknown>);
+  const fromVersion = ((normalized as { schemaVersion?: unknown }).schemaVersion as number | undefined) ?? 1;
+  const migrated = migrate(normalized, fromVersion);
   const meta: PageMeta = parsePageMeta(migrated);
   return { slug, meta, body: content.trimStart() };
+}
+
+/**
+ * Map snake_case translation frontmatter (as written on disk) to the
+ * camelCase keys PageMeta uses. Translation files carry `translation_of`,
+ * `canonical_sha`, `translated_at`; the rest of the codebase reads
+ * `translationOf`, `canonicalSha`, `translatedAt`. `lang` is the same in
+ * both forms. Non-translation files are unaffected.
+ */
+function normalizeTranslationKeys(data: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...data };
+  if ('translation_of' in out && !('translationOf' in out)) {
+    out.translationOf = out.translation_of;
+    delete out.translation_of;
+  }
+  if ('canonical_sha' in out && !('canonicalSha' in out)) {
+    out.canonicalSha = out.canonical_sha;
+    delete out.canonical_sha;
+  }
+  if ('translated_at' in out && !('translatedAt' in out)) {
+    out.translatedAt = out.translated_at;
+    delete out.translated_at;
+  }
+  return out;
 }
 
 export function serializePage(page: Page): string {
@@ -66,6 +91,10 @@ function renderFrontmatter(meta: PageMeta): string {
   if (meta.portrait) lines.push(`portrait: ${yamlScalar(meta.portrait)}`);
   lines.push(`created: ${meta.created}`);
   if (meta.deletedAt) lines.push(`deletedAt: ${yamlScalar(meta.deletedAt)}`);
+  if (meta.lang) lines.push(`lang: ${yamlScalar(meta.lang)}`);
+  if (meta.translationOf) lines.push(`translation_of: ${yamlScalar(meta.translationOf)}`);
+  if (meta.canonicalSha) lines.push(`canonical_sha: ${yamlScalar(meta.canonicalSha)}`);
+  if (meta.translatedAt) lines.push(`translated_at: ${yamlScalar(meta.translatedAt)}`);
   lines.push('---');
   return lines.join('\n') + '\n';
 }

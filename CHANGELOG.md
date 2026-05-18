@@ -21,7 +21,69 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ## [Unreleased] — v2 development
 
+### Fixed
+
+- **Async pages use `getTranslations`, not `useTranslations`:** all async server components under `frontend/app/[locale]/` were calling `useTranslations()` which is only valid in sync server components or client components — runtime crash with `Error: useTranslations is not callable within an async component`. Converted to `await getTranslations({ locale, namespace })` from `next-intl/server`. Affected: HomePage, ChangelogPage, FamilyPage, SearchPage, FamilyTreePage. The static-rendering canary test (skipped pending force-dynamic removal) would have caught this earlier.
+
+- **CLI pages path:** `core/src/paths.ts` and `cli/src/index.ts` default `pagesDir` flipped from `pages/` to `pages/en/`. Closes a regression from the multilingual content migration where `wai read <slug>` looked at the pre-migration path.
+
 ### Added
+
+- **Translation prompt enriched with related-slug context:** `wai i18n sync` now scans the canonical for `[[wikilinks]]`, looks up which referenced slugs already have a translation in the target locale, and passes the (English title → locale title) pairs as `RELATED_TRANSLATIONS_OR_NONE` context to the translator. Lets the agent mirror established surname/given-name renderings across sibling articles instead of inventing fresh transliterations and creating cross-page drift. Acts at generation time — prevents drift rather than detecting it. Closes the highest-leverage gap in the translation-backfill methodology surfaced by the 78-article first pass.
+
+- **Sex-aware translation pipeline:** `DerivedRecord.sex` (M/F/U) now surfaced from the GEDCOM `SEX` tag through to the translator prompt. `wai i18n sync` looks up the linked GEDCOM record's sex and passes it via the `SUBJECT_SEX` template variable so future translations pick gendered past-tense verbs correctly per language (Russian `родилась` vs `родился`, Hebrew `נפטרה` vs `נפטר`, etc.). The 23 already-translated articles default masculine until re-sync.
+
+- **Agent translator (default for `wai i18n sync`):** the command now invokes the editor agent via the harness adapter (`writing-articles` skill, new `translate` prompt template) and writes the resulting translation + talk file. Pass `--stub` to fall back to the offline echo translator (tests, dry runs, CI without a harness). Prompt template lives at `plugins/whoami/skills/writing-articles/prompt-templates/translate.md`. Completes Plan 3 Task 11.
+
+- **`wai i18n sync <slug> <locale>`:** new CLI command writes `pages/{locale}/<slug>.md` + `pages/{locale}/<slug>.translation.talk.md` from the canonical EN article, stamping translation frontmatter (`translation_of`, `canonical_sha`, `translated_at`, `lang`) and a sibling talk file with `## Unresolved` / `## Resolved` sections. Plan 3 ships with a stub translator (echoes canonical body); the real agent pipeline lands in Plan 3 Task 11.
+
+- **`wai i18n status`:** new CLI command lists every (slug × target-locale) pair with its computed translation status (`current` / `stale` / `review` / `missing`) and unresolved translation-talk-entry count. Tab-separated output (`slug\tlocale\tstatus\tunresolved`) for grep / sort / awk. Standalone — reads `$WHOAMI_ROOT/pages/{en,ru,uk,he}/` directly and shells out to `git log -1` for the canonical-EN head SHA.
+
+- **Article translation status detection:** `app/[locale]/[slug]/page.tsx` now resolves translation status per request via `getTranslationInfo(slug, locale)` and renders the appropriate banner. Missing translations fall back to canonical EN content with a "not translated yet" banner.
+
+- **Translation banners:** new `frontend/components/translation-banner.tsx` renders stale / review / missing notices on translated article pages. Strings added to `Page.Article.banners` in all four locale message files with correct ICU plural categories.
+
+- **Translation frontmatter:** `translation_of`, `canonical_sha`, `translated_at`, `lang` fields now parse off translation files into `PageMeta` (as `translationOf`, `canonicalSha`, `translatedAt`, `lang`). All optional — canonical EN files continue to parse cleanly. `serializePage` round-trips them in snake_case form on disk. No schema-version bump needed.
+
+- **Per-locale PageStore reads:** `PageStore.read(slug, { locale })` reads from `pages/{locale}/<slug>.md`. Existing callers (no locale) unchanged.
+
+- **Translation talk parser:** `core/src/i18n/translation-talk.ts` parses `<slug>.translation.talk.md` files into unresolved/resolved entry counts. Foundation for the translation accuracy review gate.
+
+- **Translation status helper:** `core/src/i18n/status.ts` computes `current | stale | review | missing` from `(translation canonical_sha, head canonical_sha, unresolved-talk-entries)`. Status is computed, not stored.
+
+- **Russian translation:** `frontend/messages/ru.json` — LLM-drafted translation of all UI chrome strings; Slavic ICU plural categories (one/few/many/other). Human review pending.
+- **Ukrainian translation:** `frontend/messages/uk.json` — LLM-drafted; Slavic ICU plural categories (one/few/many/other). Human review pending.
+- **Hebrew translation:** `frontend/messages/he.json` — LLM-drafted; Hebrew ICU plural categories (one/two/many/other); RTL script. Human review pending.
+
+- **Content migration:** `PAGES_DIR` flipped from `$WHOAMI_ROOT/pages` to `$WHOAMI_ROOT/pages/en`. All article and talk-page files in the data repo were `git mv`d under `pages/en/` in a separate commit there. The frontend's article loader (PageStore) stays locale-blind in Plan 1 — Plan 3 will add per-locale reads.
+
+- **Directive labels localized:** `infobox-person` and `on-this-day-ribbon` directives now read labels from `Directives.infoboxPerson` and `Directives.onThisDay` namespaces. These render on every article page, so they're the highest-volume translation targets.
+
+- **Changelog page localized:** moved under `[locale]/`; strings extracted to `Page.Changelog`.
+
+- **Search page localized:** `TYPE_LABELS` dict ("People/Families/Events/Trees/Meta") and the search placeholder extracted to `Page.Search` namespace using ICU `select`.
+
+- **Family tree localized:** `app/family/tree/page.tsx` → `app/[locale]/family/tree/page.tsx` and `components/family/sections/*` strings extracted to `Page.FamilyTree` namespace. The interactive tree is the largest UI-string surface and the densest translation target; data unions (relations, pedigree, missing-parent side, generation headings) use ICU `select`. The `mobile-disclosure` client island accepts show/hide labels as props from its server parent.
+
+- **Family page localized:** `app/family/page.tsx` → `app/[locale]/family/page.tsx`; strings extracted to `Page.Family` namespace (nav, titles, generation headings, line-side labels, date formats, empty-state copy).
+
+- **Article routes under [locale]/:** `app/[slug]/page.tsx` → `app/[locale]/[slug]/page.tsx`. `generateStaticParams` enumerates all (locale, slug) pairs for static prebuild.
+
+- **Home page localized:** `app/page.tsx` moved to `app/[locale]/page.tsx`; hardcoded English strings ("The Registry", "Continue research", "Recently revised", "All articles", "Talk pages", nav labels, month names, frontier meta, GEDCOM stale-snapshot warning) extracted into `messages/en.json` under `Page.Home` and `Months.long`. Pluralized counts (ancestors, generations, articles, snapshot age in days) use ICU `plural` syntax. The stale-snapshot warning uses `t.rich()` to preserve the inline `<code>` element.
+
+- **Locale-prefixed routes:** Root layout moved to `app/[locale]/layout.tsx`; sets `<html lang dir>`, `setRequestLocale`, `NextIntlClientProvider`. Static rendering preserved via `generateStaticParams` over all four locales.
+
+- **Locale-aware routing:** `frontend/proxy.ts` wires `next-intl` middleware; `/` redirects to `/{detected-locale}/`. API and asset routes are excluded (locale-agnostic).
+
+- **Multilingual scaffold:** Initial `next-intl` routing config in `frontend/i18n/routing.ts` defining four locales (en/ru/uk/he) and `LOCALE_DIR` for `<html dir>`. Part of multilingual support foundation.
+
+- **Language switcher:** dropdown mounted in root layout. Available on every page across all four locales (en/ru/uk/he). Switching preserves the current path.
+
+- **Language switcher messages:** `Chrome.LangSwitcher` namespace in `messages/en.json` (native names per locale).
+
+- **RTL family-tree icon audit:** directional icons in `components/family/` were audited for RTL mirroring. No horizontal directional icons (ChevronRight, ChevronLeft, ArrowLeft, ArrowRight) are present in that subtree — only `ChevronDown` (a vertical expand/collapse indicator that does not require mirroring) and `FileText` (non-directional). Horizontal `flex-row` auto-flips under RTL via CSS logical default; no Tailwind change needed. One `ArrowLeft` exists in `app/[locale]/family/tree/page.tsx` (the "back to family" nav link) — outside `components/family/` scope; deferred to a future cleanup pass.
+
+- **RTL-ready Tailwind:** converted directional utility class usages (ml-/mr-/pl-/pr-/text-left/text-right/left-/right-/border-l/border-r/rounded-l/rounded-r) across `frontend/app/` and `frontend/components/` to logical equivalents (ms-/me-/ps-/pe-/text-start/text-end/start-/end-/border-s/border-e/rounded-s/rounded-e). Layout now flows correctly under `dir="rtl"` for Hebrew. The `sheet.tsx` `data-[side=left|right]:*` variants were intentionally left physical because they tie to a `side` prop naming a visual position; converting them would change the component contract.
 
 - **Roadmap & plan-index drift guards + CLAUDE.md Rules 14/15**
   *(2026-05-17)*. Two new drift-detection test files mirror the
@@ -41,6 +103,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
   for partial work, "closes" / "completes" / "ships" only when the
   row can flip to ✅) and Rule 15 (when shipping / abandoning /
   renaming a plan, update the plan-index README in the same commit).
+
+- **`<bdi>` for inline person names:** infobox-person, on-this-day-ribbon, and search results now wrap inline person names in `<bdi>` for correct bidirectional rendering when mixing Latin and non-Latin scripts.
 
 - **`wai audit dates` — slash-date ambiguity report (P0.3)**
   *(2026-05-17)*. New CLI command that lists every ambiguous slash

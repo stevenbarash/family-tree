@@ -1,15 +1,17 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { AncestorTile } from '@/components/family/ancestor-tile';
 import { RegistryCard } from '@/components/family/registry-card';
 import { roman } from '@/lib/utils';
 import type { BrowserPersonView, FamilyTreeView } from '@/lib/family';
-import { GENERATION_HEADING, GenerationHeader, SectionHeader, familyTreeHref, formatTileMeta } from './shared';
+import { GenerationHeader, SectionHeader, familyTreeHref, formatTileMeta } from './shared';
 
 interface Props {
   view: FamilyTreeView;
 }
 
 export function LineageSection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.lineage');
   const paternalGroups = view.byGeneration.map(g => ({ generation: g.generation, people: g.paternal }));
   const maternalGroups = view.byGeneration.map(g => ({ generation: g.generation, people: g.maternal }));
   let ancestorCount = 0;
@@ -21,21 +23,21 @@ export function LineageSection({ view }: Props) {
   return (
     <section className="registry-rise" style={{ animationDelay: '160ms' }}>
       <SectionHeader
-        title="Lineage"
+        title={t('title')}
         count={ancestorCount}
         after={
           <p className="font-display text-[0.7rem] tracking-tight text-muted-foreground">
-            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-paternal mr-1.5 align-baseline" aria-hidden />
-            Paternal
+            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-paternal me-1.5 align-baseline" aria-hidden />
+            {t('legendPaternal')}
             <span className="mx-2 text-border">|</span>
-            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-maternal mr-1.5 align-baseline" aria-hidden />
-            Maternal
+            <span className="inline-block size-1.5 -translate-y-px rounded-full bg-maternal me-1.5 align-baseline" aria-hidden />
+            {t('legendMaternal')}
           </p>
         }
       />
       <div className="grid gap-4 md:grid-cols-2">
-        <LineageColumn title="Paternal" groups={paternalGroups} side="paternal" />
-        <LineageColumn title="Maternal" groups={maternalGroups} side="maternal" />
+        <LineageColumn title={t('legendPaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n: String(n) })} groups={paternalGroups} side="paternal" />
+        <LineageColumn title={t('legendMaternal')} columnLine={t('columnLine')} absentia={t('absentia')} headingFor={n => t('headings', { n: String(n) })} groups={maternalGroups} side="maternal" />
       </div>
     </section>
   );
@@ -43,10 +45,16 @@ export function LineageSection({ view }: Props) {
 
 function LineageColumn({
   title,
+  columnLine,
+  absentia,
+  headingFor,
   groups,
   side,
 }: {
   title: string;
+  columnLine: string;
+  absentia: string;
+  headingFor: (n: number) => string;
   groups: { generation: number; people: BrowserPersonView[] }[];
   side: 'paternal' | 'maternal';
 }) {
@@ -64,7 +72,7 @@ function LineageColumn({
             className="font-display text-[0.62rem] uppercase tracking-[0.22em]"
             style={{ color: accentVar }}
           >
-            line
+            {columnLine}
           </span>
         </div>
         <Badge
@@ -80,6 +88,8 @@ function LineageColumn({
             key={`${side}-${group.generation}`}
             generation={group.generation}
             people={group.people}
+            heading={headingFor(group.generation)}
+            absentia={absentia}
           />
         ))}
       </div>
@@ -90,12 +100,15 @@ function LineageColumn({
 function GenerationBlock({
   generation,
   people,
+  heading,
+  absentia,
 }: {
   generation: number;
   people: BrowserPersonView[];
+  heading: string;
+  absentia: string;
 }) {
   const sidePossible = generation > 0 && generation <= 10 ? 2 ** (generation - 1) : null;
-  const heading = GENERATION_HEADING[generation] ?? `Generation ${generation}`;
   const isEmpty = people.length === 0;
 
   return (
@@ -110,7 +123,7 @@ function GenerationBlock({
         }
       />
       {isEmpty ? (
-        <p className="px-3 pb-2 font-mono text-[0.65rem] text-muted-foreground/55">— absentia —</p>
+        <p className="px-3 pb-2 font-mono text-[0.65rem] text-muted-foreground/55">{absentia}</p>
       ) : (
         <div className="grid gap-x-2 px-2 pb-1.5 sm:grid-cols-2">
           {people.map((p, i) => (

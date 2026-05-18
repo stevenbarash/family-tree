@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
+import type { Locale } from '@/i18n/routing';
 import { ArrowLeft, Home } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import { CommandPalette } from '@/components/command-palette';
@@ -30,6 +32,7 @@ import { ResearchNotesPanel } from '@/components/research-notes/panel';
 export const dynamic = 'force-dynamic';
 
 interface Props {
+  params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ person?: string; from?: string }>;
 }
 
@@ -57,14 +60,18 @@ function abridgeCrumbs(crumbs: Crumb[]): AbridgedCrumb[] {
   ];
 }
 
-export default async function FamilyTreePage({ searchParams }: Props) {
-  const params = await searchParams;
-  const rootRecord = params.person ?? SELF_RECORD;
+export default async function FamilyTreePage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: 'Page.FamilyTree' });
+
+  const sp = await searchParams;
+  const rootRecord = sp.person ?? SELF_RECORD;
 
   // Kick off the family-tree compute and the slug-resolution in parallel —
   // resolveSlugForRecord doesn't depend on the assembled view, only on the
   // root record, and both feed the page's data.
-  const viewPromise = getFamilyTree(rootRecord, params.from ?? null);
+  const viewPromise = getFamilyTree(rootRecord, sp.from ?? null);
   const notesSlugPromise = resolveSlugForRecord(rootRecord).catch(err => {
     if (
       err instanceof UnknownRecordError
@@ -115,11 +122,11 @@ export default async function FamilyTreePage({ searchParams }: Props) {
             href="/family"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="size-4" aria-hidden />
-            <span className="font-display tracking-tight">Family</span>
+            <ArrowLeft className="size-4 rtl:scale-x-[-1]" aria-hidden />
+            <span className="font-display tracking-tight">{t('navFamily')}</span>
           </Link>
           <div className="font-display text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground/80">
-            The Registry
+            {t('registry')}
           </div>
           <div className="flex items-center gap-2">
             {!isMe ? (
@@ -128,7 +135,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
                 className={buttonVariants({ variant: 'ghost', size: 'sm' })}
               >
                 <Home data-icon="inline-start" />
-                Me
+                {t('buttonMe')}
               </Link>
             ) : null}
             <CommandPalette />
@@ -136,7 +143,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
         </div>
         {view.relationship && view.relationship.crumbs.length > 1 ? (
           <nav
-            aria-label="Lineage path"
+            aria-label={t('lineagePathAria')}
             className="mx-auto max-w-6xl overflow-x-auto px-4 pb-2 sm:px-6"
           >
             <ol className="flex items-center gap-x-1.5 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85 whitespace-nowrap">
@@ -175,7 +182,7 @@ export default async function FamilyTreePage({ searchParams }: Props) {
 
         {isEmpty ? (
           <p className="font-display text-center text-sm text-muted-foreground">
-            No related records yet.
+            {t('emptyState')}
           </p>
         ) : null}
 

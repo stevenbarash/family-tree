@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { BirthplacesMap } from '@/components/family/birthplaces-map';
 import { RegistryCard } from '@/components/family/registry-card';
 import type { FamilyTreeView } from '@/lib/family';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function PlacesSection({ view }: Props) {
+  const t = useTranslations('Page.FamilyTree.places');
   const { places, placesMap } = view;
   if (places.regions.length === 0) return null;
 
@@ -17,13 +19,13 @@ export function PlacesSection({ view }: Props) {
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '105ms' }}>
       <SectionHeader
-        title="Places of birth"
+        title={t('title')}
         count={total}
         after={
           <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {placesMap.mapped.length} located
+            {t('located', { n: String(placesMap.mapped.length) })}
             {placesMap.unmapped.length > 0
-              ? ` · ${placesMap.unmapped.length} unlocated`
+              ? t('unlocated', { n: String(placesMap.unmapped.length) })
               : ''}
           </p>
         }
@@ -83,16 +85,15 @@ export function PlacesSection({ view }: Props) {
       {placesMap.unmapped.length > 0 ? (
         <div className="mt-6">
           <h3 className="mb-2 font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-            Unmapped places
-            <span className="ml-2 font-mono tabular-nums text-muted-foreground/70">
+            {t('unmappedHeading')}
+            <span className="ms-2 font-mono tabular-nums text-muted-foreground/70">
               {placesMap.unmapped.length}
             </span>
           </h3>
           <p className="mb-3 max-w-2xl font-display text-[0.78rem] leading-relaxed text-muted-foreground">
-            These places aren&rsquo;t yet in <code className="font-mono text-[0.72rem]">genealogy/places-coords.yml</code>.
-            Add an entry there to bring them onto the map. See{' '}
-            <code className="font-mono text-[0.72rem]">research-plans/places-research.md</code>{' '}
-            for current research notes.
+            {t.rich('unmappedHelp', {
+              code: (chunks) => <code className="font-mono text-[0.72rem]">{chunks}</code>,
+            })}
           </p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {placesMap.unmapped.map(u => (

@@ -50,9 +50,9 @@ export function VersionIndex({ sections, className = '' }: VersionIndexProps): R
       <p className="mb-4 font-mono text-[0.65rem] uppercase tracking-[0.22em] text-muted-foreground">
         On this page
       </p>
-      <ol className="flex flex-col gap-1.5 border-l border-foreground/12 pl-4 text-sm">
+      <ol className="flex flex-col gap-1.5 border-s border-foreground/12 ps-4 text-sm">
         {entries.map(e => (
-          <li key={e.id} className={e.depth > 0 ? 'pl-3' : ''}>
+          <li key={e.id} className={e.depth > 0 ? 'ps-3' : ''}>
             <Link
               href={`#${e.id}`}
               className="group inline-flex items-baseline gap-2 leading-snug"
@@ -67,7 +67,7 @@ export function VersionIndex({ sections, className = '' }: VersionIndexProps): R
                 {e.label}
               </span>
               {e.subtitle ? (
-                <span className="ml-1 hidden font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground/60 xl:inline">
+                <span className="ms-1 hidden font-mono text-[0.65rem] uppercase tracking-[0.08em] text-muted-foreground/60 xl:inline">
                   {e.subtitle.length > 22 ? `${e.subtitle.slice(0, 20)}…` : e.subtitle}
                 </span>
               ) : null}

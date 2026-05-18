@@ -25,6 +25,7 @@ export function normalizeDerivedRecord(raw: unknown): DerivedRecord | null {
   return {
     record: r.record,
     name: r.name,
+    sex: (r.sex === 'M' || r.sex === 'F' || r.sex === 'U') ? r.sex : 'U',
     birth: (r.birth as DerivedRecord['birth']) ?? null,
     death: (r.death as DerivedRecord['death']) ?? null,
     parents: arr(r.parents),

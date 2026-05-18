@@ -1,0 +1,220 @@
+{
+  "Chrome": {
+    "skipToContent": "דלג לתוכן",
+    "LangSwitcher": {
+      "label": "שפה",
+      "en": "English",
+      "ru": "Русский",
+      "uk": "Українська",
+      "he": "עברית"
+    }
+  },
+  "Page": {
+    "Home": {
+      "registry": "המרשם",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {אב קדמון אחד} two {שני אבות קדמונים} many {# אבות קדמונים} other {# אבות קדמונים}} על פני {generations, plural, one {דור אחד} two {שני דורות} many {# דורות} other {# דורות}}",
+      "articlesCount": "{count, plural, one {מאמר אחד} two {שני מאמרים} many {# מאמרים} other {# מאמרים}}",
+      "gedcomSync": "GEDCOM {date}",
+      "navFamily": "משפחה →",
+      "navTree": "אילן →",
+      "navSearch": "חיפוש →",
+      "navChangelog": "יומן שינויים →",
+      "snapshotStale": "תצלום ה-GEDCOM בן {days, plural, one {יום אחד} two {יומיים} many {# ימים} other {# ימים}} (סנכרון אחרון {date}). הריצו <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code> כאשר יש לכם שינויים לייבוא.",
+      "dayLabel": "{day} {month}",
+      "continueResearch": "המשך מחקר",
+      "frontierMeta": "· דור {generation} · {side} · חסר {missing}",
+      "sidePaternal": "מצד האב",
+      "sideMaternal": "מצד האם",
+      "missingFather": "אב",
+      "missingMother": "אם",
+      "missingBoth": "שניהם",
+      "recentlyRevised": "עודכנו לאחרונה",
+      "allArticles": "כל המאמרים ({count})",
+      "talkPages": "דפי שיחה ({count})"
+    },
+    "Article": {
+      "banners": {
+        "stale": "תרגום זה משקף גרסה מוקדמת יותר של המאמר. תרגום מעודכן בעבודה.",
+        "review": "התרגום בתהליך סקירה. הסוכן ציין {count, plural, one {החלטה עריכתית אחת} two {שתי החלטות עריכתיות} many {# החלטות עריכתיות} other {# החלטות עריכתיות}} לאישורך.",
+        "missing": "המאמר טרם תורגם ל{language}. מוצגת הגרסה האנגלית.",
+        "viewCanonical": "פתח את הגרסה האנגלית"
+      }
+    },
+    "Family": {
+      "navIndex": "מפתח",
+      "noDataTitle": "משפחה",
+      "noDataDescription": "לא נמצאו נתונים נגזרים לרשומת הפרספקטיבה המוגדרת. הריצו <code>POST /api/gedcom/sync</code> כדי לאכלס את <code>genealogy/derived/</code>.",
+      "pageTitle": "קווי משפחה",
+      "pageDescription": "אבות קדמונים ישירים של <strong>{name}</strong>, מתחקים לאורך קווי האב והאם.",
+      "browseTree": "עיין באילן היוחסין",
+      "gen1": "הורים",
+      "gen2": "סבים וסבתות",
+      "gen3": "סבי-רבא וסבתות-רבא",
+      "gen4": "סבי-רבא-רבא וסבתות-רבא-רבא",
+      "gen5": "דור חמישי של סבים וסבתות",
+      "gen6": "דור שישי של סבים וסבתות",
+      "genFallback": "דור {n}",
+      "paternalLine": "קו אבהי",
+      "maternalLine": "קו אימהי",
+      "unknown": "לא ידוע",
+      "bornDate": "נ. {date}",
+      "diedDate": "נפ. {date}",
+      "bornDiedDate": "{birth} — {death}",
+      "lineSide": "{side, select, paternal {קו אבהי} maternal {קו אימהי} other {פרספקטיבה}}"
+    },
+    "FamilyTree": {
+      "navFamily": "משפחה",
+      "registry": "המרשם",
+      "lineagePathAria": "נתיב היוחסין",
+      "buttonMe": "אני",
+      "emptyState": "אין עדיין רשומות קשורות.",
+      "person": {
+        "folio": "דף · {record}",
+        "perspectiveSuffix": "· אל {isMe, select, true {אני} other {{name}}}",
+        "statParents": "הורים",
+        "statSiblings": "אחים ואחיות",
+        "statSpouses": "בני זוג",
+        "statChildren": "ילדים",
+        "statAncestors": "אבות קדמונים",
+        "statGenerations": "{n, plural, one {דור אחד} two {שני דורות} many {# דורות} other {# דורות}}",
+        "buttonArticle": "מאמר"
+      },
+      "family": {
+        "title": "משפחה",
+        "familyOfOrigin": "משפחת מוצא",
+        "familyOfOriginPedigree": "{kind, select, adopted {משפחה מאמצת} foster {משפחת אומנה} sealing {משפחה מוחתמת} other {משפחת מוצא}}",
+        "familyOfOriginNumbered": "{base} ({ordinal})",
+        "marriage": "נישואין",
+        "marriageNumbered": "נישואין ({ordinal})",
+        "otherMarriage": "{role, select, father {נישואין אחרים של האב} mother {נישואין אחרים של האם} other {נישואין אחרים}}",
+        "otherMarriageNumbered": "{base} ({ordinal})",
+        "marriedOn": "נש. {date}",
+        "halfSiblingsTitle": "אחים ואחיות למחצה ({count})",
+        "cousinsTitle": "בני דודים מדרגה ראשונה ({count})",
+        "viaMeta": "דרך {via}",
+        "relation": "{kind, select, father {אב} mother {אם} sibling {אח או אחות} spouse {בן זוג} child {ילד} stepMother {אם חורגת} stepFather {אב חורג} halfSibling {אח או אחות למחצה} cousin {בן דוד או בת דודה} other {קרוב משפחה}}"
+      },
+      "conflicts": {
+        "title": "סתירות",
+        "unresolved": "{n, plural, one {אחת לא פתורה} two {שתיים לא פתורות} many {# לא פתורות} other {# לא פתורות}}",
+        "resolved": "נפתר",
+        "weight": "משקל {value}",
+        "field": "{field, select, birthDate {תאריך לידה} birthPlace {מקום לידה} deathDate {תאריך פטירה} deathPlace {מקום פטירה} marriageDate {תאריך נישואין} marriagePlace {מקום נישואין} other {{raw}}}"
+      },
+      "coverage": {
+        "title": "כיסוי",
+        "knownOfPossible": "{known} / {possible} ידועים",
+        "perGeneration": "לפי דורות",
+        "researchFrontier": "גבול המחקר",
+        "missing": "חסר {what, select, father {אב} mother {אם} both {הורים} other {{what}}}",
+        "complete": "שושלת היוחסין מלאה עד לעומק שהוגדר."
+      },
+      "descendants": {
+        "title": "צאצאים",
+        "generationFallback": "דור +{n}",
+        "viaMeta": "דרך {via}",
+        "headings": "{n, select, 1 {ילדים} 2 {נכדים} 3 {נינים} 4 {בני נינים} 5 {בני בני נינים} other {דור +{n}}}"
+      },
+      "lifespans": {
+        "title": "תוחלת חיים",
+        "range": "{min} – {max}"
+      },
+      "lineage": {
+        "title": "שושלת יוחסין",
+        "legendPaternal": "אבהי",
+        "legendMaternal": "אימהי",
+        "columnLine": "קו",
+        "generationFallback": "דור {n}",
+        "absentia": "— נעדר —",
+        "headings": "{n, select, 1 {הורים} 2 {סבים וסבתות} 3 {סבי-רבא וסבתות-רבא} 4 {סבי-רבא-רבא וסבתות-רבא-רבא} 5 {דור חמישי של סבים וסבתות} 6 {דור שישי של סבים וסבתות} 7 {דור שביעי של סבים וסבתות} 8 {דור שמיני של סבים וסבתות} other {דור {n}}}"
+      },
+      "media": {
+        "title": "מדיה",
+        "primary": "ראשי",
+        "fallbackTitle": "מדיה {record}"
+      },
+      "places": {
+        "title": "מקומות לידה",
+        "located": "{n} ממופים",
+        "unlocated": " · {n} ללא מיקום",
+        "unmappedHeading": "מקומות לא ממופים",
+        "unmappedHelp": "מקומות אלה עדיין אינם ב-<code>genealogy/places-coords.yml</code>. הוסיפו שם רשומה כדי להעלות אותם למפה. ראו <code>research-plans/places-research.md</code> להערות מחקר עדכניות."
+      },
+      "dates": {
+        "bornDate": "נ. {date}",
+        "diedDate": "נפ. {date}",
+        "bornDiedDate": "{birth} – {death}"
+      },
+      "disclosure": {
+        "show": "הצג",
+        "hide": "הסתר"
+      }
+    },
+    "Search": {
+      "navIndex": "← מפתח",
+      "heading": "חיפוש",
+      "placeholder": "חפש דפים, מקומות, אנשים…",
+      "emptyPrompt": "הקלידו שאילתה למעלה. החיפוש מכסה כותרות, תוכן, כינויים, קטגוריות ונתוני GEDCOM מובנים (מקומות, עיסוקים, שמות קשורים).",
+      "noResults": "אין תוצאות עבור \"{query}\".",
+      "tabAll": "הכל",
+      "typeLabel": "{type, select, person {אנשים} family {משפחות} event {אירועים} tree {אילנות} meta {מטא} other {אחר}}",
+      "placesHeading": "מקומות",
+      "clearPlaces": "נקה ×"
+    },
+    "Changelog": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "היסטוריית גרסאות",
+      "subtitle": "תיעוד מלא של שינויים משמעותיים ב—",
+      "heading": "יומן שינויים",
+      "statRevisions": "{count, plural, one {גרסה אחת} two {שתי גרסאות} many {# גרסאות} other {# גרסאות}}",
+      "statReleased": "{count} שוחררו",
+      "statEntries": "{count} רשומות",
+      "statUpdated": "עודכן {date}",
+      "onThisPage": "בדף זה"
+    }
+  },
+  "Months": {
+    "long": {
+      "1": "ינואר",
+      "2": "פברואר",
+      "3": "מרץ",
+      "4": "אפריל",
+      "5": "מאי",
+      "6": "יוני",
+      "7": "יולי",
+      "8": "אוגוסט",
+      "9": "ספטמבר",
+      "10": "אוקטובר",
+      "11": "נובמבר",
+      "12": "דצמבר"
+    }
+  },
+  "Directives": {
+    "infoboxPerson": {
+      "eyebrow": "אדם",
+      "born": "נולד",
+      "died": "נפטר",
+      "parents": "הורים",
+      "spouses": "בני זוג",
+      "children": "ילדים",
+      "residences": "מקומות מגורים",
+      "work": "עיסוק",
+      "lifespanBornDied": "{birth} – {death}",
+      "lifespanBornOnly": "נ. {year}",
+      "lifespanDiedOnly": "נפ. {year}"
+    },
+    "onThisDay": {
+      "heading": "בתאריך זה — {dayLabel}",
+      "event": "{kind, select, birth {נולד} death {נפטר} marriage {התחתן} other {אירע אירוע}}",
+      "marriedWithSecondary": "התחתן"
+    }
+  },
+  "Errors": {
+    "notFound": "הדף לא נמצא",
+    "notFoundHeading": "הדף הזה אינו במרשם.",
+    "notFoundHelp": "ייתכן ששמו שונה, שהוא הועבר לארכיון, או שמעולם לא היה קיים. אם חיפשתם אדם, נסו לחפש לפי השם — הוויקי מאנדקס כינויים ושדות הנגזרים מ-GEDCOM, ולכן לעיתים קרובות מוצא אנשים שה-slug הקנוני של הדף שלהם אינו ברור מאליו.",
+    "searchPlaceholder": "חפש לפי שם…",
+    "linkHome": "← בית",
+    "linkFamilyTree": "אילן המשפחה →"
+  }
+}

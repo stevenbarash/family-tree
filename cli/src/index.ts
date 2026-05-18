@@ -25,6 +25,8 @@ import { ApiError } from './api-client.js';
 import { runCheck } from './commands/check.js';
 import { runGrepClaims } from './commands/grep-claims.js';
 import { runAuditDates } from './commands/audit-dates.js';
+import { runI18nStatus } from './commands/i18n-status.js';
+import { runI18nSync } from './commands/i18n-sync.js';
 import { runPromoteCorrections } from './commands/promote-corrections.js';
 import { runInit } from './commands/init.js';
 import { runDoctor } from './commands/doctor.js';
@@ -110,6 +112,16 @@ Quality:
                               records, and page prose. Exits 1 when any are
                               found, so it can run in pre-commit / CI.
         [--json]                Machine-readable output
+  i18n status                 List every (slug × target-locale) pair with its
+                              computed translation status (current / stale /
+                              review / missing) and unresolved talk-entry count.
+                              Tab-separated output for grep / sort.
+  i18n sync <slug> <locale>   Translate pages/en/<slug>.md into <locale>,
+                              writing pages/<locale>/<slug>.md and the sibling
+                              <slug>.translation.talk.md. Default invokes the
+                              editor agent via the harness adapter.
+        [--stub]                Use the offline echo translator (skips the
+                              harness; for tests / dry runs).
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -455,6 +467,42 @@ async function main(): Promise<number> {
         });
         return code;
       }
+      case 'i18n': {
+        const sub = args.positional[0];
+        const root = process.env.WHOAMI_ROOT
+          ? resolve(process.env.WHOAMI_ROOT)
+          : resolve(process.env.HOME!, 'whoami');
+        if (sub === 'status') {
+          await runI18nStatus({ rootDir: root, write });
+          return 0;
+        }
+        if (sub === 'sync') {
+          const slug = args.positional[1];
+          const locale = args.positional[2];
+          if (!slug || !locale) {
+            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub]\n');
+            return 2;
+          }
+          // Default: the real agent translator invokes the harness
+          // (`writing-articles` / `translate` template). `--stub` flips
+          // back to the offline echo translator for tests, dry runs,
+          // and CI where no harness is available.
+          const useStub = !!args.flags.stub;
+          const translator = useStub
+            ? (await import('./commands/i18n-sync-stub.js')).stubTranslator
+            : (await import('./commands/agent-translator.js')).agentTranslator;
+          await runI18nSync({
+            rootDir: root,
+            slug,
+            locale,
+            translator,
+            write,
+          });
+          return 0;
+        }
+        process.stderr.write(`i18n: unknown subcommand '${sub ?? ''}'. Known: status, sync.\n`);
+        return 2;
+      }
       case 'grep-claims': {
         const root = process.env.WHOAMI_ROOT
           ? resolve(process.env.WHOAMI_ROOT)
@@ -492,7 +540,7 @@ async function main(): Promise<number> {
           record: recordArg,
           apply: !!args.flags.apply,
           gedcomPath: resolve(root, 'genealogy', 'barash-tree.ged'),
-          pagesDir: resolve(root, 'pages'),
+          pagesDir: resolve(root, 'pages', 'en'),
           loadCorrections: loadPageCorrectionsWithSource,
           readFile: (p) => readFileSync(p, 'utf-8'),
           writeFile: (p, c) => writeFileSync(p, c),
@@ -793,7 +841,7 @@ async function main(): Promise<number> {
           const slugs = await resolveCohort(selector, {
             rootDir: authorRootDir,
             listExistingPages: (root) => {
-              const pagesDir = join(root, 'pages');
+              const pagesDir = join(root, 'pages', 'en');
               if (!existsSync(pagesDir)) return [];
               return readdirSync(pagesDir)
                 .filter(f => f.endsWith('.md') && !f.endsWith('.talk.md') && !f.endsWith('.narrative.md'))

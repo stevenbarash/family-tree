@@ -1,7 +1,10 @@
 import type { ReactElement } from 'react';
 import { randomBytes } from 'node:crypto';
 import { stat } from 'node:fs/promises';
+import { readFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { computeTranslationStatus, parseTranslationTalk, type TranslationStatus } from '@core/i18n/index.ts';
 import { readManifest } from '@core/gedcom/snapshots.ts';
 import type { SnapshotEntry } from '@core/gedcom/types.ts';
 import { createPageStore, type PageStore, type PageMetaSummary, type Page, type PageMeta, type PageType, type NoteKind } from '@core/pages/index.ts';
@@ -470,6 +473,75 @@ export async function readTalkBody(talkSlug: string): Promise<string> {
   } catch (err) {
     if (err instanceof PageNotFoundError) return '';
     throw err;
+  }
+}
+
+export interface TranslationInfo {
+  status: TranslationStatus;
+  unresolvedCount: number;
+  page: Page;
+}
+
+/**
+ * Resolve a page + its translation status for the given locale. For
+ * the canonical locale (en) this short-circuits to a plain read with
+ * status "current". For other locales it compares the translation's
+ * `canonical_sha` to the canonical EN file's HEAD commit sha and
+ * counts unresolved entries in the translation talk page; status is
+ * computed from the triple via `computeTranslationStatus`. When the
+ * translation is missing (or has no `canonical_sha`), the canonical
+ * EN page is returned so the article still renders behind a "not
+ * translated yet" banner.
+ */
+export async function getTranslationInfo(slug: string, locale: string): Promise<TranslationInfo> {
+  const store = getPageStore();
+
+  if (locale === 'en') {
+    const page = await store.read(slug);
+    return { status: 'current', unresolvedCount: 0, page };
+  }
+
+  let translationPage: Page | undefined;
+  try {
+    translationPage = await store.read(slug, { locale });
+  } catch {
+    translationPage = undefined;
+  }
+
+  const canonicalHeadSha = getCanonicalHeadSha(slug);
+  const translationCanonicalSha = translationPage?.meta.canonicalSha;
+
+  const talkPath = join(WHOAMI_ROOT, 'pages', locale, `${slug}.translation.talk.md`);
+  const talkBody = existsSync(talkPath) ? readFileSync(talkPath, 'utf8') : '';
+  const talkSummary = parseTranslationTalk(talkBody);
+
+  const status = computeTranslationStatus({
+    translationCanonicalSha,
+    canonicalHeadSha,
+    unresolvedTalkEntries: talkSummary.unresolved,
+  });
+
+  const page = (status === 'missing' || translationPage === undefined)
+    ? await store.read(slug)
+    : translationPage;
+
+  return { status, unresolvedCount: talkSummary.unresolved, page };
+}
+
+/**
+ * HEAD commit sha for the canonical EN file of `slug`, or '' when git
+ * can't answer (file untracked, repo missing). Sync exec is acceptable
+ * here: one short git call per article render, and the async
+ * equivalent (spawn + stream) is materially more code.
+ */
+function getCanonicalHeadSha(slug: string): string {
+  try {
+    return execSync(
+      `git -C "${WHOAMI_ROOT}" log -1 --format=%H -- pages/en/${slug}.md`,
+      { encoding: 'utf8' },
+    ).trim();
+  } catch {
+    return '';
   }
 }
 

@@ -90,3 +90,66 @@ owner's Tailscale node as a default and `WHOAMI_ALLOWED_DEV_ORIGINS`
 - **Adding business logic in components** — graph operations belong in
   `core/family/*`; page joins belong in `lib/family.ts`; components
   should consume already-shaped view data.
+
+## Internationalization (next-intl)
+
+The site is multilingual (en/ru/uk/he, Hebrew RTL). UI strings live
+in `messages/{locale}.json` namespaced by surface (Chrome, Page.*,
+Directives.*, Errors). Articles live in `~/whoami/pages/{locale}/`;
+Plan 1's PageStore is locale-blind (reads pages/en/), Plan 3 will
+add per-locale reads.
+
+**Hard rules:**
+
+- **`proxy.ts`, not `middleware.ts`.** Next 16 renamed it. Older
+  blog posts say `middleware.ts`; they are wrong for this codebase.
+- **`setRequestLocale(locale)` in every page and layout under
+  `app/[locale]/`** — before any other next-intl call. Forgetting
+  it silently degrades to dynamic rendering. The
+  `frontend/test/static-rendering.test.ts` test is the canary
+  (currently skipped — see Plan 1 follow-up about removing
+  `force-dynamic`).
+- **`Link` from `@/i18n/navigation`, NOT from `next/link`.** The
+  i18n wrapper preserves the active locale.
+- **`useTranslations('Namespace')`** uses the lowest-common-
+  denominator namespace per component to keep the client bundle
+  slice tight.
+- **Type-safe message keys:** if `t('foo.bar')` fails typecheck,
+  the key is missing from `messages/en.json` — add it there.
+  `messages/en.json` is the source of truth for the catalog shape;
+  other locales mirror its structure.
+- **ICU `select` for data unions, not N separate keys.** When a
+  variable selects between alternatives (e.g., `'paternal' | 'maternal'`),
+  prefer a single `{var, select, paternal {...} maternal {...} other {...}}`
+  message over N separate keys. Avoids translation-key sprawl;
+  keeps the alternatives visibly related to translators.
+- **ICU `plural` for counts.** English needs only `one/other`;
+  Russian/Ukrainian need `one/few/many/other`; Hebrew needs
+  `one/two/many/other`. Author all categories the language
+  requires. Don't use the `_plural`/`_zero` suffix style — it
+  silently breaks Slavic and Hebrew.
+- **Server vs client components:** server components can call
+  `useTranslations` directly (next-intl supports this in async
+  server components). Client components (`"use client"`) must
+  receive translated strings as props from server parents until
+  Plan 2 introduces the scoped `<NextIntlClientProvider messages={pick(...)}>`
+  pattern.
+
+**RTL conventions (Hebrew):**
+
+- **Use logical Tailwind utilities only.** `ms-`/`me-` not `ml-`/`mr-`; `ps-`/`pe-` not `pl-`/`pr-`; `text-start`/`text-end` not `text-left`/`text-right`; `start-`/`end-` not `left-`/`right-`; `border-s`/`border-e` not `border-l`/`border-r`. The grep test in `frontend/test/rtl-tailwind-sweep.test.ts` blocks new directional usages. The single intentional exception is `components/ui/sheet.tsx` (its `data-[side=left|right]` patterns name a component prop, not layout direction).
+- **`<bdi>` for inline embedded foreign-script text.** Person names, place names, GEDCOM IDs, dates, and any other strings that may render in a different script than the surrounding text must be wrapped in `<bdi>`. Plain `<span dir="ltr">` does NOT isolate — it lets neighboring strong-directional characters bleed in. (Source: W3C "Inline markup and bidirectional text in HTML".)
+- **`<span lang="...">` for embedded foreign-language text.** A Russian name in an English paragraph: `<span lang="ru">Светлана</span>`. Affects screen readers, hyphenation, font selection, and search indexing.
+- **Directional icons mirror under RTL.** Add `rtl:scale-x-[-1]` to chevrons, arrows, and other directional iconography. Non-directional icons (clock, search magnifier, calendar) do NOT mirror — leave them alone.
+- **Family-tree spatial mirroring.** Siblings flow horizontally; under `dir="rtl"`, default `flex-row` reverses automatically. Vertical relationships (ancestors above, descendants below) are unaffected. `flex-row-reverse` is a hardcoded reversal that does NOT auto-flip — use only when you want the reverse-from-natural ordering regardless of locale.
+- **Hebrew calendar dates** are NOT default. `Intl.DateTimeFormat("he", { ... })` renders Gregorian dates in Hebrew script — that's the current default. Hebrew calendar (`{ calendar: 'hebrew' }`) is per-page or per-event opt-in (e.g., yahrzeit dates).
+
+**Translation pipeline (Plan 3):**
+
+- **Translation file frontmatter** carries `translation_of: <slug>`, `canonical_sha: <full-git-sha>`, `translated_at: <iso-date>`, `lang: <locale>`. `translation_status` is COMPUTED at render time, not stored.
+- **Status is computed** by `core/src/i18n/status.ts` from `(translation canonical_sha, head canonical_sha, unresolved-talk-entries)`. Returns `current | stale | review | missing`.
+- **Talk files** at `pages/{locale}/<slug>.translation.talk.md` are English-only audit logs of agent editorial choices. Users resolve entries by ticking `[ ]` → `[x]`. Once unresolved-count hits zero, status flips to `current` on next render.
+- **Missing translations fall back** to canonical EN content; rendered with a missing-translation banner.
+- **Use `getTranslationInfo(slug, locale)` from `lib/server-services`** when rendering an article — it returns `{ status, unresolvedCount, page }` ready to pass to the banner + body.
+- **`messages/{locale}.d.json.ts` is auto-generated** by next-intl's `createMessagesDeclaration` plugin during `next build` / `next dev`. It's gitignored. If you add a new namespace to `en.json` and tsc complains the path doesn't exist, run `next build` (or restart dev server) to regenerate the declaration. This is a known sharp edge that occasionally trips agents.
+- **`wai i18n status`** lists every (slug × locale) with its computed status. `wai i18n sync <slug> <locale>` invokes the editor agent via the harness adapter to produce a translation + talk file. Pass `--stub` for offline / dry-run testing (echoes canonical content with placeholder talk entry).

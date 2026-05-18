@@ -21,7 +21,7 @@ export function Admonition({ kind, children }: Props) {
     <Alert className={p.className}>
       <Icon className="h-4 w-4" />
       <AlertDescription>
-        <span className="font-semibold mr-2">{p.label}.</span>
+        <span className="font-semibold me-2">{p.label}.</span>
         {children}
       </AlertDescription>
     </Alert>

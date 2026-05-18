@@ -1,0 +1,220 @@
+{
+  "Chrome": {
+    "skipToContent": "Skip to content",
+    "LangSwitcher": {
+      "label": "Language",
+      "en": "English",
+      "ru": "Русский",
+      "uk": "Українська",
+      "he": "עברית"
+    }
+  },
+  "Page": {
+    "Home": {
+      "registry": "The Registry",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} other {# ancestors}} across {generations, plural, one {# generation} other {# generations}}",
+      "articlesCount": "{count, plural, one {# article} other {# articles}}",
+      "gedcomSync": "GEDCOM {date}",
+      "navFamily": "Family →",
+      "navTree": "Tree →",
+      "navSearch": "Search →",
+      "navChangelog": "Changelog →",
+      "snapshotStale": "GEDCOM snapshot is {days, plural, one {# day} other {# days}} old (last sync {date}). Run <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code> when you have changes to import.",
+      "dayLabel": "{month} {day}",
+      "continueResearch": "Continue research",
+      "frontierMeta": "· gen {generation} · {side} · missing {missing}",
+      "sidePaternal": "paternal",
+      "sideMaternal": "maternal",
+      "missingFather": "father",
+      "missingMother": "mother",
+      "missingBoth": "both",
+      "recentlyRevised": "Recently revised",
+      "allArticles": "All articles ({count})",
+      "talkPages": "Talk pages ({count})"
+    },
+    "Article": {
+      "banners": {
+        "stale": "This translation reflects an earlier version of the article. An updated translation is in progress.",
+        "review": "This translation is under review. The agent flagged {count, plural, one {# editorial choice} other {# editorial choices}} for your confirmation.",
+        "missing": "This article hasn't been translated to {language} yet. Showing the English version.",
+        "viewCanonical": "View the English version"
+      }
+    },
+    "Family": {
+      "navIndex": "Index",
+      "noDataTitle": "Family",
+      "noDataDescription": "No derived data found for the configured perspective record. Run <code>POST /api/gedcom/sync</code> to populate <code>genealogy/derived/</code>.",
+      "pageTitle": "Family lines",
+      "pageDescription": "Direct ancestors of <strong>{name}</strong>, traced through paternal and maternal lines.",
+      "browseTree": "Browse the family tree",
+      "gen1": "Parents",
+      "gen2": "Grandparents",
+      "gen3": "Great-grandparents",
+      "gen4": "Great-great-grandparents",
+      "gen5": "Great-great-great-grandparents",
+      "gen6": "Great-great-great-great-grandparents",
+      "genFallback": "Generation {n}",
+      "paternalLine": "Paternal line",
+      "maternalLine": "Maternal line",
+      "unknown": "unknown",
+      "bornDate": "b. {date}",
+      "diedDate": "d. {date}",
+      "bornDiedDate": "{birth} - {death}",
+      "lineSide": "{side, select, paternal {Paternal line} maternal {Maternal line} other {Perspective}}"
+    },
+    "FamilyTree": {
+      "navFamily": "Family",
+      "registry": "The Registry",
+      "lineagePathAria": "Lineage path",
+      "buttonMe": "Me",
+      "emptyState": "No related records yet.",
+      "person": {
+        "folio": "Folio · {record}",
+        "perspectiveSuffix": "· to {isMe, select, true {me} other {{name}}}",
+        "statParents": "Parents",
+        "statSiblings": "Siblings",
+        "statSpouses": "Spouses",
+        "statChildren": "Children",
+        "statAncestors": "Ancestors",
+        "statGenerations": "{n, plural, one {# gen} other {# gens}}",
+        "buttonArticle": "Article"
+      },
+      "family": {
+        "title": "Family",
+        "familyOfOrigin": "Family of origin",
+        "familyOfOriginPedigree": "{kind, select, adopted {Adoptive family} foster {Foster family} sealing {Sealed family} other {Family of origin}}",
+        "familyOfOriginNumbered": "{base} ({ordinal})",
+        "marriage": "Marriage",
+        "marriageNumbered": "Marriage ({ordinal})",
+        "otherMarriage": "{role, select, father {Father's other marriage} mother {Mother's other marriage} other {Other marriage}}",
+        "otherMarriageNumbered": "{base} ({ordinal})",
+        "marriedOn": "m. {date}",
+        "halfSiblingsTitle": "Half-siblings ({count})",
+        "cousinsTitle": "First cousins ({count})",
+        "viaMeta": "via {via}",
+        "relation": "{kind, select, father {father} mother {mother} sibling {sibling} spouse {spouse} child {child} stepMother {step-mother} stepFather {step-father} halfSibling {half-sibling} cousin {cousin} other {relative}}"
+      },
+      "conflicts": {
+        "title": "Conflicts",
+        "unresolved": "{n, plural, one {# unresolved} other {# unresolved}}",
+        "resolved": "resolved",
+        "weight": "weight {value}",
+        "field": "{field, select, birthDate {Birth date} birthPlace {Birthplace} deathDate {Death date} deathPlace {Place of death} marriageDate {Marriage date} marriagePlace {Marriage place} other {{raw}}}"
+      },
+      "coverage": {
+        "title": "Coverage",
+        "knownOfPossible": "{known} / {possible} known",
+        "perGeneration": "Per generation",
+        "researchFrontier": "Research frontier",
+        "missing": "missing {what, select, father {father} mother {mother} both {parents} other {{what}}}",
+        "complete": "Lineage is complete to the configured depth."
+      },
+      "descendants": {
+        "title": "Descendants",
+        "generationFallback": "Generation +{n}",
+        "viaMeta": "via {via}",
+        "headings": "{n, select, 1 {Children} 2 {Grandchildren} 3 {Great-grandchildren} 4 {2× Great-grandchildren} 5 {3× Great-grandchildren} other {Generation +{n}}}"
+      },
+      "lifespans": {
+        "title": "Lifespans",
+        "range": "{min} – {max}"
+      },
+      "lineage": {
+        "title": "Lineage",
+        "legendPaternal": "Paternal",
+        "legendMaternal": "Maternal",
+        "columnLine": "line",
+        "generationFallback": "Generation {n}",
+        "absentia": "— absentia —",
+        "headings": "{n, select, 1 {Parents} 2 {Grandparents} 3 {Great-grandparents} 4 {2× Great-grandparents} 5 {3× Great-grandparents} 6 {4× Great-grandparents} 7 {5× Great-grandparents} 8 {6× Great-grandparents} other {Generation {n}}}"
+      },
+      "media": {
+        "title": "Media",
+        "primary": "primary",
+        "fallbackTitle": "Media {record}"
+      },
+      "places": {
+        "title": "Places of birth",
+        "located": "{n} located",
+        "unlocated": " · {n} unlocated",
+        "unmappedHeading": "Unmapped places",
+        "unmappedHelp": "These places aren't yet in <code>genealogy/places-coords.yml</code>. Add an entry there to bring them onto the map. See <code>research-plans/places-research.md</code> for current research notes."
+      },
+      "dates": {
+        "bornDate": "b. {date}",
+        "diedDate": "d. {date}",
+        "bornDiedDate": "{birth} – {death}"
+      },
+      "disclosure": {
+        "show": "Show",
+        "hide": "Hide"
+      }
+    },
+    "Search": {
+      "navIndex": "← Index",
+      "heading": "Search",
+      "placeholder": "Search pages, places, people…",
+      "emptyPrompt": "Type a query above. Searches title, body, aliases, categories, and structured GEDCOM data (places, occupations, related names).",
+      "noResults": "No results for \"{query}\".",
+      "tabAll": "All",
+      "typeLabel": "{type, select, person {People} family {Families} event {Events} tree {Trees} meta {Meta} other {Other}}",
+      "placesHeading": "Places",
+      "clearPlaces": "clear ×"
+    },
+    "Changelog": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Revision history",
+      "subtitle": "A complete record of notable changes to —",
+      "heading": "Changelog",
+      "statRevisions": "{count, plural, one {# revision} other {# revisions}}",
+      "statReleased": "{count} released",
+      "statEntries": "{count} entries",
+      "statUpdated": "updated {date}",
+      "onThisPage": "On this page"
+    }
+  },
+  "Months": {
+    "long": {
+      "1": "January",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September",
+      "10": "October",
+      "11": "November",
+      "12": "December"
+    }
+  },
+  "Directives": {
+    "infoboxPerson": {
+      "eyebrow": "Person",
+      "born": "born",
+      "died": "died",
+      "parents": "parents",
+      "spouses": "spouses",
+      "children": "children",
+      "residences": "residences",
+      "work": "work",
+      "lifespanBornDied": "{birth} – {death}",
+      "lifespanBornOnly": "b. {year}",
+      "lifespanDiedOnly": "d. {year}"
+    },
+    "onThisDay": {
+      "heading": "On this day — {dayLabel}",
+      "event": "{kind, select, birth {was born} death {died} marriage {married} other {had an event}}",
+      "marriedWithSecondary": "married"
+    }
+  },
+  "Errors": {
+    "notFound": "Page not found",
+    "notFoundHeading": "That page isn’t in the registry.",
+    "notFoundHelp": "It may have been renamed, archived, or never existed. If you were looking for a person, search by their name — the wiki indexes aliases and GEDCOM-derived fields, so it often finds people whose canonical page slug isn’t obvious.",
+    "searchPlaceholder": "Search for a name…",
+    "linkHome": "← Home",
+    "linkFamilyTree": "Family tree →"
+  }
+}

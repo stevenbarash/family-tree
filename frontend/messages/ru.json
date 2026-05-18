@@ -1,0 +1,220 @@
+{
+  "Chrome": {
+    "skipToContent": "Перейти к содержимому",
+    "LangSwitcher": {
+      "label": "Язык",
+      "en": "English",
+      "ru": "Русский",
+      "uk": "Українська",
+      "he": "עברית"
+    }
+  },
+  "Page": {
+    "Home": {
+      "registry": "Реестр",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# предок} few {# предка} many {# предков} other {# предка}} в {generations, plural, one {# поколении} few {# поколениях} many {# поколениях} other {# поколениях}}",
+      "articlesCount": "{count, plural, one {# статья} few {# статьи} many {# статей} other {# статьи}}",
+      "gedcomSync": "GEDCOM {date}",
+      "navFamily": "Семья →",
+      "navTree": "Древо →",
+      "navSearch": "Поиск →",
+      "navChangelog": "История изменений →",
+      "snapshotStale": "Снимок GEDCOM устарел на {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} (последняя синхронизация {date}). Выполните <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code>, когда у вас появятся изменения для импорта.",
+      "dayLabel": "{day} {month}",
+      "continueResearch": "Продолжить исследование",
+      "frontierMeta": "· пок. {generation} · {side} · отсутствует {missing}",
+      "sidePaternal": "отцовская",
+      "sideMaternal": "материнская",
+      "missingFather": "отец",
+      "missingMother": "мать",
+      "missingBoth": "оба",
+      "recentlyRevised": "Недавно изменённые",
+      "allArticles": "Все статьи ({count})",
+      "talkPages": "Страницы обсуждения ({count})"
+    },
+    "Article": {
+      "banners": {
+        "stale": "Этот перевод отражает более раннюю версию статьи. Обновление в процессе.",
+        "review": "Перевод на проверке. Агент отметил {count, plural, one {# редакторский выбор} few {# редакторских выбора} many {# редакторских выборов} other {# редакторских выбора}} для вашего подтверждения.",
+        "missing": "Эта статья ещё не переведена на {language}. Показана английская версия.",
+        "viewCanonical": "Открыть английскую версию"
+      }
+    },
+    "Family": {
+      "navIndex": "Указатель",
+      "noDataTitle": "Семья",
+      "noDataDescription": "Не найдено производных данных для настроенной записи. Выполните <code>POST /api/gedcom/sync</code>, чтобы заполнить <code>genealogy/derived/</code>.",
+      "pageTitle": "Семейные линии",
+      "pageDescription": "Прямые предки <strong>{name}</strong>, прослеженные по отцовской и материнской линиям.",
+      "browseTree": "Просмотреть семейное древо",
+      "gen1": "Родители",
+      "gen2": "Бабушки и дедушки",
+      "gen3": "Прабабушки и прадедушки",
+      "gen4": "Прапрабабушки и прапрадедушки",
+      "gen5": "Прапрапрабабушки и прапрапрадедушки",
+      "gen6": "Прапрапрапрабабушки и прапрапрапрадедушки",
+      "genFallback": "Поколение {n}",
+      "paternalLine": "Отцовская линия",
+      "maternalLine": "Материнская линия",
+      "unknown": "неизвестно",
+      "bornDate": "р. {date}",
+      "diedDate": "ум. {date}",
+      "bornDiedDate": "{birth} — {death}",
+      "lineSide": "{side, select, paternal {Отцовская линия} maternal {Материнская линия} other {Перспектива}}"
+    },
+    "FamilyTree": {
+      "navFamily": "Семья",
+      "registry": "Реестр",
+      "lineagePathAria": "Путь родословной",
+      "buttonMe": "Я",
+      "emptyState": "Связанных записей пока нет.",
+      "person": {
+        "folio": "Лист · {record}",
+        "perspectiveSuffix": "· к {isMe, select, true {мне} other {{name}}}",
+        "statParents": "Родители",
+        "statSiblings": "Братья и сёстры",
+        "statSpouses": "Супруги",
+        "statChildren": "Дети",
+        "statAncestors": "Предки",
+        "statGenerations": "{n, plural, one {# пок.} few {# пок.} many {# пок.} other {# пок.}}",
+        "buttonArticle": "Статья"
+      },
+      "family": {
+        "title": "Семья",
+        "familyOfOrigin": "Родительская семья",
+        "familyOfOriginPedigree": "{kind, select, adopted {Приёмная семья} foster {Семья воспитателей} sealing {Запечатанная семья} other {Родительская семья}}",
+        "familyOfOriginNumbered": "{base} ({ordinal})",
+        "marriage": "Брак",
+        "marriageNumbered": "Брак ({ordinal})",
+        "otherMarriage": "{role, select, father {Другой брак отца} mother {Другой брак матери} other {Другой брак}}",
+        "otherMarriageNumbered": "{base} ({ordinal})",
+        "marriedOn": "бр. {date}",
+        "halfSiblingsTitle": "Сводные братья и сёстры ({count})",
+        "cousinsTitle": "Двоюродные братья и сёстры ({count})",
+        "viaMeta": "через {via}",
+        "relation": "{kind, select, father {отец} mother {мать} sibling {брат или сестра} spouse {супруг} child {ребёнок} stepMother {мачеха} stepFather {отчим} halfSibling {сводный брат или сестра} cousin {двоюродный брат или сестра} other {родственник}}"
+      },
+      "conflicts": {
+        "title": "Противоречия",
+        "unresolved": "{n, plural, one {# неразрешённое} few {# неразрешённых} many {# неразрешённых} other {# неразрешённых}}",
+        "resolved": "разрешено",
+        "weight": "вес {value}",
+        "field": "{field, select, birthDate {Дата рождения} birthPlace {Место рождения} deathDate {Дата смерти} deathPlace {Место смерти} marriageDate {Дата брака} marriagePlace {Место брака} other {{raw}}}"
+      },
+      "coverage": {
+        "title": "Охват",
+        "knownOfPossible": "{known} / {possible} известно",
+        "perGeneration": "По поколениям",
+        "researchFrontier": "Граница исследования",
+        "missing": "отсутствует {what, select, father {отец} mother {мать} both {родители} other {{what}}}",
+        "complete": "Родословная заполнена до настроенной глубины."
+      },
+      "descendants": {
+        "title": "Потомки",
+        "generationFallback": "Поколение +{n}",
+        "viaMeta": "через {via}",
+        "headings": "{n, select, 1 {Дети} 2 {Внуки} 3 {Правнуки} 4 {Праправнуки} 5 {Прапраправнуки} other {Поколение +{n}}}"
+      },
+      "lifespans": {
+        "title": "Продолжительность жизни",
+        "range": "{min} – {max}"
+      },
+      "lineage": {
+        "title": "Родословная",
+        "legendPaternal": "Отцовская",
+        "legendMaternal": "Материнская",
+        "columnLine": "линия",
+        "generationFallback": "Поколение {n}",
+        "absentia": "— отсутствует —",
+        "headings": "{n, select, 1 {Родители} 2 {Бабушки и дедушки} 3 {Прабабушки и прадедушки} 4 {Прапрабабушки и прапрадедушки} 5 {Прапрапрабабушки и прапрапрадедушки} 6 {Прапрапрапрабабушки и прапрапрапрадедушки} 7 {Прапрапрапрапрабабушки и прапрапрапрапрадедушки} 8 {Прапрапрапрапрапрабабушки и прапрапрапрапрапрадедушки} other {Поколение {n}}}"
+      },
+      "media": {
+        "title": "Медиа",
+        "primary": "основное",
+        "fallbackTitle": "Медиа {record}"
+      },
+      "places": {
+        "title": "Места рождения",
+        "located": "{n} с координатами",
+        "unlocated": " · {n} без координат",
+        "unmappedHeading": "Места без координат",
+        "unmappedHelp": "Этих мест пока нет в <code>genealogy/places-coords.yml</code>. Добавьте запись там, чтобы они появились на карте. Текущие исследовательские заметки см. в <code>research-plans/places-research.md</code>."
+      },
+      "dates": {
+        "bornDate": "р. {date}",
+        "diedDate": "ум. {date}",
+        "bornDiedDate": "{birth} – {death}"
+      },
+      "disclosure": {
+        "show": "Показать",
+        "hide": "Скрыть"
+      }
+    },
+    "Search": {
+      "navIndex": "← Указатель",
+      "heading": "Поиск",
+      "placeholder": "Поиск страниц, мест, людей…",
+      "emptyPrompt": "Введите запрос выше. Поиск охватывает заголовки, текст, псевдонимы, категории и структурированные данные GEDCOM (места, занятия, связанные имена).",
+      "noResults": "Нет результатов по запросу «{query}».",
+      "tabAll": "Все",
+      "typeLabel": "{type, select, person {Люди} family {Семьи} event {События} tree {Древа} meta {Мета} other {Прочее}}",
+      "placesHeading": "Места",
+      "clearPlaces": "очистить ×"
+    },
+    "Changelog": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "История правок",
+      "subtitle": "Полный список значимых изменений —",
+      "heading": "История изменений",
+      "statRevisions": "{count, plural, one {# правка} few {# правки} many {# правок} other {# правки}}",
+      "statReleased": "{count} выпущено",
+      "statEntries": "{count} записей",
+      "statUpdated": "обновлено {date}",
+      "onThisPage": "На этой странице"
+    }
+  },
+  "Months": {
+    "long": {
+      "1": "январь",
+      "2": "февраль",
+      "3": "март",
+      "4": "апрель",
+      "5": "май",
+      "6": "июнь",
+      "7": "июль",
+      "8": "август",
+      "9": "сентябрь",
+      "10": "октябрь",
+      "11": "ноябрь",
+      "12": "декабрь"
+    }
+  },
+  "Directives": {
+    "infoboxPerson": {
+      "eyebrow": "Личность",
+      "born": "родился",
+      "died": "умер",
+      "parents": "родители",
+      "spouses": "супруги",
+      "children": "дети",
+      "residences": "места проживания",
+      "work": "деятельность",
+      "lifespanBornDied": "{birth} – {death}",
+      "lifespanBornOnly": "р. {year}",
+      "lifespanDiedOnly": "ум. {year}"
+    },
+    "onThisDay": {
+      "heading": "В этот день — {dayLabel}",
+      "event": "{kind, select, birth {родился} death {умер} marriage {женился} other {произошло событие}}",
+      "marriedWithSecondary": "женился"
+    }
+  },
+  "Errors": {
+    "notFound": "Страница не найдена",
+    "notFoundHeading": "Этой страницы нет в реестре.",
+    "notFoundHelp": "Возможно, она была переименована, заархивирована или никогда не существовала. Если вы искали человека, попробуйте поиск по имени — вики индексирует псевдонимы и поля, производные от GEDCOM, поэтому часто находит людей, чей канонический slug страницы неочевиден.",
+    "searchPlaceholder": "Поиск по имени…",
+    "linkHome": "← Главная",
+    "linkFamilyTree": "Семейное древо →"
+  }
+}
