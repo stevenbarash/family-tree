@@ -157,6 +157,8 @@
         "generationLabel": "поколение {n}",
         "mobileGenerationHeader": "Поколение {n}",
         "chartAriaLabel": "Родословная диаграмма, {n} предков",
+        "frontierMissing": "отсутствует",
+        "frontierAriaLabel": "{kinship} — отсутствует, открыть исследовательские заметки",
         "kinship": {
           "father": "Отец",
           "mother": "Мать",

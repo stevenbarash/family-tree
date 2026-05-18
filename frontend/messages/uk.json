@@ -157,6 +157,8 @@
         "generationLabel": "покоління {n}",
         "mobileGenerationHeader": "Покоління {n}",
         "chartAriaLabel": "Родовідна діаграма, {n} предків",
+        "frontierMissing": "відсутній",
+        "frontierAriaLabel": "{kinship} — відсутній, відкрити дослідницькі нотатки",
         "kinship": {
           "father": "Батько",
           "mother": "Мати",

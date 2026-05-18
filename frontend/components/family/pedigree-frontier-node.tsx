@@ -6,6 +6,10 @@ import { Handle, Position } from '@xyflow/react';
 export interface PedigreeFrontierNodeData extends Record<string, unknown> {
   /** Kinship label (already-translated string), e.g. "Paternal grandmother" */
   kinshipLabel: string;
+  /** Translated "missing" indicator text shown below the kinship label. */
+  missingLabel: string;
+  /** Translated full aria-label string (e.g. "Paternal grandmother — missing, open research notes"). */
+  ariaLabel: string;
   /** The record of the present descendant whose parent slot this is. */
   descendantRecord: string;
   /** Where clicking the slot navigates. Set by the section. */
@@ -25,7 +29,7 @@ export function PedigreeFrontierNode({ data }: NodeProps<PedigreeFrontierNodeTyp
     <a
       href={data.href}
       className="group flex w-44 items-center justify-center rounded-md border border-dashed border-muted-foreground/40 bg-transparent px-2.5 py-3 transition-colors hover:bg-muted/30 hover:border-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      aria-label={`${data.kinshipLabel} — missing, open research notes`}
+      aria-label={data.ariaLabel}
     >
       <Handle type="target" position={Position.Top} className="!opacity-0" />
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
@@ -34,7 +38,7 @@ export function PedigreeFrontierNode({ data }: NodeProps<PedigreeFrontierNodeTyp
           <bdi>{data.kinshipLabel}</bdi>
         </div>
         <div className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground/50">
-          missing
+          {data.missingLabel}
         </div>
       </div>
     </a>

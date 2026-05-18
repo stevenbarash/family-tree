@@ -153,6 +153,8 @@
         "generationLabel": "generation {n}",
         "mobileGenerationHeader": "Generation {n}",
         "chartAriaLabel": "Pedigree chart with {n} ancestors",
+        "frontierMissing": "missing",
+        "frontierAriaLabel": "{kinship} — missing, open research notes",
         "kinship": {
           "father": "Father",
           "mother": "Mother",

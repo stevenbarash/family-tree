@@ -110,6 +110,8 @@ export async function PedigreeSection({ view }: Props) {
       position: { x: n.x - NODE_HALF_WIDTH, y: n.y - NODE_HALF_HEIGHT },
       data: {
         kinshipLabel,
+        missingLabel: t('frontierMissing'),
+        ariaLabel: t('frontierAriaLabel', { kinship: kinshipLabel }),
         descendantRecord: n.descendantRecord,
         href: familyTreeHref(n.descendantRecord),
       },

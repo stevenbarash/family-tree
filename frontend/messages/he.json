@@ -157,6 +157,8 @@
         "generationLabel": "דור {n}",
         "mobileGenerationHeader": "דור {n}",
         "chartAriaLabel": "אילן יוחסין, {n} אבות",
+        "frontierMissing": "חסר",
+        "frontierAriaLabel": "{kinship} — חסר, פתח רשימות מחקר",
         "kinship": {
           "father": "אבא",
           "mother": "אמא",
