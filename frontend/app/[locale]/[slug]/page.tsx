@@ -131,8 +131,9 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   const sourceCount = countCitations(page.body);
   const liveNoteCount = notes.filter(n => !n.deletedAt).length;
   const openGapCount = countOpenGaps(talkBody);
+  const editors = page.meta.editors ?? [];
   const showStrip = !isTalkSlug(slug) && !isRestricted
-    && (page.meta.created || page.meta.editors.length > 0 || gedcomSnapshotDate || sourceCount > 0 || liveNoteCount > 0 || openGapCount > 0);
+    && (page.meta.created || page.meta.author || editors.length > 0 || gedcomSnapshotDate || sourceCount > 0 || liveNoteCount > 0 || openGapCount > 0);
 
   return (
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-6 sm:px-6 lg:py-10">
@@ -167,8 +168,9 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
         {showStrip ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">
             {page.meta.created ? <span>created {page.meta.created}</span> : null}
-            {page.meta.editors.length > 0 ? (
-              <span>editors: {page.meta.editors.join(', ')}</span>
+            {page.meta.author ? <span>author: {page.meta.author}</span> : null}
+            {editors.length > 0 ? (
+              <span>editors: {editors.join(', ')}</span>
             ) : null}
             {gedcomSnapshotDate ? (
               <span>GEDCOM snapshot {gedcomSnapshotDate}</span>

@@ -47,6 +47,73 @@ test('wai i18n sync: writes translation + talk file with correct frontmatter (st
   await rm(root, { recursive: true });
 });
 
+test('wai i18n sync: injects author from WAI_AUTHOR_MODEL into both files', async () => {
+  const root = join(tmpdir(), `whoami-i18n-author-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', 'abby.md'),
+    "---\nschemaVersion: 1\ntitle: Abby\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nEnglish body",
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  const prev = process.env.WAI_AUTHOR_MODEL;
+  process.env.WAI_AUTHOR_MODEL = 'Claude Sonnet 99.9';
+  try {
+    let stdout = '';
+    await runI18nSync({
+      rootDir: root,
+      slug: 'abby',
+      locale: 'ru',
+      translator: stubTranslator,
+      write: (s) => { stdout += s; },
+    });
+
+    const translation = await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+    assert.match(translation, /^author: Claude Sonnet 99\.9$/m);
+    assert.doesNotMatch(translation, /^owner:/m);
+    assert.doesNotMatch(translation, /^editors:/m);
+
+    const talk = await readFile(join(root, 'pages', 'ru', 'abby.translation.talk.md'), 'utf8');
+    assert.match(talk, /^author: Claude Sonnet 99\.9$/m);
+  } finally {
+    if (prev === undefined) delete process.env.WAI_AUTHOR_MODEL;
+    else process.env.WAI_AUTHOR_MODEL = prev;
+    await rm(root, { recursive: true });
+  }
+});
+
+test('wai i18n sync: defaults author to Claude Opus 4.7 when env var unset', async () => {
+  const root = join(tmpdir(), `whoami-i18n-author-default-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', 'abby.md'),
+    "---\nschemaVersion: 1\ntitle: Abby\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nEnglish body",
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  const prev = process.env.WAI_AUTHOR_MODEL;
+  delete process.env.WAI_AUTHOR_MODEL;
+  try {
+    let stdout = '';
+    await runI18nSync({
+      rootDir: root,
+      slug: 'abby',
+      locale: 'uk',
+      translator: stubTranslator,
+      write: (s) => { stdout += s; },
+    });
+    const translation = await readFile(join(root, 'pages', 'uk', 'abby.md'), 'utf8');
+    assert.match(translation, /^author: Claude Opus 4\.7$/m);
+  } finally {
+    if (prev !== undefined) process.env.WAI_AUTHOR_MODEL = prev;
+    await rm(root, { recursive: true });
+  }
+});
+
 test('wai i18n sync: refuses canonical locale (en)', async () => {
   const root = join(tmpdir(), `whoami-i18n-sync-en-${Date.now()}`);
   await mkdir(root, { recursive: true });

@@ -33,8 +33,16 @@ export interface PageMeta {
    */
   schemaVersion: number;
   title: string;
-  owner: string;
-  editors: string[];
+  /**
+   * LLM model that authored this page (e.g. "Claude Opus 4.7"). The
+   * `wai i18n sync` pipeline injects this from `WAI_AUTHOR_MODEL`.
+   * Older pages may have the deprecated `owner` field instead.
+   */
+  author?: string;
+  /** Deprecated in favor of `author`. Kept optional for backwards compat. */
+  owner?: string;
+  /** Deprecated in favor of `author`. Kept optional for backwards compat. */
+  editors?: string[];
   type: PageType;
   aliases: string[];
   categories: string[];
