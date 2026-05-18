@@ -16,5 +16,8 @@ export const stubTranslator: Translator = async (req) => ({
 
 ## Resolved
 `,
-  titleTranslation: `[${req.locale}] ${(req.canonicalMeta as { title?: string }).title ?? req.canonicalMeta['title'] ?? ''}`,
+  // When the GEDCOM has a NAME.TRAN for this locale, use it verbatim;
+  // otherwise fall back to bracket-prefixing for the stub's smoke-test value.
+  titleTranslation: req.nameTranslation
+    ?? `[${req.locale}] ${(req.canonicalMeta as { title?: string }).title ?? req.canonicalMeta['title'] ?? ''}`,
 });

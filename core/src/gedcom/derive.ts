@@ -17,6 +17,7 @@ import {
   type Sex,
 } from './types.ts';
 import { stripPointer, type ParseResult } from './parser.ts';
+import { parseDerivedRecord } from './schema.ts';
 import { parseGedcomYear } from '../family/dates.ts';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -73,7 +74,7 @@ function deriveSpousesAndChildren(
       const childRecord = stripPointer(chil.data ?? '');
       const child = ctx.individuals.get(childRecord);
       if (!child) continue;
-      const born = child.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE')?.data?.trim() || null;
+      const born = readDateValue(child.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE'));
       children.push({ record: childRecord, name: deriveName(child), born });
     }
   }
@@ -85,7 +86,7 @@ function deriveResidences(node: GedcomNode): ResidenceEvent[] {
   return node.tree
     .filter(n => n.tag === 'RESI')
     .map(resi => ({
-      date: resi.tree.find(n => n.tag === 'DATE')?.data?.trim() || null,
+      date: readDateValue(resi.tree.find(n => n.tag === 'DATE')),
       place: resi.tree.find(n => n.tag === 'PLAC')?.data?.trim() || null,
     }))
     .filter(r => r.date || r.place);
@@ -96,7 +97,7 @@ function deriveOccupations(node: GedcomNode): OccupationEvent[] {
     .filter(n => n.tag === 'OCCU')
     .map(occu => ({
       title: (occu.data ?? '').trim(),
-      date: occu.tree.find(n => n.tag === 'DATE')?.data?.trim() || null,
+      date: readDateValue(occu.tree.find(n => n.tag === 'DATE')),
     }))
     .filter(o => o.title);
 }
@@ -104,7 +105,7 @@ function deriveOccupations(node: GedcomNode): OccupationEvent[] {
 function memberRef(record: string, ind: GedcomNode, includeBorn: boolean): FamilyMemberRef {
   const ref: FamilyMemberRef = { record, name: deriveName(ind) };
   if (includeBorn) {
-    ref.born = ind.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE')?.data?.trim() || null;
+    ref.born = readDateValue(ind.tree.find(n => n.tag === 'BIRT')?.tree.find(n => n.tag === 'DATE'));
   }
   return ref;
 }
@@ -199,7 +200,10 @@ function deriveSourceRef(pointer: string, sources: Map<string, GedcomNode>): Sou
   if (author) ref.author = author;
   const publisher = get('PUBL');
   if (publisher) ref.publisher = publisher;
-  const apid = get('_APID');
+  // GEDCOM 7 uses the standard EXID tag for what 5.5.1 expressed via the
+  // Ancestry-specific _APID vendor extension. Both shapes can appear; prefer
+  // EXID (v7) if present, fall back to _APID (5.5.1 legacy).
+  const apid = get('EXID') ?? get('_APID');
   if (apid) ref.apid = apid;
   const note = get('NOTE');
   if (note) ref.note = note;
@@ -272,10 +276,12 @@ export function deriveIndividual(
   const sc = deriveSpousesAndChildren(node, record, ctx);
   const birth = deriveDatedEvent(node, 'BIRT');
   const death = deriveDatedEvent(node, 'DEAT');
+  const nameTranslations = deriveNameTranslations(node);
   return {
     record,
     name: deriveName(node),
     sex: deriveSex(node),
+    ...(Object.keys(nameTranslations).length > 0 ? { nameTranslations } : {}),
     birth,
     death,
     parents: deriveParents(node, ctx),
@@ -349,21 +355,84 @@ function deriveName(node: GedcomNode): string {
   return nameNode.data.replace(/\//g, '').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Extract NAME.TRAN substructures (GEDCOM 7 feature). Returns a map of
+ * BCP 47 locale → translated name string, gathered from the FIRST NAME
+ * block on this individual. Used by the translation pipeline as a
+ * first-choice translation source so per-language names live once in the
+ * GEDCOM rather than being re-derived per article.
+ *
+ * Empty map if there's no NAME, no TRANs, or TRANs lack LANG (LANG is
+ * required by spec — drop ones without it so we don't conflate locales).
+ */
+export function deriveNameTranslations(node: GedcomNode): Record<string, string> {
+  const out: Record<string, string> = {};
+  const nameNode = node.tree.find(n => n.tag === 'NAME');
+  if (!nameNode) return out;
+  for (const tran of nameNode.tree.filter(n => n.tag === 'TRAN')) {
+    const lang = tran.tree.find(n => n.tag === 'LANG')?.data?.trim();
+    const value = tran.data?.trim();
+    if (!lang || !value) continue;
+    out[lang] = value;
+  }
+  return out;
+}
+
 function deriveDatedEvent(node: GedcomNode, tag: string): DatedEvent | null {
   const eventNode = node.tree.find(n => n.tag === tag);
   if (!eventNode) return null;
   const dateNode = eventNode.tree.find(n => n.tag === 'DATE');
   const placeNode = eventNode.tree.find(n => n.tag === 'PLAC');
-  const date = dateNode?.data?.trim() || null;
+  const date = readDateValue(dateNode);
   const place = placeNode?.data?.trim() || null;
   if (!date && !place) return null;
   return { date, place };
 }
 
+/**
+ * Read the displayable value of a DATE node. In GEDCOM 5.5.1, DATE.data holds
+ * the date string directly (which often included non-canonical forms like
+ * year-ranges "1995-2020" or month names in mixed case "5 May 2001"). The
+ * gedcom7code/c-converter normalizes those into canonical DATE + a PHRASE
+ * substructure that preserves the original. Prefer PHRASE when present so we
+ * keep the human-meaningful original wording; fall back to DATE otherwise.
+ *
+ * Examples (after v7 conversion):
+ *   2 DATE 2017               → "2017"
+ *   3 PHRASE 2017-2020        → "2017-2020"  ← preferred
+ *
+ *   2 DATE 5 MAY 2001         → "5 MAY 2001"  ← no PHRASE, use DATE
+ */
+export function readDateValue(dateNode: GedcomNode | undefined): string | null {
+  if (!dateNode) return null;
+  const phrase = dateNode.tree.find(n => n.tag === 'PHRASE')?.data?.trim();
+  if (phrase) return phrase;
+  return dateNode.data?.trim() || null;
+}
+
+/**
+ * Validate `derived` against the schema and return the canonical YAML form
+ * the writer would put on disk. Exported so callers that want to compare
+ * what's on disk to what they're about to write (e.g. `sync.ts` diff)
+ * produce byte-identical text — comparing raw vs. parsed records would
+ * spuriously flag every record as "changed" whenever Zod normalizes the
+ * shape (e.g. fills a missing array, drops an unknown field).
+ *
+ * Throws if the deriver produced an invalid record — that's a bug in
+ * the deriver, not bad data to ship to disk.
+ */
+export function serializeDerivedRecord(derived: DerivedRecord): string {
+  const parsed = parseDerivedRecord(derived);
+  if (!parsed.ok) {
+    throw new Error(`deriver produced invalid DerivedRecord for ${derived.record}: ${parsed.error}`);
+  }
+  return yaml.dump(parsed.data, { lineWidth: 200, sortKeys: false, noRefs: true });
+}
+
 export async function writeDerivedYaml(derivedDir: string, derived: DerivedRecord): Promise<string> {
+  const text = serializeDerivedRecord(derived);
   mkdirSync(derivedDir, { recursive: true });
   const path = join(derivedDir, `${derived.record}.yml`);
-  const text = yaml.dump(derived, { lineWidth: 200, sortKeys: false, noRefs: true });
   writeFileSync(path, text);
   return path;
 }

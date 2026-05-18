@@ -20,6 +20,23 @@ export interface RepoState {
   derivedDir: string;
   derived: ReadonlyMap<string, DerivedRecord>;
   placesCoords: ReadonlyArray<PlaceCoord>;
+  /**
+   * Pages whose frontmatter failed to parse / migrate / Zod-validate.
+   * load.ts collects these silently rather than throwing; schema-drift
+   * surfaces them as findings so `wai check` reports malformed pages
+   * instead of silently skipping them.
+   * Optional so existing test fixtures stay terse — detectors treat
+   * undefined and empty equivalently.
+   */
+  parseErrors?: ReadonlyArray<{ path: string; error: string }>;
+  /**
+   * HEAD git SHA per canonical EN slug (pages/en/<slug>.md), populated
+   * by load.ts via `git log -1 --format=%H -- pages/en/<slug>.md`.
+   * Used by stale-sha-drift to compare translation files'
+   * `canonical_sha` field against the canonical's actual HEAD.
+   * Optional so test fixtures and non-git contexts stay terse.
+   */
+  canonicalHeadSha?: ReadonlyMap<string, string>;
 }
 
 export type FindingCategory = 'format' | 'data' | 'schema' | 'coverage' | 'consistency' | 'citation';

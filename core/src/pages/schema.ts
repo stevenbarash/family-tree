@@ -45,9 +45,17 @@ const PageMetaSchema = z.object({
     z.date().transform(d => d.toISOString().slice(0, 10))
   ]).optional(),
   corrections: z.array(CorrectionSchema).default([]),
-  lang: z.string().min(1).optional(),
-  translationOf: z.string().min(1).optional(),
-  canonicalSha: z.string().min(1).optional(),
+  // BCP 47 short codes — we use plain two- or three-letter forms (en, ru, uk, he).
+  // Reject things like "english" or "ru-RU" that have crept in from agents who
+  // didn't know the convention.
+  lang: z.string().regex(/^[a-z]{2,3}$/, 'expected a BCP 47 short locale code like "ru" or "he"').optional(),
+  // Plain slug — same character class as the page slug itself (lowercase
+  // letters, digits, hyphens). Rejects path forms like "pages/en/x.md" that
+  // agents have occasionally written.
+  translationOf: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'expected a page slug, not a path or filename').optional(),
+  // 40-char git SHA. Agents have occasionally written shortened forms or
+  // descriptions; tighten to the full-length form the pipeline emits.
+  canonicalSha: z.string().regex(/^[a-f0-9]{40}$/, 'expected a full 40-character git SHA').optional(),
   translatedAt: z.union([
     z.string().regex(ISO_DATE, 'expected YYYY-MM-DD'),
     z.date().transform(d => d.toISOString().slice(0, 10))
@@ -68,4 +76,38 @@ void _schemaParity;
  */
 export function parsePageMeta(input: unknown): PageMeta {
   return PageMetaSchema.parse(input);
+}
+
+/**
+ * Focused validation of just the translation-pipeline frontmatter fields
+ * (`lang`, `translationOf`, `canonicalSha`, `translatedAt`) — the same
+ * regexes the main PageMeta schema enforces, pulled out so they can be
+ * applied to pages that aren't of an article type and therefore can't
+ * be parsed with the full PageMeta schema (e.g. `type: translation-talk`,
+ * `type: meta`).
+ *
+ * Why this exists: talk pages carry the same pipeline fields as the
+ * articles they shadow, and the same bug class hits them — a
+ * `translation_of: en/<slug>` path instead of a bare slug breaks the
+ * pipeline for both files. Without this focused validator the talk-page
+ * version of the bug is invisible to `wai check` (the main schema
+ * rejects talk pages on type alone and load.ts silently drops them).
+ *
+ * Returns a flattened error string on failure, null on success. Caller
+ * pushes the error into `RepoState.parseErrors` for `detectSchemaDrift`
+ * to surface — same channel article-page schema errors flow through.
+ */
+const PipelineFieldsSchema = PageMetaSchema.pick({
+  lang: true,
+  translationOf: true,
+  canonicalSha: true,
+  translatedAt: true,
+}).passthrough();
+
+export function parsePipelineFields(input: unknown): string | null {
+  const result = PipelineFieldsSchema.safeParse(input);
+  if (result.success) return null;
+  return result.error.issues
+    .map(i => `${i.path.length ? i.path.join('.') + ': ' : ''}${i.message}`)
+    .join('; ');
 }

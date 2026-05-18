@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parsePageMeta } from '../../src/pages/schema.ts';
+import { parsePageMeta, parsePipelineFields } from '../../src/pages/schema.ts';
 import { CURRENT_SCHEMA_VERSION } from '../../src/pages/migrations/index.ts';
 
 test('parsePageMeta: accepts a minimal valid frontmatter object', () => {
@@ -175,4 +175,62 @@ test('parsePageMeta: corrections is an array — single object rejected', () => 
       corrections: { field: 'name', value: 'X', source: 's' },
     }),
   );
+});
+
+test('parsePipelineFields: returns null when all pipeline fields valid', () => {
+  assert.equal(parsePipelineFields({
+    lang: 'ru',
+    translationOf: 'rahil-moiseyevna-berezovskaya',
+    canonicalSha: 'a3f2c19abcdef0123456789abcdef0123456789a',
+    translatedAt: '2026-05-17',
+  }), null);
+});
+
+test('parsePipelineFields: returns null on minimal/empty input', () => {
+  // All pipeline fields are optional — a file that carries none of them
+  // (a research-plan, a meta page) passes silently.
+  assert.equal(parsePipelineFields({}), null);
+  assert.equal(parsePipelineFields({ type: 'translation-talk' }), null);
+});
+
+test('parsePipelineFields: catches translationOf path-vs-slug bug', () => {
+  const err = parsePipelineFields({
+    lang: 'ru',
+    translationOf: 'en/rahil-moiseyevna-berezovskaya',
+    canonicalSha: 'a3f2c19abcdef0123456789abcdef0123456789a',
+  });
+  assert.notEqual(err, null);
+  assert.match(err!, /translationOf/);
+  assert.match(err!, /slug/);
+});
+
+test('parsePipelineFields: catches translationOf full-path bug', () => {
+  const err = parsePipelineFields({
+    translationOf: 'pages/en/some-slug.md',
+  });
+  assert.notEqual(err, null);
+  assert.match(err!, /translationOf/);
+});
+
+test('parsePipelineFields: catches bad lang code', () => {
+  const err = parsePipelineFields({ lang: 'English' });
+  assert.notEqual(err, null);
+  assert.match(err!, /lang/);
+});
+
+test('parsePipelineFields: catches short canonical_sha', () => {
+  const err = parsePipelineFields({ canonicalSha: 'abc123' });
+  assert.notEqual(err, null);
+  assert.match(err!, /canonicalSha/);
+});
+
+test('parsePipelineFields: ignores unrelated fields (passthrough)', () => {
+  // A talk page carries title, type, author, etc. — none should be flagged.
+  assert.equal(parsePipelineFields({
+    title: 'Talk page',
+    type: 'translation-talk',
+    author: 'Claude Opus 4.7',
+    lang: 'ru',
+    translationOf: 'valid-slug',
+  }), null);
 });

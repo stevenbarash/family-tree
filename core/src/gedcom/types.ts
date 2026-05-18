@@ -148,6 +148,14 @@ export interface DerivedRecord {
    * Consumers should treat undefined as 'U'.
    */
   sex?: Sex;
+  /**
+   * NAME.TRAN substructures from GEDCOM 7. Maps BCP 47 locale → translated
+   * name. Used by `wai i18n sync` as a first-choice translation source so
+   * the canonical per-language form lives in one place (the GEDCOM) rather
+   * than being re-derived in each article. Absent when the GEDCOM has no
+   * TRAN entries for this individual.
+   */
+  nameTranslations?: Record<string, string>;
   birth: DatedEvent | null;
   death: DatedEvent | null;
   parents: ParentRef[];

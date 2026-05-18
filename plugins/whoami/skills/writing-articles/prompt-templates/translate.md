@@ -46,6 +46,25 @@ Body (markdown):
 
 {{BODY}}
 
+## Canonical translated title from GEDCOM (NAME.TRAN for {{LOCALE}})
+
+{{NAME_TRAN_OR_NONE}}
+
+If the value above is anything other than `(none)`, it is the project's
+canonical translated title for this individual — pulled from the GEDCOM 7
+`NAME.TRAN` substructure. **Use it verbatim as your `titleTranslation`
+output.** Do NOT re-translate the title from scratch, and do NOT log a
+`[name-transliteration]` talk entry about the title itself; the canonical
+form has already been adjudicated. You still translate the body and may
+log talk entries for non-title editorial choices (idiom, place-name, date
+format, register, etc.).
+
+If the value is `(none)`, no canonical exists yet — pick the best
+rendering, use it as `titleTranslation`, and DO log a
+`[name-transliteration]` talk entry so a human can ratify it (the
+ratified form will eventually be promoted into the GEDCOM as a
+`NAME.TRAN`).
+
 ## Prior translation (if any — preserve where consistent with new canonical)
 
 {{EXISTING_TRANSLATION_OR_NONE}}
@@ -84,6 +103,20 @@ If you produce additional frontmatter blocks inside the body (e.g.
 copying the canonical's `type:` / `categories:` / `gedcom:` block),
 do NOT include `owner:` or `editors:` — those have been retired in
 favor of the pipeline-injected `author:`.
+
+## Frontmatter field-format rules (enforced by Zod + `wai check`)
+
+These are validated by the page schema and surface as `wai check
+--only schema` findings if violated. Match exactly:
+
+- `translation_of`: a bare page slug (`leah-rosinsky`), NOT a path
+  (`pages/en/leah-rosinsky.md`) and NOT a filename.
+  Regex: `^[a-z0-9][a-z0-9-]*$`
+- `lang`: a BCP 47 short code (`en`, `ru`, `uk`, `he`). Not `english`,
+  not `ru-RU`. Regex: `^[a-z]{2,3}$`
+- `canonical_sha`: the full 40-character git SHA, lowercase hex. Not
+  shortened. Regex: `^[a-f0-9]{40}$`
+- `translated_at`: ISO date `YYYY-MM-DD` (today, from the pipeline).
 
 ## Output format
 

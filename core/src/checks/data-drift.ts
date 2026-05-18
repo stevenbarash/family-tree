@@ -6,10 +6,17 @@ interface SourcedCorrection extends Correction {
   pagePath: string;
 }
 
-function flatCorrections(pages: ReadonlyArray<LoadedPage>): SourcedCorrection[] {
+function flatCorrections(pages: ReadonlyArray<LoadedPage>, opts: { canonicalOnly?: boolean } = {}): SourcedCorrection[] {
   const out: SourcedCorrection[] = [];
   for (const p of pages) {
     if (!p.meta.corrections || p.meta.corrections.length === 0) continue;
+    // Translation files (lang is set to a non-en BCP 47 code) carry
+    // derivative corrections — locale-prose translations of the SAME
+    // factual correction asserted by the canonical EN page. When asked
+    // to compute conflicts (canonicalOnly), skip them: comparing the
+    // English correction's prose against its Russian/Hebrew translation
+    // would always look like a conflict but isn't one.
+    if (opts.canonicalOnly && p.meta.lang !== undefined && p.meta.lang !== 'en') continue;
     const pageRecord = p.meta.gedcom?.record;
     for (const c of p.meta.corrections) {
       const target = c.record ?? pageRecord;
@@ -32,11 +39,17 @@ function rawFieldValue(record: DerivedRecord, field: Correction['field']): strin
 
 export const detectDataDrift: Detector = (state: RepoState): Finding[] => {
   const findings: Finding[] = [];
+  // For conflict detection, only consider canonical EN corrections —
+  // translations are derivatives and would always "conflict" on the
+  // translated prose. For per-correction classification (active /
+  // promotable / orphan), include everything so each page's overlay
+  // surfaces individually.
+  const conflictCorrections = flatCorrections(state.pages, { canonicalOnly: true });
   const corrections = flatCorrections(state.pages);
 
-  // Detect conflicts: same (record, field) with different values, from different pages.
+  // Detect conflicts: same (record, field) with different values, from different canonical pages.
   const byKey = new Map<string, SourcedCorrection[]>();
-  for (const c of corrections) {
+  for (const c of conflictCorrections) {
     const key = `${c.record}::${c.field}`;
     const arr = byKey.get(key) ?? [];
     arr.push(c);

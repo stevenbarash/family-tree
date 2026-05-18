@@ -114,6 +114,84 @@ test('wai i18n sync: defaults author to Claude Opus 4.7 when env var unset', asy
   }
 });
 
+test('wai i18n sync: passes NAME.TRAN from derived YAML to translator as nameTranslation', async () => {
+  const root = join(tmpdir(), `whoami-i18n-tran-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await mkdir(join(root, 'genealogy', 'derived'), { recursive: true });
+  // Canonical EN page linked to a GEDCOM record
+  await writeFile(
+    join(root, 'pages', 'en', 'sasha.md'),
+    "---\nschemaVersion: 1\ntitle: Sasha\ntype: person\naliases: []\ncategories: []\ngedcom:\n  file: x.ged\n  record: I999\n  snapshot: abc\ncreated: '2026-05-01'\ncorrections: []\n---\nBody.",
+  );
+  // Derived YAML with nameTranslations block
+  await writeFile(
+    join(root, 'genealogy', 'derived', 'I999.yml'),
+    "record: I999\nname: Sasha\nsex: M\nnameTranslations:\n  ru: Саша\n  uk: Сашко\n  he: סשה\n",
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  // Capture what the translator gets called with
+  let receivedNameTranslation: string | undefined;
+  const captureTranslator = async (req: { nameTranslation?: string; locale: string }) => {
+    receivedNameTranslation = req.nameTranslation;
+    return { body: 'translated body', talk: '## Unresolved\n\n## Resolved\n', titleTranslation: req.nameTranslation ?? 'fallback' };
+  };
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root,
+    slug: 'sasha',
+    locale: 'ru',
+    translator: captureTranslator as Parameters<typeof runI18nSync>[0]['translator'],
+    write: (s) => { stdout += s; },
+  });
+
+  assert.equal(receivedNameTranslation, 'Саша');
+  // The translation file's title should be the NAME.TRAN value
+  const translation = await readFile(join(root, 'pages', 'ru', 'sasha.md'), 'utf8');
+  assert.match(translation, /^title: Саша$/m);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: omits nameTranslation when derived YAML has no nameTranslations block', async () => {
+  const root = join(tmpdir(), `whoami-i18n-notran-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await mkdir(join(root, 'genealogy', 'derived'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', 'sasha.md'),
+    "---\nschemaVersion: 1\ntitle: Sasha\ntype: person\naliases: []\ncategories: []\ngedcom:\n  file: x.ged\n  record: I999\n  snapshot: abc\ncreated: '2026-05-01'\ncorrections: []\n---\nBody.",
+  );
+  // Derived YAML without nameTranslations
+  await writeFile(
+    join(root, 'genealogy', 'derived', 'I999.yml'),
+    "record: I999\nname: Sasha\nsex: M\n",
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  let receivedNameTranslation: string | undefined = 'should-be-overwritten';
+  const captureTranslator = async (req: { nameTranslation?: string; locale: string }) => {
+    receivedNameTranslation = req.nameTranslation;
+    return { body: 'b', talk: '## Unresolved\n\n## Resolved\n', titleTranslation: 'T' };
+  };
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root,
+    slug: 'sasha',
+    locale: 'ru',
+    translator: captureTranslator as Parameters<typeof runI18nSync>[0]['translator'],
+    write: (s) => { stdout += s; },
+  });
+
+  assert.equal(receivedNameTranslation, undefined);
+  await rm(root, { recursive: true });
+});
+
 test('wai i18n sync: refuses canonical locale (en)', async () => {
   const root = join(tmpdir(), `whoami-i18n-sync-en-${Date.now()}`);
   await mkdir(root, { recursive: true });

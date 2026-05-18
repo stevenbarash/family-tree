@@ -54,3 +54,31 @@ test('schema-drift: multiple pages below version → one finding per page', () =
   const findings = detectSchemaDrift(state);
   assert.equal(findings.length, 2);
 });
+
+test('schema-drift: surfaces parseErrors as error findings', () => {
+  const state = makeState([page('a', 1)]);
+  const stateWithErrors = {
+    ...state,
+    parseErrors: [
+      { path: '/x/pages/ru/broken.md',
+        error: '[{"path":["translationOf"],"message":"expected a page slug, not a path or filename","code":"invalid_format"}]' },
+      { path: '/x/pages/en/another.md',
+        error: 'unexpected non-Zod error string' },
+    ],
+  };
+  const findings = detectSchemaDrift(stateWithErrors);
+  // 0 from the existing version-check (page is at v1) + 2 from parseErrors
+  assert.equal(findings.length, 2);
+  assert.equal(findings[0]!.severity, 'error');
+  assert.equal(findings[0]!.category, 'schema');
+  assert.match(findings[0]!.message, /translationOf: expected a page slug/);
+  assert.equal(findings[0]!.location.file, '/x/pages/ru/broken.md');
+  assert.match(findings[1]!.message, /unexpected non-Zod error string/);
+});
+
+test('schema-drift: empty parseErrors works (back-compat with old fixtures)', () => {
+  // RepoState.parseErrors is optional; absence should not crash the detector.
+  const state = makeState([page('a', 1)]);
+  // state.parseErrors is undefined here
+  assert.deepEqual(detectSchemaDrift(state), []);
+});
