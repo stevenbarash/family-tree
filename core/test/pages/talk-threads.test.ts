@@ -136,6 +136,72 @@ test('countOpenThreads: includes both ::open and ::gap, excludes ::closed and ::
   assert.equal(countOpenThreads(body), 3);
 });
 
+test('parseTalkThreads: ### subheading inside a thread body is preserved (NOT a boundary)', () => {
+  const body = [
+    '## Research plan: Zus Krasnov',
+    '::open',
+    '',
+    'Lead-in paragraph.',
+    '',
+    '### Project objective',
+    '',
+    'Find Zus.',
+    '',
+    '### Why this is hard',
+    '',
+    'Records are sparse.',
+    '',
+    '## Next thread',
+    '::open',
+    '',
+    'second body',
+  ].join('\n');
+  const out = parseTalkThreads(body);
+  assert.equal(out.length, 2);
+  assert.equal(out[0]!.heading, 'Research plan: Zus Krasnov');
+  // The full body — including both ### subheadings — must be preserved.
+  assert.match(out[0]!.body, /### Project objective/);
+  assert.match(out[0]!.body, /Find Zus\./);
+  assert.match(out[0]!.body, /### Why this is hard/);
+  assert.match(out[0]!.body, /Records are sparse\./);
+  assert.equal(out[1]!.heading, 'Next thread');
+});
+
+test('parseTalkThreads: ### heading WITH a marker still terminates the prior thread', () => {
+  const body = [
+    '## First',
+    '::open',
+    '',
+    'first body',
+    '',
+    '### Second (also a thread)',
+    '::closed',
+    '',
+    'second body',
+  ].join('\n');
+  const out = parseTalkThreads(body);
+  assert.equal(out.length, 2);
+  assert.equal(out[0]!.body, 'first body');
+  assert.equal(out[1]!.heading, 'Second (also a thread)');
+  assert.equal(out[1]!.body, 'second body');
+});
+
+test('parseTalkThreads: ## heading without marker still terminates body (structural break)', () => {
+  const body = [
+    '## Thread one',
+    '::open',
+    '',
+    'body one',
+    '',
+    '## Research notes',
+    '',
+    'section content, not a thread',
+  ].join('\n');
+  const out = parseTalkThreads(body);
+  assert.equal(out.length, 1);
+  assert.equal(out[0]!.body, 'body one');
+});
+
 test('countOpenThreads: counts level-3 threads that the legacy regex missed', () => {
   const body = [
     '## Section',
