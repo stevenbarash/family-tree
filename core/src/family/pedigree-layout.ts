@@ -29,9 +29,11 @@ export interface LayoutConfig {
 /** Vertical pixel distance between generation rows. */
 const ROW_HEIGHT = 180;
 /** Horizontal half-width allocated to each side of the focal at the top
- *  generation. The actual unit width per node at generation g is
- *  COL_HALF_WIDTH * 2 / 2^g, so the top row gets COL_HALF_WIDTH per slot. */
-const COL_HALF_WIDTH = 320;
+ *  generation. Sized for node width `w-44` (176px) so that sibling
+ *  spacing at MAX_GENERATION=4 (the deepest visible row) stays at least
+ *  ~200px center-to-center — gives a ~24px gap between adjacent nodes.
+ *  Formula: COL_HALF_WIDTH * 2 / 2^(N-1) = spacing at generation N. */
+const COL_HALF_WIDTH = 800;
 
 /**
  * Layout an ancestor pedigree: focal at (0, 0); ancestors above (negative y);
