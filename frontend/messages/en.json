@@ -145,6 +145,11 @@
         "diedDate": "d. {date}",
         "bornDiedDate": "{birth} – {death}"
       },
+      "pedigree": {
+        "title": "Pedigree",
+        "emptyState": "No ancestors recorded yet.",
+        "navigateAria": "Ancestors by generation"
+      },
       "disclosure": {
         "show": "Show",
         "hide": "Hide"
