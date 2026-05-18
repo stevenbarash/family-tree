@@ -37,7 +37,7 @@ export function RedlinksCard({ entries, rowLimit }: Props) {
                   href="/redlinks"
                   className="redlink underline-offset-4 hover:no-underline"
                 >
-                  {chunks}
+                  <bdi>{chunks}</bdi>
                 </Link>
               ),
             })}

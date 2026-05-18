@@ -40,6 +40,7 @@
     },
     "Index": {
       "registry": "The Registry",
+      "title": "Index",
       "navHome": "← Home",
       "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} other {# ancestors}} across {generations, plural, one {# generation} other {# generations}}",
       "articlesCount": "{count, plural, one {# article} other {# articles}}",

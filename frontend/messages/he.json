@@ -40,9 +40,10 @@
     },
     "Index": {
       "registry": "המרשם",
+      "title": "מפתח",
       "navHome": "← לדף הבית",
-      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} two {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} two {# generations} many {# generations} other {# generations}}",
-      "articlesCount": "{count, plural, one {# article} two {# articles} many {# articles} other {# articles}}",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {אב קדמון אחד} two {# אבות קדמונים} many {# אבות קדמונים} other {# אבות קדמונים}} ב־{generations, plural, one {# דור} two {# דורות} many {# דורות} other {# דורות}}",
+      "articlesCount": "{count, plural, one {מאמר אחד} two {# מאמרים} many {# מאמרים} other {# מאמרים}}",
       "gedcomSync": "GEDCOM {date}",
       "allArticlesHeading": "כל המאמרים ({count})",
       "talkPagesHeading": "דפי שיחה ({count})",

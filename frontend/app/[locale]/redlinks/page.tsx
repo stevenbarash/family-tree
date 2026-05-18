@@ -43,7 +43,7 @@ export default async function RedlinksPage({
           {entries.map(r => (
             <li key={r.canonical}>
               <div className="text-lg font-medium">
-                <span className="redlink">[[ {r.target} ]]</span>
+                <span className="redlink">[[ <bdi>{r.target}</bdi> ]]</span>
                 <span className="ms-3 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/80">
                   {t('refCount', { count: r.count })}
                 </span>
@@ -55,7 +55,7 @@ export default async function RedlinksPage({
                 {r.sources.map(s => (
                   <li key={s}>
                     <Link href={`/${s}`} className="underline-offset-4 hover:text-foreground hover:underline">
-                      {s}
+                      <bdi>{s}</bdi>
                     </Link>
                   </li>
                 ))}

@@ -40,9 +40,10 @@
     },
     "Index": {
       "registry": "Реестр",
+      "title": "Указатель",
       "navHome": "← На главную",
-      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} few {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} few {# generations} many {# generations} other {# generations}}",
-      "articlesCount": "{count, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# предок} few {# предка} many {# предков} other {# предков}} в {generations, plural, one {# поколении} few {# поколениях} many {# поколениях} other {# поколениях}}",
+      "articlesCount": "{count, plural, one {# статья} few {# статьи} many {# статей} other {# статей}}",
       "gedcomSync": "GEDCOM {date}",
       "allArticlesHeading": "Все статьи ({count})",
       "talkPagesHeading": "Страницы обсуждения ({count})",

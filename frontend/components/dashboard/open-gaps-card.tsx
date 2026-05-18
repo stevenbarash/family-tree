@@ -31,7 +31,7 @@ export function OpenGapsCard({ view }: Props) {
                   href={`/${r.slug}`}
                   className="font-medium underline-offset-4 hover:text-foreground hover:underline"
                 >
-                  {chunks}
+                  <bdi>{chunks}</bdi>
                 </Link>
               ),
               talk: chunks => (

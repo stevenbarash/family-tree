@@ -42,7 +42,7 @@ export default async function IndexPage({
           {t('registry')}
         </p>
         <h1 className="mt-2 text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
-          Index
+          {t('title')}
         </h1>
         <p className="mt-3 font-mono text-[0.75rem] uppercase tracking-[0.08em] text-muted-foreground/85">
           {joinMeta([
