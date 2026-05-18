@@ -169,37 +169,16 @@ export default async function HomePage({
 
       <RedlinksCard entries={redlinks} rowLimit={REDLINKS_LIMIT} />
 
-      <section className="mb-10">
-        <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-          {t('allArticles', { count: String(live.length) })}
-        </h2>
-        <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-          {live.map(p => (
-            <li key={p.slug}>
-              <Link href={`/${p.slug}`} className="underline-offset-4 hover:text-foreground hover:underline">
-                {p.title}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {talk.length > 0 ? (
-        <section>
-          <h2 className="mb-3 font-display text-xs uppercase tracking-[0.32em] text-muted-foreground">
-            {t('talkPages', { count: String(talk.length) })}
-          </h2>
-          <ul className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-            {talk.map(p => (
-              <li key={p.slug}>
-                <Link href={`/${p.slug}`} className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-                  {p.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <footer className="mt-12 flex flex-col gap-1 border-t pt-6 font-mono text-[0.75rem] uppercase tracking-[0.08em] text-muted-foreground">
+        <Link href="/index" className="hover:text-foreground hover:underline">
+          {t('browseAllArticles', { count: live.length })}
+        </Link>
+        {talk.length > 0 ? (
+          <Link href="/index#talk" className="hover:text-foreground hover:underline">
+            {t('browseAllTalkPages', { count: talk.length })}
+          </Link>
+        ) : null}
+      </footer>
     </main>
   );
 }

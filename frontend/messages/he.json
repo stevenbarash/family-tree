@@ -36,9 +36,18 @@
       "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} two {# refs} many {# refs} other {# refs}}",
       "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} two {# unwritten pages} many {# unwritten pages} other {# unwritten pages}} · {refs, plural, one {# reference} two {# references} many {# references} other {# references}} · <a>all redlinks →</a>",
       "browseAllArticles": "Browse all {count, plural, one {# article} two {# articles} many {# articles} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} two {# talk pages} many {# talk pages} other {# talk pages}} →",
-      "allArticles": "כל המאמרים ({count})",
-      "talkPages": "דפי שיחה ({count})"
+      "browseAllTalkPages": "{count, plural, one {# talk page} two {# talk pages} many {# talk pages} other {# talk pages}} →"
+    },
+    "Index": {
+      "registry": "המרשם",
+      "navHome": "← Home",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} two {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} two {# generations} many {# generations} other {# generations}}",
+      "articlesCount": "{count, plural, one {# article} two {# articles} many {# articles} other {# articles}}",
+      "gedcomSync": "GEDCOM {date}",
+      "allArticlesHeading": "All articles ({count})",
+      "talkPagesHeading": "Talk pages ({count})",
+      "emptyArticles": "No articles yet.",
+      "emptyTalkPages": "No talk pages yet."
     },
     "Article": {
       "banners": {

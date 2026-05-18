@@ -36,9 +36,18 @@
       "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}",
       "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} few {# unwritten pages} many {# unwritten pages} other {# unwritten pages}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}} · <a>all redlinks →</a>",
       "browseAllArticles": "Browse all {count, plural, one {# article} few {# articles} many {# articles} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} few {# talk pages} many {# talk pages} other {# talk pages}} →",
-      "allArticles": "Все статьи ({count})",
-      "talkPages": "Страницы обсуждения ({count})"
+      "browseAllTalkPages": "{count, plural, one {# talk page} few {# talk pages} many {# talk pages} other {# talk pages}} →"
+    },
+    "Index": {
+      "registry": "Реестр",
+      "navHome": "← Home",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} few {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} few {# generations} many {# generations} other {# generations}}",
+      "articlesCount": "{count, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
+      "gedcomSync": "GEDCOM {date}",
+      "allArticlesHeading": "All articles ({count})",
+      "talkPagesHeading": "Talk pages ({count})",
+      "emptyArticles": "No articles yet.",
+      "emptyTalkPages": "No talk pages yet."
     },
     "Article": {
       "banners": {

@@ -36,9 +36,18 @@
       "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} other {# refs}}",
       "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} other {# unwritten pages}} · {refs, plural, one {# reference} other {# references}} · <a>all redlinks →</a>",
       "browseAllArticles": "Browse all {count, plural, one {# article} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} other {# talk pages}} →",
-      "allArticles": "All articles ({count})",
-      "talkPages": "Talk pages ({count})"
+      "browseAllTalkPages": "{count, plural, one {# talk page} other {# talk pages}} →"
+    },
+    "Index": {
+      "registry": "The Registry",
+      "navHome": "← Home",
+      "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} other {# ancestors}} across {generations, plural, one {# generation} other {# generations}}",
+      "articlesCount": "{count, plural, one {# article} other {# articles}}",
+      "gedcomSync": "GEDCOM {date}",
+      "allArticlesHeading": "All articles ({count})",
+      "talkPagesHeading": "Talk pages ({count})",
+      "emptyArticles": "No articles yet.",
+      "emptyTalkPages": "No talk pages yet."
     },
     "Article": {
       "banners": {
