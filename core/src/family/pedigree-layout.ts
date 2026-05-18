@@ -9,7 +9,8 @@ export interface PedigreeNode {
 }
 
 export interface PedigreeEdge {
-  /** child → parent direction (source is the descendant) */
+  /** child → parent direction (source is the ancestor at higher generation,
+   *  target is the descendant one generation closer to focal) */
   source: string;
   target: string;
 }
@@ -28,60 +29,97 @@ export interface LayoutConfig {
 
 /** Vertical pixel distance between generation rows. */
 const ROW_HEIGHT = 180;
-/** Horizontal half-width allocated to each side of the focal at the top
- *  generation. Sized for node width `w-44` (176px) so that sibling
- *  spacing at MAX_GENERATION=4 (the deepest visible row) stays at least
- *  ~200px center-to-center — gives a ~24px gap between adjacent nodes.
- *  Formula: COL_HALF_WIDTH * 2 / 2^(N-1) = spacing at generation N. */
-const COL_HALF_WIDTH = 800;
+
+/** Horizontal pixel distance between adjacent leaves. The chart's total
+ *  width is roughly LEAF_SPACING × (visible_leaf_count − 1). Tune for the
+ *  node width in `pedigree-node.tsx` (`w-44` = 176px) plus a small gap. */
+const LEAF_SPACING = 200;
 
 /**
  * Layout an ancestor pedigree: focal at (0, 0); ancestors above (negative y);
- * x assigned by binary path-from-root so the top generation spreads evenly.
- * Missing ancestors leave their slot empty — gap = research frontier signal.
+ * x assigned by recursive midpoint placement over the visible tree.
+ *
+ *   - Leaves (deepest visible ancestor along each branch) get consecutive
+ *     positions at LEAF_SPACING intervals (post-order, left-to-right).
+ *   - Inner nodes get x = midpoint of their visible children.
+ *   - The whole layout is then re-centered so focal.x = 0.
+ *
+ * Result: asymmetric trees (one branch deep, one shallow) use only the
+ * space they need. A single-lineage chain (only paternal ancestors)
+ * collapses to a vertical column below the focal — no wasted whitespace.
+ *
  * Pure: no DOM, no React, no I/O.
  */
 export function layoutPedigree(cfg: LayoutConfig): PedigreeLayout {
   const visible = cfg.ancestors.filter(a => a.generation <= cfg.maxGeneration);
 
+  // Build a map from each node's record → its "visual children" (the
+  // ancestors one generation above that are this node's parents). The
+  // focal's visual children are its parents; an ancestor's visual children
+  // are its parents (the next generation deeper).
+  const childrenOf = new Map<string, BrowserPerson[]>();
+  childrenOf.set(cfg.focal.record, []);
+  for (const a of visible) childrenOf.set(a.record, []);
+
+  for (const a of visible) {
+    const descendantRecord = a.pathFromRoot.length === 1
+      ? cfg.focal.record
+      : a.pathFromRoot[a.pathFromRoot.length - 2]!;
+    const arr = childrenOf.get(descendantRecord);
+    if (arr) arr.push(a);
+  }
+
+  // Order siblings: father (left) before mother (right). Missing role keeps
+  // input order so the result is still deterministic.
+  for (const arr of childrenOf.values()) {
+    arr.sort((a, b) => {
+      if (a.role === 'father' && b.role === 'mother') return -1;
+      if (a.role === 'mother' && b.role === 'father') return 1;
+      return 0;
+    });
+  }
+
+  // Post-order traversal: place leaves at consecutive LEAF_SPACING positions,
+  // then inner nodes at midpoint of their children's positions.
+  const xByRecord = new Map<string, number>();
+  let nextLeafX = 0;
+
+  function place(record: string): number {
+    const children = childrenOf.get(record) ?? [];
+    let x: number;
+    if (children.length === 0) {
+      x = nextLeafX;
+      nextLeafX += LEAF_SPACING;
+    } else {
+      const childXs = children.map(c => place(c.record));
+      x = (Math.min(...childXs) + Math.max(...childXs)) / 2;
+    }
+    xByRecord.set(record, x);
+    return x;
+  }
+
+  place(cfg.focal.record);
+
+  // Re-center on focal at x = 0.
+  const focalX = xByRecord.get(cfg.focal.record) ?? 0;
+
   const nodes: PedigreeNode[] = [
     { record: cfg.focal.record, x: 0, y: 0, generation: 0, side: 'self' },
   ];
-
-  // Reconstruct x from pathFromRoot: each step is a record id of a parent.
-  // We need to know whether each step is the father (left, contributes -1)
-  // or mother (right, contributes +1). Build a lookup from a person's record
-  // to its `role` so we can walk any pathFromRoot and sum the bit pattern.
-  const roleByRecord = new Map<string, 'father' | 'mother'>();
-  for (const a of cfg.ancestors) {
-    if (a.role) roleByRecord.set(a.record, a.role);
-  }
-
   for (const a of visible) {
-    let frac = 0;
-    let denom = 1;
-    for (const step of a.pathFromRoot) {
-      denom *= 2;
-      const role = roleByRecord.get(step);
-      // father = left half, mother = right half; missing role defaults to
-      // father side (legacy data) so position is deterministic.
-      frac += role === 'mother' ? 1 / denom : -1 / denom;
-    }
-    // frac ∈ (-1, +1); scale by the half-width budget so generation 1
-    // (denom=2 → frac=±0.5) lands at ±COL_HALF_WIDTH * 0.5.
-    const x = frac * COL_HALF_WIDTH * 2;
+    const rawX = xByRecord.get(a.record);
+    if (rawX === undefined) continue;
     nodes.push({
       record: a.record,
-      x,
+      x: rawX - focalX,
       y: -a.generation * ROW_HEIGHT,
       generation: a.generation,
       side: a.side === 'self' ? 'paternal' : a.side,
     });
   }
 
-  // Edges: each ancestor's last pathFromRoot step is its direct child within
-  // the tree (the record at index pathFromRoot.length - 2, or the focal if
-  // pathFromRoot.length === 1).
+  // Edges: each visible ancestor connects to its descendant (one gen toward
+  // focal). Filter to ensure both endpoints are in the visible set.
   const edges: PedigreeEdge[] = [];
   const visibleRecords = new Set(nodes.map(n => n.record));
   for (const a of visible) {

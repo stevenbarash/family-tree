@@ -73,18 +73,20 @@ test('layoutPedigree: 3 generations spread monotonically by horizontal position'
   assert.ok(result.edges.some(e => e.source === 'I7' && e.target === 'I3'));
 });
 
-test('layoutPedigree: asymmetric tree (only paternal line) places nodes correctly', () => {
+test('layoutPedigree: asymmetric tree (only paternal line) collapses to a vertical column', () => {
   const focal = makePerson('I1', 0, 'self', []);
   const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
   const ff = makePerson('I3', 2, 'paternal', ['I2', 'I3'], 'father');
   const result = layoutPedigree({ focal, ancestors: [father, ff], maxGeneration: 4 });
 
   assert.equal(result.nodes.length, 3);
-  // No mother node at gen 1 → gap stays. Father's position unchanged.
-  const fatherNode = result.nodes.find(n => n.record === 'I2')!;
-  const ffNode = result.nodes.find(n => n.record === 'I3')!;
-  assert.ok(fatherNode.x < 0);
-  assert.ok(ffNode.x < fatherNode.x, "father's father should be further left than father");
+  // Adaptive layout: a single-lineage chain (no siblings to spread against)
+  // stacks vertically below the focal. Encodes the "use only the space you
+  // need" invariant — asymmetric trees don't waste horizontal whitespace
+  // showing missing-ancestor slots.
+  for (const node of result.nodes) {
+    assert.equal(node.x, 0, `${node.record} should be on the focal's vertical column (x=0)`);
+  }
 });
 
 test('layoutPedigree: maxGeneration clamps the visible nodes', () => {
@@ -95,16 +97,16 @@ test('layoutPedigree: maxGeneration clamps the visible nodes', () => {
     'ancestor beyond maxGeneration should be filtered out');
 });
 
-test('layoutPedigree: missing role defaults to father position (deterministic)', () => {
+test('layoutPedigree: a sole ancestor with no sibling is placed on the focal column', () => {
   const focal = makePerson('I1', 0, 'self', []);
-  // Person at generation 1, no role field — simulates legacy data
-  const noRole = makePerson('I2', 1, 'paternal', ['I2']);
-  const result = layoutPedigree({ focal, ancestors: [noRole], maxGeneration: 4 });
+  // One ancestor at generation 1, no sibling. Adaptive layout has no second
+  // child to spread against — places this node on the focal's vertical column.
+  const lone = makePerson('I2', 1, 'paternal', ['I2']);
+  const result = layoutPedigree({ focal, ancestors: [lone], maxGeneration: 4 });
 
-  const noRoleNode = result.nodes.find(n => n.record === 'I2')!;
-  // Default-to-father means x should be negative (left side)
-  assert.ok(noRoleNode.x < 0,
-    `missing role should default to father (x < 0), got x=${noRoleNode.x}`);
+  const node = result.nodes.find(n => n.record === 'I2')!;
+  assert.equal(node.x, 0,
+    'a single ancestor with no sibling collapses to focal column under adaptive layout');
 });
 
 test('layoutPedigree: edges from clamped-out ancestors are not constructed', () => {
