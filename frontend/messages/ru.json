@@ -148,6 +148,14 @@
       "disclosure": {
         "show": "Показать",
         "hide": "Скрыть"
+      },
+      "pedigree": {
+        "title": "Родословная",
+        "emptyState": "Записанных предков пока нет.",
+        "navigateAria": "Предки по поколениям",
+        "selfLabel": "я",
+        "generationLabel": "поколение {n}",
+        "mobileGenerationHeader": "Поколение {n}"
       }
     },
     "Search": {

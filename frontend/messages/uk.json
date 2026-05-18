@@ -148,6 +148,14 @@
       "disclosure": {
         "show": "Показати",
         "hide": "Сховати"
+      },
+      "pedigree": {
+        "title": "Родовід",
+        "emptyState": "Записаних предків поки немає.",
+        "navigateAria": "Предки за поколіннями",
+        "selfLabel": "я",
+        "generationLabel": "покоління {n}",
+        "mobileGenerationHeader": "Покоління {n}"
       }
     },
     "Search": {

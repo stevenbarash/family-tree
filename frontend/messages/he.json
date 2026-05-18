@@ -148,6 +148,14 @@
       "disclosure": {
         "show": "הצג",
         "hide": "הסתר"
+      },
+      "pedigree": {
+        "title": "אילן יוחסין",
+        "emptyState": "טרם נרשמו אבות.",
+        "navigateAria": "אבות לפי דור",
+        "selfLabel": "אני",
+        "generationLabel": "דור {n}",
+        "mobileGenerationHeader": "דור {n}"
       }
     },
     "Search": {
