@@ -4,7 +4,7 @@
 > [May 2026 platform review](./reviews/2026-05-07-platform-review.md)
 > and the in-flight work in the current working tree.
 
-**Last updated:** 2026-05-18 (P1.9 talk-page surfacing)
+**Last updated:** 2026-05-18 (P2.1 citation-directive contrast, closes Wave 1)
 **Cadence:** revisit at the end of each completed band, or when a new
 review document lands. Status lines are the source of truth — keep
 them honest.
@@ -31,9 +31,13 @@ work (GEDCOM normalize → full 5.5.1 → 7.0.18 upgrade). See
 [Shipped outside the plan-of-record](#shipped-outside-the-plan-of-record-since-2026-05-07)
 below for the full list.
 
-Next pull should be from **Wave 1 (remaining: P2.1)** before moving
-into Wave 2 or Wave 3 — see waves below. The 2026-05-07 PM call to
-reduce WIP from four themes to one was satisfied by 2026-05-15.
+Wave 1 is now closed (P0.1 ✅, P0.3 ✅, P2.1 ✅, P2.2 ✅, P2.5 🔧
+partial — `lang=` follow-on deferred). Next pull should be from
+**Wave 2 (remaining: P0.4)** or, if a low-effort visible win is
+preferred, the Wave 3 reading-surface items **P1.3** (home page
+research dashboard) or **P1.10** (empty/error/loading states) — both
+S-lift. The 2026-05-07 PM call to reduce WIP from four themes to one
+was satisfied by 2026-05-15.
 
 ---
 
@@ -87,13 +91,14 @@ the talk page of the relevant plan, not silently re-ordered.
 |---|---|---|---|
 | ✅ shipped | **P0.1** Strip removed CLI commands from `plugins/whoami/CLAUDE.md` and `agents/editor.md`; add eval smoke test for prompt/CLI drift | S | [Review §P0.1](./reviews/2026-05-07-platform-review.md#p01--agent-prompts-reference-removed-cli-commands) — *Shipped 2026-05-17. Prompts now document the full agent-facing surface (added `author`, `narrative`, `transcribe`, `interview`, `grep-claims`, `redlinks`, `delete`, `note --kind`); pre-existing stale `--include` flag references in editorial-guide also fixed; smoke test at `cli/test/prompt-drift.test.ts` extracts every `wai <cmd>` and `--flag` from the prompts and asserts each is a live CLI surface element.* |
 | ✅ shipped | **P0.3** Flag slash-date ambiguity in `core/src/family/dates.ts`; add `wai audit dates`; render `?` glyph in infobox | S | [Review §P0.3](./reviews/2026-05-07-platform-review.md#p03--slash-date-ambiguity-is-unresolved) — *Shipped 2026-05-17. Detection already existed in `core/src/format/dates.ts` (`normalizeDate` returns `{ ambiguous: true }` for m/d/y vs d/m/y when both ≤ 12) and the infobox `?` glyph at `frontend/components/directives/infobox-person.tsx:180-196` was already wired; this PR closed the remaining gap by adding the **`wai audit dates`** CLI command — a pure `core/src/checks/ambiguous-dates.ts` scanner over the GEDCOM source, derived YAMLs, and page prose, plus a thin CLI wrapper that groups hits by source and exits non-zero on any find. Current user data has zero hits, so the command lands as a forward-looking guardrail for the next batch of raw input.* |
-| ⏳ ready | **P2.1** Move citation directives to design tokens; verify dark-mode contrast | S | [Review §P2.1](./reviews/2026-05-07-platform-review.md#p21--citation-directives-are-visually-disconnected-and-dark-mode-broken) |
+| ✅ shipped | **P2.1** Move citation directives to design tokens; verify dark-mode contrast | S | [Review §P2.1](./reviews/2026-05-07-platform-review.md#p21--citation-directives-are-visually-disconnected-and-dark-mode-broken) — *Shipped 2026-05-18. The strict "move citation directives off hardcoded `text-slate-600` / `bg-slate-50` / `border-blue-300`" half had already landed in commit `3f300e0` (`bg-muted` + `text-muted-foreground` + `border-s-border` / `border-s-primary` on `cite-vault.tsx` and `cite-message.tsx`); the roadmap row was never flipped. This PR closes the "verify dark-mode contrast" half (`text-muted-foreground` on `bg-muted` ≈ 6.5:1 against `--card` in dark mode — passes WCAG AA) and adds `dark:[&>svg]:text-{yellow,green,red,amber}-400` variants to `admonition.tsx` — the `-600` light-mode hues were borderline (3.9–4.7:1) on the dark card background. Adjacent violet quote-accent borders in `blockquote` / `dialogue` are mid-luminance and pass in both modes — left alone. Closes Wave 1.* |
 | 🔧 partial | **P2.5** Accessibility hotfix bundle: skip-to-content, alt text on portraits/avatars, `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps) — *Skip-to-content link landed 2026-05-15 (`frontend/app/layout.tsx`); alt text was already correct via `AvatarMonogram`'s `alt=""` + `aria-hidden`. `lang=` on multilingual name spans still deferred — natural follow-on now that the multilingual pipeline (Plans 1–3) is live and per-locale name renders exist.* |
 | ✅ shipped | **P2.2** Red-links flow (`wai redlinks` + `/api/redlinks` + `core/src/pages/redlinks.ts`) | S | [Review §P2.2](./reviews/2026-05-07-platform-review.md#p22--red-links-exist-but-offer-no-creation-flow) — *Shipped 2026-05-09 in commit `839a714`. Surfaces the want-list of unwritten articles for `wai author --cohort missing` and for human selection of the next page to write.* |
 
-> **Wave 1 status (2026-05-18):** 3 of 4 items shipped (P0.1, P0.3, P2.2),
-> P2.5 partial, only **P2.1** still ⏳. The agent loop is no longer
-> broken; pull P2.1 to close Wave 1, then move on to Wave 2.
+> **Wave 1 status (2026-05-18):** closed. P0.1, P0.3, P2.1, P2.2 all
+> ✅; P2.5 🔧 partial (skip-to-content + alt text shipped; per-locale
+> `lang=` deferred as a natural follow-on now that the multilingual
+> pipeline is live). Pull from Wave 2 (**P0.4**) next.
 
 ### Wave 2 — Privacy & schema groundwork (weeks 2–3)
 
