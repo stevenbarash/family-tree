@@ -102,15 +102,49 @@ You don't have to enforce these manually — `wai write` and `wai check --fix` a
 
 ## Talk page structure
 
-Talk pages live alongside main pages as `<slug>.talk.md`. They use a small set of directives the renderer recognizes:
+Talk pages live alongside main pages as `<slug>.talk.md`. Each editorial thread is a `##` (or `###`) heading whose **next non-blank line** is one of four status markers:
 
-- `::open` — an open editorial question, counted by `wai search`'s "open gaps" badge.
-- `::closed` — a previously-open question that has been resolved.
-- `::superseded` — a closed question whose resolution has since been replaced.
+- `::open` — unresolved editorial question; counted by the "open gaps" badge and renders in the **Editorial discussion** section of the live article (open group, expanded by default).
+- `::closed` — previously-open question, now resolved.
+- `::superseded` — closed question whose resolution has since been replaced.
+- `::gap` — unfilled slot (use sparingly; prefer `::open` with a question).
 
-A talk page may interleave research notes (with `## Research notes` section header — see Editor agent spec) with directive blocks for editorial questions.
+### Canonical form — write threads exactly like this
 
-Do NOT use section headers like `## Active gaps` or `## Open editorial questions` — those don't render any UI affordance and aren't counted.
+```markdown
+## Birth year 1881 (1928 census) vs. 1887 (GEDCOM)
+::open
+
+The 1928 Teofipol census records her age as 47, implying birth ~1881.
+The wiki and family-tree GEDCOM previously recorded 1887. The 1928
+census is the better-supported primary source.
+
+To resolve:
+- Identify the origin of the GEDCOM 1887 — is there a contemporaneous
+  source that contradicts the census, or was it derived from a later
+  reconstruction?
+- Cross-check against any surviving Soviet civil records.
+```
+
+The heading is the topic; the marker is on its own line directly after; the body is markdown prose (lists, links, sub-`### Subheadings` — all preserved). The body ends at the next `##` heading **or** at the next `### Heading` whose own next non-blank line is itself a marker (= a sibling thread). Bare `### Subheadings` with prose under them stay inside the current thread.
+
+### Wrong forms — `wai check` flags these
+
+```markdown
+::open                                       ← orphan: no heading above
+**Marriage to Sonya — date and place**: ...
+
+## ::open marriage-to-sonya                  ← single-line: marker concatenated to heading
+
+== Marriage to Sonya ==                      ← MediaWiki: convert to `## …`
+::closed
+```
+
+Each fails to render in the **Editorial discussion** section and is silently invisible to readers. Use the canonical form above.
+
+A talk page may also carry a `## Research notes` section (dated bullet log of captured snippets — see Editor agent spec). That section is rendered separately under "Research notes" below the article; do NOT also put `::open` markers under date headings inside it.
+
+Do NOT use section headers like `## Active gaps` or `## Open editorial questions` — those don't render any UI affordance and aren't counted. Each thread stands on its own with its `## Heading` + `::marker`.
 
 ## Citation system
 

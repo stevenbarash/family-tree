@@ -76,15 +76,16 @@ Run this BEFORE touching any file. Make a list of every hit, then fix them in on
 ## Phase 3: Publishing
 
 1. **Create or update the page**: `wai create <slug> --file draft.md` or `wai write <slug> --file draft.md`
-2. **Post each gap as its own talk page thread** with a descriptive subject. Read the existing talk file (if any), append a new thread, and write it back:
+2. **Post each gap as its own talk page thread** with a descriptive subject. Read the existing talk file (if any), append a new thread, and write it back. Every thread is a `## Heading` followed on its **own next non-blank line** by a status marker — `::open` (or `::closed` once resolved, `::superseded` if replaced, `::gap` for an unfilled slot):
+
    ```markdown
    ## Who attended the dinner on Nov 12?
-
    ::open
 
    The photos show 5 people but only 3 are identified...
    ```
-   Prefix each thread with `::open` (or `::closed` once resolved, `::superseded` if replaced, `::gap` for an unfilled slot).
+
+   Do NOT write a bare `::open` without a heading above it, and do NOT collapse the heading and marker onto one line (`## ::open foo`). Both forms render as silent invisibility on the live article's **Editorial discussion** section. See the editorial guide's "Talk page structure" for the canonical form and the wrong forms `wai check` flags.
 3. **Log your work** on the talk page under an `## Agent log` section: date, what changed, link to the page.
 
 ## Phase 4: Drift check
