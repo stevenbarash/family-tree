@@ -29,6 +29,14 @@ export interface RepoState {
    * undefined and empty equivalently.
    */
   parseErrors?: ReadonlyArray<{ path: string; error: string }>;
+  /**
+   * HEAD git SHA per canonical EN slug (pages/en/<slug>.md), populated
+   * by load.ts via `git log -1 --format=%H -- pages/en/<slug>.md`.
+   * Used by stale-sha-drift to compare translation files'
+   * `canonical_sha` field against the canonical's actual HEAD.
+   * Optional so test fixtures and non-git contexts stay terse.
+   */
+  canonicalHeadSha?: ReadonlyMap<string, string>;
 }
 
 export type FindingCategory = 'format' | 'data' | 'schema' | 'coverage' | 'consistency' | 'citation';

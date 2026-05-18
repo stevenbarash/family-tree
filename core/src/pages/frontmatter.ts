@@ -29,7 +29,7 @@ export function parsePage(slug: string, raw: string): Page {
  * `translationOf`, `canonicalSha`, `translatedAt`. `lang` is the same in
  * both forms. Non-translation files are unaffected.
  */
-function normalizeTranslationKeys(data: Record<string, unknown>): Record<string, unknown> {
+export function normalizeTranslationKeys(data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...data };
   if ('translation_of' in out && !('translationOf' in out)) {
     out.translationOf = out.translation_of;

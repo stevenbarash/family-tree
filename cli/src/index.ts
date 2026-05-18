@@ -50,6 +50,10 @@ import { detectCoverageDrift } from '@core/checks/coverage-drift.ts';
 import { detectPlacesDrift } from '@core/checks/places-drift.ts';
 import { detectConsistencyDrift } from '@core/checks/consistency-drift.ts';
 import { detectCitationDrift } from '@core/checks/citation-drift.ts';
+import { detectNameTranDrift } from '@core/checks/name-tran-drift.ts';
+import { detectStaleCanonicalSha } from '@core/checks/stale-canonical-sha.ts';
+import { detectInfoboxNameDrift } from '@core/checks/infobox-name-drift.ts';
+import { detectPipelineFrontmatterDrift } from '@core/checks/pipeline-frontmatter-drift.ts';
 import type { Detector, FindingCategory, Severity } from '@core/checks/types.ts';
 import { runDetectors } from './commands/check/run-detectors.js';
 import { checkBundleFreshness } from './bundle-freshness.js';
@@ -442,7 +446,10 @@ async function main(): Promise<number> {
             detectSchemaDrift,
             detectCoverageDrift,
             detectPlacesDrift,
-            ...(includeConsistency ? [detectConsistencyDrift] : []),
+            detectNameTranDrift,
+            detectStaleCanonicalSha,
+            detectPipelineFrontmatterDrift,
+            ...(includeConsistency ? [detectConsistencyDrift, detectInfoboxNameDrift] : []),
             ...(includeCitation ? [detectCitationDrift] : []),
           ],
           write,

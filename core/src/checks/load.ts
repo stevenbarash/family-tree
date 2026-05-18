@@ -1,10 +1,12 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
 import matter from 'gray-matter';
 import type { RepoState, LoadedPage } from './types.ts';
 import { parseGedcomFile } from '../gedcom/parser.ts';
 import { parsePageMeta } from '../pages/schema.ts';
+import { normalizeTranslationKeys } from '../pages/frontmatter.ts';
 import { migrate } from '../pages/migrations/index.ts';
 import { parseCoordsYaml } from '../family/places-coords.ts';
 import { normalizeDerivedRecord } from '../gedcom/normalize.ts';
@@ -43,10 +45,17 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
       const raw = readFileSync(path, 'utf-8');
       const parsed = matter(raw);
       const fmRaw = parsed.data ?? {};
-      const fmVersion = typeof fmRaw.schemaVersion === 'number' ? fmRaw.schemaVersion : 1;
+      // Normalize snake_case translation keys (translation_of, canonical_sha,
+      // translated_at) to camelCase BEFORE migrate/Zod — same chain parsePage
+      // uses. Skipping this step makes every disk-stored translation page look
+      // like it's missing pipeline fields.
+      const fmNormalized = normalizeTranslationKeys(fmRaw as Record<string, unknown>);
+      const fmVersion = typeof (fmNormalized as { schemaVersion?: unknown }).schemaVersion === 'number'
+        ? (fmNormalized as { schemaVersion: number }).schemaVersion
+        : 1;
       let meta;
       try {
-        const migrated = migrate(fmRaw, fmVersion);
+        const migrated = migrate(fmNormalized, fmVersion);
         meta = parsePageMeta(migrated);
       } catch (e) {
         // Surface as a parse error if the file CLAIMS to be an article
@@ -85,6 +94,30 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
     ? parseCoordsYaml(readFileSync(coordsPath, 'utf-8'))
     : [];
 
+  // Look up canonical EN page HEAD SHAs — but only for slugs that have at
+  // least one translation page, since stale-canonical-sha is the only
+  // consumer. Bounds git cost to ~O(translated slugs), not O(all pages).
+  // Silent on git failure (untracked file, no .git dir): just omits that
+  // slug from the map, and the detector treats the absence as "skip".
+  const canonicalHeadSha = new Map<string, string>();
+  const translatedSlugs = new Set<string>();
+  for (const p of pages) {
+    if (p.meta.lang && p.meta.lang !== 'en' && p.meta.translationOf) {
+      translatedSlugs.add(p.meta.translationOf);
+    }
+  }
+  for (const slug of translatedSlugs) {
+    try {
+      const sha = execSync(
+        `git -C "${rootDir}" log -1 --format=%H -- pages/en/${slug}.md`,
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+      if (/^[a-f0-9]{40}$/.test(sha)) canonicalHeadSha.set(slug, sha);
+    } catch {
+      // untracked / not a git repo / other: skip silently
+    }
+  }
+
   return {
     rootDir,
     gedcomPath,
@@ -95,5 +128,6 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
     derived,
     placesCoords,
     parseErrors,
+    canonicalHeadSha,
   };
 }
