@@ -49,6 +49,15 @@
       "emptyArticles": "No articles yet.",
       "emptyTalkPages": "No talk pages yet."
     },
+    "Redlinks": {
+      "registry": "המרשם",
+      "navHome": "← Home",
+      "title": "Unwritten pages",
+      "summary": "{targets, plural, one {# unwritten target} two {# unwritten targets} many {# unwritten targets} other {# unwritten targets}} · {refs, plural, one {# reference} two {# references} many {# references} other {# references}}",
+      "empty": "No redlinks yet — every wikilink resolves.",
+      "linkedFrom": "Linked from:",
+      "refCount": "{count, plural, one {# ref} two {# refs} many {# refs} other {# refs}}"
+    },
     "Article": {
       "banners": {
         "stale": "תרגום זה משקף גרסה מוקדמת יותר של המאמר. תרגום מעודכן בעבודה.",

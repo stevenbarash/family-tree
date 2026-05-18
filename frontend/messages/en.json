@@ -49,6 +49,15 @@
       "emptyArticles": "No articles yet.",
       "emptyTalkPages": "No talk pages yet."
     },
+    "Redlinks": {
+      "registry": "The Registry",
+      "navHome": "← Home",
+      "title": "Unwritten pages",
+      "summary": "{targets, plural, one {# unwritten target} other {# unwritten targets}} · {refs, plural, one {# reference} other {# references}}",
+      "empty": "No redlinks yet — every wikilink resolves.",
+      "linkedFrom": "Linked from:",
+      "refCount": "{count, plural, one {# ref} other {# refs}}"
+    },
     "Article": {
       "banners": {
         "stale": "This translation reflects an earlier version of the article. An updated translation is in progress.",

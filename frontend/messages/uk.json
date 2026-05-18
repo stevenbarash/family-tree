@@ -49,6 +49,15 @@
       "emptyArticles": "No articles yet.",
       "emptyTalkPages": "No talk pages yet."
     },
+    "Redlinks": {
+      "registry": "Реєстр",
+      "navHome": "← Home",
+      "title": "Unwritten pages",
+      "summary": "{targets, plural, one {# unwritten target} few {# unwritten targets} many {# unwritten targets} other {# unwritten targets}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}}",
+      "empty": "No redlinks yet — every wikilink resolves.",
+      "linkedFrom": "Linked from:",
+      "refCount": "{count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}"
+    },
     "Article": {
       "banners": {
         "stale": "Цей переклад відображає старішу версію статті. Оновлення триває.",
