@@ -155,7 +155,8 @@
         "navigateAria": "אבות לפי דור",
         "selfLabel": "אני",
         "generationLabel": "דור {n}",
-        "mobileGenerationHeader": "דור {n}"
+        "mobileGenerationHeader": "דור {n}",
+        "chartAriaLabel": "אילן יוחסין, {n} אבות"
       }
     },
     "Search": {

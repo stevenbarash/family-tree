@@ -8,9 +8,9 @@ export interface PedigreeChartProps {
     id: string;
     position: { x: number; y: number };
     data: PedigreeNodeData;
-    ariaLabel: string;
   }>;
   edges: Array<{ id: string; source: string; target: string }>;
+  ariaLabel: string;
 }
 
 const nodeTypes = { pedigree: PedigreeNode };
@@ -23,7 +23,7 @@ const nodeTypes = { pedigree: PedigreeNode };
  * Clicks pass through to the per-node `<a href>`; React Flow's own
  * node-click handler is unused.
  */
-export default function PedigreeChart({ nodes, edges }: PedigreeChartProps) {
+export default function PedigreeChart({ nodes, edges, ariaLabel }: PedigreeChartProps) {
   const rfNodes: Node<PedigreeNodeData & Record<string, unknown>>[] = nodes.map(n => ({
     id: n.id,
     type: 'pedigree',
@@ -32,7 +32,6 @@ export default function PedigreeChart({ nodes, edges }: PedigreeChartProps) {
     draggable: false,
     selectable: false,
     connectable: false,
-    domAttributes: { 'aria-label': n.ariaLabel } as Record<string, unknown>,
   }));
   const rfEdges: Edge[] = edges.map(e => ({
     id: e.id,
@@ -43,7 +42,11 @@ export default function PedigreeChart({ nodes, edges }: PedigreeChartProps) {
   }));
 
   return (
-    <div className="h-[520px] w-full overflow-hidden rounded-md border rule-hair bg-muted/30">
+    <div
+      role="img"
+      aria-label={ariaLabel}
+      className="h-[520px] w-full overflow-hidden rounded-md border rule-hair bg-muted/30"
+    >
       <ReactFlow
         nodes={rfNodes}
         edges={rfEdges}

@@ -1,3 +1,5 @@
+'use client';
+
 import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import { AvatarMonogram } from './avatar-monogram';

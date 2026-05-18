@@ -151,7 +151,8 @@
         "navigateAria": "Ancestors by generation",
         "selfLabel": "self",
         "generationLabel": "generation {n}",
-        "mobileGenerationHeader": "Generation {n}"
+        "mobileGenerationHeader": "Generation {n}",
+        "chartAriaLabel": "Pedigree chart with {n} ancestors"
       },
       "disclosure": {
         "show": "Show",

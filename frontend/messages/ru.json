@@ -155,7 +155,8 @@
         "navigateAria": "Предки по поколениям",
         "selfLabel": "я",
         "generationLabel": "поколение {n}",
-        "mobileGenerationHeader": "Поколение {n}"
+        "mobileGenerationHeader": "Поколение {n}",
+        "chartAriaLabel": "Родословная диаграмма, {n} предков"
       }
     },
     "Search": {

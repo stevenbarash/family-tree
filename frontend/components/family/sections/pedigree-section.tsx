@@ -57,9 +57,6 @@ export async function PedigreeSection({ view }: Props) {
     const person = byRecord.get(n.record);
     const name = person?.name ?? n.record;
     const years = person ? formatYears(person) : null;
-    const generationLabel = n.generation === 0
-      ? t('selfLabel')
-      : t('generationLabel', { n: String(n.generation) });
     return {
       id: n.record,
       position: { x: n.x - NODE_HALF_WIDTH, y: n.y - NODE_HALF_HEIGHT },
@@ -71,9 +68,6 @@ export async function PedigreeSection({ view }: Props) {
         isFocal: n.generation === 0,
         href: familyTreeHref(n.record),
       },
-      // Per-node aria-label applied by React Flow via domAttributes; complements
-      // the <a aria-label> on the inner link (screen readers benefit from both).
-      ariaLabel: `${name}, ${generationLabel}${years ? `, ${years}` : ''}`,
     };
   });
   const edges = layout.edges.map(e => ({
@@ -88,7 +82,7 @@ export async function PedigreeSection({ view }: Props) {
 
       {/* Desktop: interactive chart */}
       <div className="hidden md:block">
-        <PedigreeChart nodes={nodes} edges={edges} />
+        <PedigreeChart nodes={nodes} edges={edges} ariaLabel={t('chartAriaLabel', { n: String(layout.nodes.length) })} />
       </div>
 
       {/* Mobile: stacked generations list — keep what works */}
