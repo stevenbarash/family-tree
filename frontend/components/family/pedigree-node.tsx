@@ -34,8 +34,8 @@ export function PedigreeNode({ data }: NodeProps<PedigreeNodeType>) {
       ].join(' ')}
       aria-label={`${data.name}${data.years ? ` (${data.years})` : ''} — open in family tree`}
     >
-      <Handle type="target" position={Position.Bottom} className="!opacity-0" />
-      <Handle type="source" position={Position.Top} className="!opacity-0" />
+      <Handle type="target" position={Position.Top} className="!opacity-0" />
+      <Handle type="source" position={Position.Bottom} className="!opacity-0" />
       <AvatarMonogram name={data.name} portrait={data.portrait} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-[0.78rem] font-medium leading-tight">
