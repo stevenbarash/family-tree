@@ -9,7 +9,7 @@ import { parsePageMeta } from '../pages/schema.ts';
 import { normalizeTranslationKeys } from '../pages/frontmatter.ts';
 import { migrate } from '../pages/migrations/index.ts';
 import { parseCoordsYaml } from '../family/places-coords.ts';
-import { normalizeDerivedRecord } from '../gedcom/normalize.ts';
+import { parseDerivedRecord } from '../gedcom/schema.ts';
 import type { DerivedRecord } from '../gedcom/types.ts';
 
 /**
@@ -82,10 +82,18 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
   if (existsSync(derivedDir)) {
     for (const name of readdirSync(derivedDir)) {
       if (!name.endsWith('.yml')) continue;
-      const raw = readFileSync(join(derivedDir, name), 'utf-8');
+      const path = join(derivedDir, name);
+      const raw = readFileSync(path, 'utf-8');
       const parsed = yaml.load(raw);
-      const norm = normalizeDerivedRecord(parsed);
-      if (norm) derived.set(norm.record, norm);
+      const result = parseDerivedRecord(parsed);
+      if (result.ok) {
+        derived.set(result.data.record, result.data);
+      } else {
+        // Previously silently dropped; now surfaces via schema-drift so a
+        // hand-edited or stale YAML doesn't quietly disappear from the
+        // derived map (where downstream code would just see "no record").
+        parseErrors.push({ path, error: result.error });
+      }
     }
   }
 

@@ -13,17 +13,21 @@ export const detectSchemaDrift: Detector = (state: RepoState): Finding[] => {
       });
     }
   }
-  // Surface frontmatter parse errors collected by load.ts. These are files
-  // that claimed to be article pages (type: person|family|event|tree) but
-  // failed Zod validation. Previously silently dropped — now flagged so the
-  // user sees malformed pages instead of mysteriously-missing ones.
-  // Examples: translation_of holding a path instead of a slug, lang holding
-  // "english" instead of "en", canonical_sha shorter than 40 chars.
+  // Surface schema-validation parse errors collected by load.ts. Two sources:
+  //   - Page frontmatter that claims to be an article (type: person|family|
+  //     event|tree) but fails Zod. Examples: translation_of holding a path
+  //     instead of a slug, lang holding "english" instead of "en",
+  //     canonical_sha shorter than 40 chars.
+  //   - Derived YAML (genealogy/derived/*.yml) that fails DerivedRecordSchema.
+  //     Examples: hand-edited file with wrong-shape parents array, a record
+  //     with malformed id, missing required fields.
+  // Previously both were silently dropped — now flagged so the user sees
+  // malformed inputs instead of mysteriously-missing ones.
   for (const err of state.parseErrors ?? []) {
     findings.push({
       category: 'schema',
       severity: 'error',
-      message: `frontmatter failed schema validation: ${shortenZodMessage(err.error)}`,
+      message: `schema validation failed: ${shortenZodMessage(err.error)}`,
       location: { file: err.path },
     });
   }

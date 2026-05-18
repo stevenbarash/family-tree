@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import type { DerivedRecord, SyncDiff, SnapshotEntry } from './types.ts';
 import type { AuthorIdentity } from '../pages/types.ts';
 import { parseGedcomFile } from './parser.ts';
-import { deriveIndividual, writeDerivedYaml, hashGedcomFile } from './derive.ts';
+import { deriveIndividual, writeDerivedYaml, hashGedcomFile, serializeDerivedRecord } from './derive.ts';
 import { appendSnapshot, latestSnapshot } from './snapshots.ts';
 
 export interface SyncConfig {
@@ -68,7 +68,10 @@ export async function syncGedcom(cfg: SyncConfig): Promise<SyncResult> {
   }
 
   for (const [record, derived] of newDerived) {
-    const newText = yaml.dump(derived, { lineWidth: 200, noRefs: true });
+    // Use the same serializer the writer uses, so diff text is byte-identical
+    // to what would land on disk. Comparing raw `derived` would spuriously
+    // flag every record as "changed" whenever the schema normalizes shape.
+    const newText = serializeDerivedRecord(derived);
     const oldText = existing.get(record);
     if (oldText === undefined) diff.added.push(record);
     else if (oldText !== newText) diff.changed.push(record);

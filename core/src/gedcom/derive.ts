@@ -17,6 +17,7 @@ import {
   type Sex,
 } from './types.ts';
 import { stripPointer, type ParseResult } from './parser.ts';
+import { parseDerivedRecord } from './schema.ts';
 import { parseGedcomYear } from '../family/dates.ts';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -409,10 +410,29 @@ export function readDateValue(dateNode: GedcomNode | undefined): string | null {
   return dateNode.data?.trim() || null;
 }
 
+/**
+ * Validate `derived` against the schema and return the canonical YAML form
+ * the writer would put on disk. Exported so callers that want to compare
+ * what's on disk to what they're about to write (e.g. `sync.ts` diff)
+ * produce byte-identical text — comparing raw vs. parsed records would
+ * spuriously flag every record as "changed" whenever Zod normalizes the
+ * shape (e.g. fills a missing array, drops an unknown field).
+ *
+ * Throws if the deriver produced an invalid record — that's a bug in
+ * the deriver, not bad data to ship to disk.
+ */
+export function serializeDerivedRecord(derived: DerivedRecord): string {
+  const parsed = parseDerivedRecord(derived);
+  if (!parsed.ok) {
+    throw new Error(`deriver produced invalid DerivedRecord for ${derived.record}: ${parsed.error}`);
+  }
+  return yaml.dump(parsed.data, { lineWidth: 200, sortKeys: false, noRefs: true });
+}
+
 export async function writeDerivedYaml(derivedDir: string, derived: DerivedRecord): Promise<string> {
+  const text = serializeDerivedRecord(derived);
   mkdirSync(derivedDir, { recursive: true });
   const path = join(derivedDir, `${derived.record}.yml`);
-  const text = yaml.dump(derived, { lineWidth: 200, sortKeys: false, noRefs: true });
   writeFileSync(path, text);
   return path;
 }

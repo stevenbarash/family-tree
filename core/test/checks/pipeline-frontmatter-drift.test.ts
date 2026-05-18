@@ -9,7 +9,6 @@ const SHA = 'a3f2c19abcdef0123456789abcdef0123456789a';
 function meta(opts: Partial<PageMeta> & { title: string }): PageMeta {
   return {
     schemaVersion: 1,
-    title: opts.title,
     type: 'person',
     aliases: [],
     categories: [],
