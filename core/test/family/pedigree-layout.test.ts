@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { layoutPedigree } from '../../src/family/pedigree-layout.ts';
 import type { BrowserPerson } from '../../src/family/browser.ts';
+import type { DerivedRecord } from '../../src/gedcom/types.ts';
 
 function makePerson(
   record: string,
@@ -125,4 +126,108 @@ test('layoutPedigree: edges from clamped-out ancestors are not constructed', () 
   assert.equal(result.nodes.find(n => n.kind === 'present' && n.record === 'I9'), undefined);
   assert.ok(!result.edges.some(e => e.source === 'I9'),
     'no edge should originate from a clamped-out ancestor');
+});
+
+function makeRecord(
+  recordId: string,
+  parents: Array<{ record: string; role: 'father' | 'mother' }>,
+): DerivedRecord {
+  return {
+    record: recordId,
+    name: recordId,
+    sex: undefined,
+    birth: null,
+    death: null,
+    parents: parents.map(p => ({ record: p.record, name: p.record, role: p.role })),
+    spouses: [],
+    children: [],
+    familyOfOrigin: [],
+    marriages: [],
+    residences: [],
+    occupations: [],
+    sources: [],
+    media: [],
+    privacy: { restricted: false, reason: 'none' },
+  };
+}
+
+test('layoutPedigree: includeFrontier=false (default) emits no frontier nodes even with missing parents', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
+  // father has NO parents recorded — would normally produce 2 frontier slots
+  const lookup = new Map<string, DerivedRecord>([
+    ['I2', makeRecord('I2', [])],
+  ]);
+  const result = layoutPedigree({ focal, ancestors: [father], maxGeneration: 4, recordLookup: lookup });
+  // includeFrontier omitted ⇒ defaults to false
+  for (const node of result.nodes) {
+    assert.notEqual(node.kind, 'frontier', 'no frontier nodes should be emitted when includeFrontier is unset');
+  }
+});
+
+test('layoutPedigree: includeFrontier=true emits a FrontierNode for a missing mother of a present father', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
+  // father has ONLY a father recorded; mother slot is missing
+  const lookup = new Map<string, DerivedRecord>([
+    ['I2', makeRecord('I2', [{ record: 'I4', role: 'father' }])],
+  ]);
+  const result = layoutPedigree({ focal, ancestors: [father], maxGeneration: 4, includeFrontier: true, recordLookup: lookup });
+
+  const frontierNodes = result.nodes.filter(n => n.kind === 'frontier');
+  assert.equal(frontierNodes.length, 1, 'should emit one frontier (the missing mother)');
+  const fnode = frontierNodes[0]!;
+  assert.equal(fnode.kind, 'frontier');
+  if (fnode.kind !== 'frontier') throw new Error('type narrowing');
+  assert.equal(fnode.descendantRecord, 'I2');
+  assert.equal(fnode.role, 'mother');
+  assert.equal(fnode.generation, 2);
+  assert.equal(fnode.side, 'paternal');
+  assert.equal(fnode.id, 'frontier:I2:mother');
+});
+
+test('layoutPedigree: frontier slot is positioned as a full leaf — present sibling and frontier are spread around their parent', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
+  const ff = makePerson('I3', 2, 'paternal', ['I2', 'I3'], 'father');
+  // father has a recorded father (I3 = ff) but a missing mother
+  const lookup = new Map<string, DerivedRecord>([
+    ['I2', makeRecord('I2', [{ record: 'I3', role: 'father' }])],
+  ]);
+  const result = layoutPedigree({ focal, ancestors: [father, ff], maxGeneration: 4, includeFrontier: true, recordLookup: lookup });
+
+  // father should be at midpoint of [ff, frontier_mother]
+  const fatherNode = result.nodes.find(n => n.kind === 'present' && n.record === 'I2')!;
+  const ffNode = result.nodes.find(n => n.kind === 'present' && n.record === 'I3')!;
+  const frontierMother = result.nodes.find(n => n.kind === 'frontier')!;
+  if (frontierMother.kind !== 'frontier') throw new Error('type narrowing');
+
+  assert.ok(ffNode.x < fatherNode.x, 'father (left) sibling is to the left of father');
+  assert.ok(frontierMother.x > fatherNode.x, 'mother (right) frontier is to the right of father');
+  assert.equal(fatherNode.x, (ffNode.x + frontierMother.x) / 2,
+    'father should be at midpoint of its two children — present + frontier');
+});
+
+test('layoutPedigree: frontier slots are NOT emitted for missing parents of ancestors at maxGeneration', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
+  const ff = makePerson('I3', 2, 'paternal', ['I2', 'I3'], 'father');
+  const fff = makePerson('I4', 3, 'paternal', ['I2', 'I3', 'I4'], 'father');
+  // I4 (gen 3 — the deepest visible at maxGeneration=3) has missing parents.
+  // Frontier slots for them would sit at gen 4, OUTSIDE the chart bound.
+  // So they must not be emitted.
+  const lookup = new Map<string, DerivedRecord>([
+    ['I4', makeRecord('I4', [])],
+  ]);
+  const result = layoutPedigree({
+    focal,
+    ancestors: [father, ff, fff],
+    maxGeneration: 3,
+    includeFrontier: true,
+    recordLookup: lookup,
+  });
+  for (const node of result.nodes) {
+    assert.notEqual(node.kind, 'frontier',
+      'frontier slots above maxGeneration must not be emitted');
+  }
 });

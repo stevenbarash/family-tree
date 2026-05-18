@@ -93,7 +93,38 @@ export function layoutPedigree(cfg: LayoutConfig): PedigreeLayout {
     }
   }
 
-  // Frontier emission (Task 3 fills this in)
+  // Frontier emission: for each visible present ancestor whose recordLookup
+  // entry exists and whose parents[] lacks a father or mother role, emit a
+  // FrontierNode at gen+1 (provided gen+1 <= maxGeneration).
+  if (cfg.includeFrontier && cfg.recordLookup) {
+    for (const a of visible) {
+      if (a.generation >= cfg.maxGeneration) continue; // frontier above bound is dropped
+      const rec = cfg.recordLookup.get(a.record);
+      if (!rec) continue;
+      const hasFather = rec.parents.some(p => p.role === 'father');
+      const hasMother = rec.parents.some(p => p.role === 'mother');
+      // The frontier slot inherits the descendant's side (so a paternal
+      // grandparent's missing father is still paternal).
+      const childSide = a.side === 'self' ? 'paternal' : a.side;
+      const slots: Array<'father' | 'mother'> = [];
+      if (!hasFather) slots.push('father');
+      if (!hasMother) slots.push('mother');
+      for (const role of slots) {
+        const id = `frontier:${a.record}:${role}`;
+        const arr = childrenOf.get(a.record)!;
+        arr.push({
+          id,
+          role,
+          isFrontier: true,
+          generation: a.generation + 1,
+          side: childSide,
+        });
+        // Initialize an empty children list for the frontier node so the
+        // post-order traversal recognises it as a leaf (no recursion past it).
+        childrenOf.set(id, []);
+      }
+    }
+  }
 
   // Sort siblings: father (left) before mother (right). Missing role keeps input order.
   for (const arr of childrenOf.values()) {
