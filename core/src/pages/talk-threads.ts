@@ -76,3 +76,30 @@ export function parseTalkThreads(talkBody: string): TalkThread[] {
 export function countOpenThreads(talkBody: string): number {
   return parseTalkThreads(talkBody).filter(t => t.marker === 'open' || t.marker === 'gap').length;
 }
+
+export interface OpenGapsRow {
+  slug: string;
+  title: string;
+  count: number;
+}
+
+/**
+ * Aggregate unresolved-thread counts across many talk pages and return
+ * the top `limit` rows, sorted by count descending then slug ascending.
+ * Rows with zero open threads are omitted. Empty `talkBody` is treated
+ * as zero (no allocation, no parse).
+ */
+export function aggregateOpenGaps(
+  pages: ReadonlyArray<{ slug: string; title: string; talkBody: string }>,
+  limit: number,
+): OpenGapsRow[] {
+  if (limit <= 0) return [];
+  const rows: OpenGapsRow[] = [];
+  for (const p of pages) {
+    if (!p.talkBody) continue;
+    const count = countOpenThreads(p.talkBody);
+    if (count > 0) rows.push({ slug: p.slug, title: p.title, count });
+  }
+  rows.sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug));
+  return rows.slice(0, limit);
+}
