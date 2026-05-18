@@ -50,6 +50,13 @@ export interface TranslateRequest {
    *  gendered verb forms in languages that require it (Russian past tense,
    *  Hebrew past tense, etc.). */
   subjectSex?: 'M' | 'F' | 'U';
+  /** Canonical translated name pulled from the linked GEDCOM record's
+   *  NAME.TRAN substructure for this locale (GEDCOM 7 feature). When
+   *  present, the translator should use this verbatim as the title rather
+   *  than re-translating from scratch — the GEDCOM is the source of truth
+   *  for cross-locale name renderings. Absent for non-person articles or
+   *  individuals without TRAN entries (still happens during the migration). */
+  nameTranslation?: string;
   /** Title pairs for wikilinked slugs that have already been translated
    *  into this locale. Lets the translator follow established conventions
    *  (e.g. surname renderings) instead of drifting. */
@@ -107,12 +114,27 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
   // line at the top level of the file.
   const gedcomRecord = (canonicalPage.meta as { gedcom?: { record?: string } }).gedcom?.record;
   let subjectSex: 'M' | 'F' | 'U' | undefined = undefined;
+  let nameTranslation: string | undefined = undefined;
   if (gedcomRecord) {
     const derivedPath = join(opts.rootDir, 'genealogy', 'derived', `${gedcomRecord}.yml`);
     if (existsSync(derivedPath)) {
       const body = await readFile(derivedPath, 'utf8');
-      const match = body.match(/^sex:\s*([MFU])\s*$/m);
-      if (match) subjectSex = match[1] as 'M' | 'F' | 'U';
+      const sexMatch = body.match(/^sex:\s*([MFU])\s*$/m);
+      if (sexMatch) subjectSex = sexMatch[1] as 'M' | 'F' | 'U';
+      // NAME.TRAN lookup: the derive layer emits
+      //   nameTranslations:
+      //     ru: <translated name>
+      //     uk: <translated name>
+      //     he: <translated name>
+      // when GEDCOM 7 NAME.TRAN substructures exist. Pick the one for our locale;
+      // translator uses it as the canonical translated title (no re-translation).
+      const tranMatch = body.match(
+        new RegExp(`^nameTranslations:\\n(  [a-z]{2,3}: .+\\n)+`, 'm'),
+      );
+      if (tranMatch) {
+        const locMatch = tranMatch[0].match(new RegExp(`^  ${opts.locale}: (.+)$`, 'm'));
+        if (locMatch) nameTranslation = locMatch[1].trim().replace(/^['"]|['"]$/g, '');
+      }
     }
   }
 
@@ -142,6 +164,7 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
     canonicalMeta: canonicalPage.meta as unknown as Record<string, unknown>,
     locale: opts.locale as Locale,
     subjectSex,
+    nameTranslation,
     relatedTranslations,
     existingTranslation,
     existingTalkResolved,

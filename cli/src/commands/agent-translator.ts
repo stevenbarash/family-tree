@@ -24,6 +24,7 @@ export const agentTranslator: Translator = async (req) => {
       FRONTMATTER_JSON: string;
       BODY: string;
       SUBJECT_SEX: string;
+      NAME_TRAN_OR_NONE: string;
       RELATED_TRANSLATIONS_OR_NONE: string;
       EXISTING_TRANSLATION_OR_NONE: string;
       EXISTING_TALK_RESOLVED_OR_NONE: string;
@@ -43,6 +44,7 @@ export const agentTranslator: Translator = async (req) => {
       FRONTMATTER_JSON: JSON.stringify(req.canonicalMeta, null, 2),
       BODY: req.canonicalBody,
       SUBJECT_SEX: subjectSexLabel(req.subjectSex),
+      NAME_TRAN_OR_NONE: req.nameTranslation ?? '(none)',
       RELATED_TRANSLATIONS_OR_NONE: relatedTranslationsBlock(req.relatedTranslations),
       EXISTING_TRANSLATION_OR_NONE: req.existingTranslation ?? '(none)',
       EXISTING_TALK_RESOLVED_OR_NONE: req.existingTalkResolved ?? '(none)',

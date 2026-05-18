@@ -275,10 +275,12 @@ export function deriveIndividual(
   const sc = deriveSpousesAndChildren(node, record, ctx);
   const birth = deriveDatedEvent(node, 'BIRT');
   const death = deriveDatedEvent(node, 'DEAT');
+  const nameTranslations = deriveNameTranslations(node);
   return {
     record,
     name: deriveName(node),
     sex: deriveSex(node),
+    ...(Object.keys(nameTranslations).length > 0 ? { nameTranslations } : {}),
     birth,
     death,
     parents: deriveParents(node, ctx),
@@ -350,6 +352,29 @@ function deriveName(node: GedcomNode): string {
   const nameNode = node.tree.find(n => n.tag === 'NAME');
   if (!nameNode?.data) return '';
   return nameNode.data.replace(/\//g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Extract NAME.TRAN substructures (GEDCOM 7 feature). Returns a map of
+ * BCP 47 locale → translated name string, gathered from the FIRST NAME
+ * block on this individual. Used by the translation pipeline as a
+ * first-choice translation source so per-language names live once in the
+ * GEDCOM rather than being re-derived per article.
+ *
+ * Empty map if there's no NAME, no TRANs, or TRANs lack LANG (LANG is
+ * required by spec — drop ones without it so we don't conflate locales).
+ */
+export function deriveNameTranslations(node: GedcomNode): Record<string, string> {
+  const out: Record<string, string> = {};
+  const nameNode = node.tree.find(n => n.tag === 'NAME');
+  if (!nameNode) return out;
+  for (const tran of nameNode.tree.filter(n => n.tag === 'TRAN')) {
+    const lang = tran.tree.find(n => n.tag === 'LANG')?.data?.trim();
+    const value = tran.data?.trim();
+    if (!lang || !value) continue;
+    out[lang] = value;
+  }
+  return out;
 }
 
 function deriveDatedEvent(node: GedcomNode, tag: string): DatedEvent | null {
