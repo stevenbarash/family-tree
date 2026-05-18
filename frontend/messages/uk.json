@@ -166,7 +166,7 @@
           "paternalGrandmother": "Бабуся по батькові",
           "maternalGrandfather": "Дід по матері",
           "maternalGrandmother": "Бабуся по матері",
-          "unknownAncestor": "Невідомий пра-{n}-пра-родич"
+          "unknownAncestor": "Пра-{n}-прародич"
         }
       }
     },

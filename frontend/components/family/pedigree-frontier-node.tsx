@@ -34,7 +34,7 @@ export function PedigreeFrontierNode({ data }: NodeProps<PedigreeFrontierNodeTyp
       <Handle type="target" position={Position.Top} className="!opacity-0" />
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
       <div className="min-w-0 flex-1 text-center">
-        <div className="truncate text-[0.72rem] font-medium leading-tight text-muted-foreground/80">
+        <div className="line-clamp-2 text-[0.72rem] font-medium leading-tight text-muted-foreground/80 text-pretty">
           <bdi>{data.kinshipLabel}</bdi>
         </div>
         <div className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground/50">

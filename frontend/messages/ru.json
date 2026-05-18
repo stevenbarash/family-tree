@@ -166,7 +166,7 @@
           "paternalGrandmother": "Бабушка по отцу",
           "maternalGrandfather": "Дед по матери",
           "maternalGrandmother": "Бабушка по матери",
-          "unknownAncestor": "Неизвестный пра-{n}-пра-родственник"
+          "unknownAncestor": "Пра-{n}-прародитель"
         }
       }
     },
