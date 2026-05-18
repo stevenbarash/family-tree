@@ -156,7 +156,16 @@
         "selfLabel": "я",
         "generationLabel": "покоління {n}",
         "mobileGenerationHeader": "Покоління {n}",
-        "chartAriaLabel": "Родовідна діаграма, {n} предків"
+        "chartAriaLabel": "Родовідна діаграма, {n} предків",
+        "kinship": {
+          "father": "Батько",
+          "mother": "Мати",
+          "paternalGrandfather": "Дід по батькові",
+          "paternalGrandmother": "Бабуся по батькові",
+          "maternalGrandfather": "Дід по матері",
+          "maternalGrandmother": "Бабуся по матері",
+          "unknownAncestor": "Невідомий пра-{n}-пра-родич"
+        }
       }
     },
     "Search": {
