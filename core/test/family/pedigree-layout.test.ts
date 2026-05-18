@@ -94,3 +94,32 @@ test('layoutPedigree: maxGeneration clamps the visible nodes', () => {
   assert.equal(result.nodes.find(n => n.record === 'I9'), undefined,
     'ancestor beyond maxGeneration should be filtered out');
 });
+
+test('layoutPedigree: missing role defaults to father position (deterministic)', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  // Person at generation 1, no role field — simulates legacy data
+  const noRole = makePerson('I2', 1, 'paternal', ['I2']);
+  const result = layoutPedigree({ focal, ancestors: [noRole], maxGeneration: 4 });
+
+  const noRoleNode = result.nodes.find(n => n.record === 'I2')!;
+  // Default-to-father means x should be negative (left side)
+  assert.ok(noRoleNode.x < 0,
+    `missing role should default to father (x < 0), got x=${noRoleNode.x}`);
+});
+
+test('layoutPedigree: edges from clamped-out ancestors are not constructed', () => {
+  const focal = makePerson('I1', 0, 'self', []);
+  const father = makePerson('I2', 1, 'paternal', ['I2'], 'father');
+  // Deep ancestor beyond maxGeneration — should be filtered, AND
+  // any edge it would have produced (deep → father) must not exist.
+  const deep = makePerson('I9', 6, 'paternal', ['I2', 'a', 'b', 'c', 'd', 'I9'], 'father');
+  const result = layoutPedigree({
+    focal,
+    ancestors: [father, deep],
+    maxGeneration: 4,
+  });
+
+  assert.equal(result.nodes.find(n => n.record === 'I9'), undefined);
+  assert.ok(!result.edges.some(e => e.source === 'I9'),
+    'no edge should originate from a clamped-out ancestor');
+});
