@@ -18,8 +18,12 @@ import type { Detector, Finding, RepoState } from './types.ts';
  *     surfaces that; double-reporting is noise.
  *   - State has no `canonicalHeadSha` map at all (non-git test contexts).
  *
- * Severity is `warn` — re-running `wai i18n sync <slug> <locale>`
- * fixes it deterministically.
+ * Severity is `info` (not `warn`) — translations going stale is the
+ * natural consequence of the canonical EN being edited between sync
+ * runs. It's a "you might want to refresh" signal, not a corruption
+ * blocker; blocking the pre-commit hook (`--min-severity warn`) on
+ * unrelated commits because translations are out-of-date is the wrong
+ * UX. Run `wai check --min-severity info` to inspect.
  */
 export const detectStaleCanonicalSha: Detector = (state: RepoState): Finding[] => {
   const heads = state.canonicalHeadSha;
@@ -38,7 +42,7 @@ export const detectStaleCanonicalSha: Detector = (state: RepoState): Finding[] =
     if (!pageSha) {
       findings.push({
         category: 'data',
-        severity: 'warn',
+        severity: 'info',
         message: `translation missing canonical_sha — should be ${headSha.slice(0, 8)} (run \`wai i18n sync ${canonical} ${p.meta.lang}\`)`,
         location: { file: p.path },
       });
@@ -49,7 +53,7 @@ export const detectStaleCanonicalSha: Detector = (state: RepoState): Finding[] =
 
     findings.push({
       category: 'data',
-      severity: 'warn',
+      severity: 'info',
       message: `stale canonical_sha ${pageSha.slice(0, 8)} (canonical HEAD is ${headSha.slice(0, 8)}) — re-run \`wai i18n sync ${canonical} ${p.meta.lang}\` to refresh`,
       location: { file: p.path },
     });

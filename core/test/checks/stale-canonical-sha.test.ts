@@ -55,7 +55,7 @@ test('stale-canonical-sha: translation sha is an old SHA → warn finding with d
   });
   const findings = detectStaleCanonicalSha(state);
   assert.equal(findings.length, 1);
-  assert.equal(findings[0]!.severity, 'warn');
+  assert.equal(findings[0]!.severity, 'info');
   assert.equal(findings[0]!.category, 'data');
   assert.equal(findings[0]!.location.file, '/tmp/x/pages/ru/a.md');
   assert.match(findings[0]!.message, /canonical_sha/);
