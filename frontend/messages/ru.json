@@ -29,34 +29,34 @@
       "missingMother": "мать",
       "missingBoth": "оба",
       "recentlyRevised": "Недавно изменённые",
-      "editorialGapsHeading": "Editorial gaps",
-      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# open} few {# open} many {# open} other {# open}} · <talk>talk →</talk>",
-      "editorialGapsAggregate": "{threads, plural, one {# open} few {# open} many {# open} other {# open}} across {articles, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
-      "unwrittenPagesHeading": "Unwritten pages",
-      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}",
-      "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} few {# unwritten pages} many {# unwritten pages} other {# unwritten pages}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}} · <a>all redlinks →</a>",
-      "browseAllArticles": "Browse all {count, plural, one {# article} few {# articles} many {# articles} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} few {# talk pages} many {# talk pages} other {# talk pages}} →"
+      "editorialGapsHeading": "Редакторские пробелы",
+      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# открытый} few {# открытых} many {# открытых} other {# открытых}} · <talk>обсуждение →</talk>",
+      "editorialGapsAggregate": "{threads, plural, one {# открытый} few {# открытых} many {# открытых} other {# открытых}} в {articles, plural, one {# статье} few {# статьях} many {# статьях} other {# статьях}}",
+      "unwrittenPagesHeading": "Ненаписанные страницы",
+      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ссылка} few {# ссылки} many {# ссылок} other {# ссылок}}",
+      "unwrittenPagesAggregate": "{targets, plural, one {# ненаписанная страница} few {# ненаписанные страницы} many {# ненаписанных страниц} other {# ненаписанных страниц}} · {refs, plural, one {# ссылка} few {# ссылки} many {# ссылок} other {# ссылок}} · <a>все красные ссылки →</a>",
+      "browseAllArticles": "Все {count, plural, one {# статья} few {# статьи} many {# статей} other {# статей}} →",
+      "browseAllTalkPages": "{count, plural, one {# страница обсуждения} few {# страницы обсуждения} many {# страниц обсуждения} other {# страниц обсуждения}} →"
     },
     "Index": {
       "registry": "Реестр",
-      "navHome": "← Home",
+      "navHome": "← На главную",
       "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} few {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} few {# generations} many {# generations} other {# generations}}",
       "articlesCount": "{count, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
       "gedcomSync": "GEDCOM {date}",
-      "allArticlesHeading": "All articles ({count})",
-      "talkPagesHeading": "Talk pages ({count})",
-      "emptyArticles": "No articles yet.",
-      "emptyTalkPages": "No talk pages yet."
+      "allArticlesHeading": "Все статьи ({count})",
+      "talkPagesHeading": "Страницы обсуждения ({count})",
+      "emptyArticles": "Пока нет статей.",
+      "emptyTalkPages": "Пока нет страниц обсуждения."
     },
     "Redlinks": {
       "registry": "Реестр",
-      "navHome": "← Home",
-      "title": "Unwritten pages",
-      "summary": "{targets, plural, one {# unwritten target} few {# unwritten targets} many {# unwritten targets} other {# unwritten targets}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}}",
-      "empty": "No redlinks yet — every wikilink resolves.",
-      "linkedFrom": "Linked from:",
-      "refCount": "{count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}"
+      "navHome": "← На главную",
+      "title": "Ненаписанные страницы",
+      "summary": "{targets, plural, one {# ненаписанная цель} few {# ненаписанные цели} many {# ненаписанных целей} other {# ненаписанных целей}} · {refs, plural, one {# ссылка} few {# ссылки} many {# ссылок} other {# ссылок}}",
+      "empty": "Красных ссылок нет — все вики-ссылки разрешаются.",
+      "linkedFrom": "Источники:",
+      "refCount": "{count, plural, one {# ссылка} few {# ссылки} many {# ссылок} other {# ссылок}}"
     },
     "Article": {
       "banners": {

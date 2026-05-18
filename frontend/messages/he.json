@@ -29,34 +29,34 @@
       "missingMother": "אם",
       "missingBoth": "שניהם",
       "recentlyRevised": "עודכנו לאחרונה",
-      "editorialGapsHeading": "Editorial gaps",
-      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# open} two {# open} many {# open} other {# open}} · <talk>talk →</talk>",
-      "editorialGapsAggregate": "{threads, plural, one {# open} two {# open} many {# open} other {# open}} across {articles, plural, one {# article} two {# articles} many {# articles} other {# articles}}",
-      "unwrittenPagesHeading": "Unwritten pages",
-      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} two {# refs} many {# refs} other {# refs}}",
-      "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} two {# unwritten pages} many {# unwritten pages} other {# unwritten pages}} · {refs, plural, one {# reference} two {# references} many {# references} other {# references}} · <a>all redlinks →</a>",
-      "browseAllArticles": "Browse all {count, plural, one {# article} two {# articles} many {# articles} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} two {# talk pages} many {# talk pages} other {# talk pages}} →"
+      "editorialGapsHeading": "פערים עריכתיים",
+      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# פתוח} two {# פתוחים} many {# פתוחים} other {# פתוחים}} · <talk>שיחה →</talk>",
+      "editorialGapsAggregate": "{threads, plural, one {# פתוח} two {# פתוחים} many {# פתוחים} other {# פתוחים}} ב־{articles, plural, one {# מאמר} two {# מאמרים} many {# מאמרים} other {# מאמרים}}",
+      "unwrittenPagesHeading": "דפים שלא נכתבו",
+      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# הפניה} two {# הפניות} many {# הפניות} other {# הפניות}}",
+      "unwrittenPagesAggregate": "{targets, plural, one {# דף שלא נכתב} two {# דפים שלא נכתבו} many {# דפים שלא נכתבו} other {# דפים שלא נכתבו}} · {refs, plural, one {# הפניה} two {# הפניות} many {# הפניות} other {# הפניות}} · <a>כל הקישורים האדומים →</a>",
+      "browseAllArticles": "כל {count, plural, one {# מאמר} two {# המאמרים} many {# המאמרים} other {# המאמרים}} →",
+      "browseAllTalkPages": "{count, plural, one {# דף שיחה} two {# דפי שיחה} many {# דפי שיחה} other {# דפי שיחה}} →"
     },
     "Index": {
       "registry": "המרשם",
-      "navHome": "← Home",
+      "navHome": "← לדף הבית",
       "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} two {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} two {# generations} many {# generations} other {# generations}}",
       "articlesCount": "{count, plural, one {# article} two {# articles} many {# articles} other {# articles}}",
       "gedcomSync": "GEDCOM {date}",
-      "allArticlesHeading": "All articles ({count})",
-      "talkPagesHeading": "Talk pages ({count})",
-      "emptyArticles": "No articles yet.",
-      "emptyTalkPages": "No talk pages yet."
+      "allArticlesHeading": "כל המאמרים ({count})",
+      "talkPagesHeading": "דפי שיחה ({count})",
+      "emptyArticles": "אין מאמרים עדיין.",
+      "emptyTalkPages": "אין דפי שיחה עדיין."
     },
     "Redlinks": {
       "registry": "המרשם",
-      "navHome": "← Home",
-      "title": "Unwritten pages",
-      "summary": "{targets, plural, one {# unwritten target} two {# unwritten targets} many {# unwritten targets} other {# unwritten targets}} · {refs, plural, one {# reference} two {# references} many {# references} other {# references}}",
-      "empty": "No redlinks yet — every wikilink resolves.",
-      "linkedFrom": "Linked from:",
-      "refCount": "{count, plural, one {# ref} two {# refs} many {# refs} other {# refs}}"
+      "navHome": "← לדף הבית",
+      "title": "דפים שלא נכתבו",
+      "summary": "{targets, plural, one {# יעד לא־כתוב} two {# יעדים לא־כתובים} many {# יעדים לא־כתובים} other {# יעדים לא־כתובים}} · {refs, plural, one {# הפניה} two {# הפניות} many {# הפניות} other {# הפניות}}",
+      "empty": "אין קישורים אדומים — כל קישורי הוויקי נפתרים.",
+      "linkedFrom": "מקושר מ:",
+      "refCount": "{count, plural, one {# הפניה} two {# הפניות} many {# הפניות} other {# הפניות}}"
     },
     "Article": {
       "banners": {

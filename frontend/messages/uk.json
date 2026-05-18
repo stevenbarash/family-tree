@@ -29,34 +29,34 @@
       "missingMother": "мати",
       "missingBoth": "обоє",
       "recentlyRevised": "Нещодавно змінені",
-      "editorialGapsHeading": "Editorial gaps",
-      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# open} few {# open} many {# open} other {# open}} · <talk>talk →</talk>",
-      "editorialGapsAggregate": "{threads, plural, one {# open} few {# open} many {# open} other {# open}} across {articles, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
-      "unwrittenPagesHeading": "Unwritten pages",
-      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}",
-      "unwrittenPagesAggregate": "{targets, plural, one {# unwritten page} few {# unwritten pages} many {# unwritten pages} other {# unwritten pages}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}} · <a>all redlinks →</a>",
-      "browseAllArticles": "Browse all {count, plural, one {# article} few {# articles} many {# articles} other {# articles}} →",
-      "browseAllTalkPages": "{count, plural, one {# talk page} few {# talk pages} many {# talk pages} other {# talk pages}} →"
+      "editorialGapsHeading": "Редакційні прогалини",
+      "editorialGapsRow": "<a>{title}</a> {count, plural, one {# відкритий} few {# відкритих} many {# відкритих} other {# відкритих}} · <talk>обговорення →</talk>",
+      "editorialGapsAggregate": "{threads, plural, one {# відкритий} few {# відкритих} many {# відкритих} other {# відкритих}} у {articles, plural, one {# статті} few {# статтях} many {# статтях} other {# статтях}}",
+      "unwrittenPagesHeading": "Ненаписані сторінки",
+      "unwrittenPagesRow": "<a>[[ {target} ]]</a> {count, plural, one {# посилання} few {# посилання} many {# посилань} other {# посилань}}",
+      "unwrittenPagesAggregate": "{targets, plural, one {# ненаписана сторінка} few {# ненаписані сторінки} many {# ненаписаних сторінок} other {# ненаписаних сторінок}} · {refs, plural, one {# посилання} few {# посилання} many {# посилань} other {# посилань}} · <a>усі червоні посилання →</a>",
+      "browseAllArticles": "Усі {count, plural, one {# стаття} few {# статті} many {# статей} other {# статей}} →",
+      "browseAllTalkPages": "{count, plural, one {# сторінка обговорення} few {# сторінки обговорення} many {# сторінок обговорення} other {# сторінок обговорення}} →"
     },
     "Index": {
       "registry": "Реєстр",
-      "navHome": "← Home",
+      "navHome": "← На головну",
       "ancestorsAcrossGenerations": "{ancestors, plural, one {# ancestor} few {# ancestors} many {# ancestors} other {# ancestors}} across {generations, plural, one {# generation} few {# generations} many {# generations} other {# generations}}",
       "articlesCount": "{count, plural, one {# article} few {# articles} many {# articles} other {# articles}}",
       "gedcomSync": "GEDCOM {date}",
-      "allArticlesHeading": "All articles ({count})",
-      "talkPagesHeading": "Talk pages ({count})",
-      "emptyArticles": "No articles yet.",
-      "emptyTalkPages": "No talk pages yet."
+      "allArticlesHeading": "Усі статті ({count})",
+      "talkPagesHeading": "Сторінки обговорення ({count})",
+      "emptyArticles": "Поки немає статей.",
+      "emptyTalkPages": "Поки немає сторінок обговорення."
     },
     "Redlinks": {
       "registry": "Реєстр",
-      "navHome": "← Home",
-      "title": "Unwritten pages",
-      "summary": "{targets, plural, one {# unwritten target} few {# unwritten targets} many {# unwritten targets} other {# unwritten targets}} · {refs, plural, one {# reference} few {# references} many {# references} other {# references}}",
-      "empty": "No redlinks yet — every wikilink resolves.",
-      "linkedFrom": "Linked from:",
-      "refCount": "{count, plural, one {# ref} few {# refs} many {# refs} other {# refs}}"
+      "navHome": "← На головну",
+      "title": "Ненаписані сторінки",
+      "summary": "{targets, plural, one {# ненаписана ціль} few {# ненаписані цілі} many {# ненаписаних цілей} other {# ненаписаних цілей}} · {refs, plural, one {# посилання} few {# посилання} many {# посилань} other {# посилань}}",
+      "empty": "Червоних посилань немає — усі вікі-посилання вирішуються.",
+      "linkedFrom": "Джерела:",
+      "refCount": "{count, plural, one {# посилання} few {# посилання} many {# посилань} other {# посилань}}"
     },
     "Article": {
       "banners": {
