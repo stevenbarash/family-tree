@@ -77,3 +77,37 @@ void _schemaParity;
 export function parsePageMeta(input: unknown): PageMeta {
   return PageMetaSchema.parse(input);
 }
+
+/**
+ * Focused validation of just the translation-pipeline frontmatter fields
+ * (`lang`, `translationOf`, `canonicalSha`, `translatedAt`) — the same
+ * regexes the main PageMeta schema enforces, pulled out so they can be
+ * applied to pages that aren't of an article type and therefore can't
+ * be parsed with the full PageMeta schema (e.g. `type: translation-talk`,
+ * `type: meta`).
+ *
+ * Why this exists: talk pages carry the same pipeline fields as the
+ * articles they shadow, and the same bug class hits them — a
+ * `translation_of: en/<slug>` path instead of a bare slug breaks the
+ * pipeline for both files. Without this focused validator the talk-page
+ * version of the bug is invisible to `wai check` (the main schema
+ * rejects talk pages on type alone and load.ts silently drops them).
+ *
+ * Returns a flattened error string on failure, null on success. Caller
+ * pushes the error into `RepoState.parseErrors` for `detectSchemaDrift`
+ * to surface — same channel article-page schema errors flow through.
+ */
+const PipelineFieldsSchema = PageMetaSchema.pick({
+  lang: true,
+  translationOf: true,
+  canonicalSha: true,
+  translatedAt: true,
+}).passthrough();
+
+export function parsePipelineFields(input: unknown): string | null {
+  const result = PipelineFieldsSchema.safeParse(input);
+  if (result.success) return null;
+  return result.error.issues
+    .map(i => `${i.path.length ? i.path.join('.') + ': ' : ''}${i.message}`)
+    .join('; ');
+}

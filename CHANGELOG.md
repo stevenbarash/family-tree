@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ## [Unreleased] — v2 development
 
+### Added
+
+- **Pipeline-fields validation on non-article pages:** Talk pages (`type: translation-talk`), meta pages, and any other non-article frontmatter carrying translation-pipeline fields (`lang`, `translation_of`, `canonical_sha`, `translated_at`) are now validated against the same regex constraints PageMeta uses. Surfaces via `RepoState.parseErrors` → `detectSchemaDrift`, same channel as article-page schema failures. New `parsePipelineFields()` helper in `core/src/pages/schema.ts` exposes the focused check; `load.ts` runs it in the catch branch where it used to silently drop non-article files. Motivation: the `rahil-moiseyevna-berezovskaya` translation-talk files carried the same `translation_of: en/<slug>` path-vs-slug bug as the article files but were invisible to `wai check` until now — the main schema rejects talk pages on type alone, so the focused validator never ran. 7 new tests; cumulative core 549 (was 542).
+
 ### Changed
 
 - **`detectStaleCanonicalSha` severity dropped from `warn` to `info`:** Caught on its first real-world deployment — the pre-commit hook in the data repo (`wai check --fail-on format,schema,data --min-severity warn`) was blocking unrelated commits because the 534 stale translations from the recent canonical-EN cleanup commits tripped the warn threshold. Stale-sha is a "you might want to refresh" signal, not a corruption blocker; downgraded to `info` so it's visible via `wai check --min-severity info` without gating commits. Other Pass-2 detectors (NAME.TRAN ↔ title, pipeline-frontmatter) stay at warn — those are real disagreements, not natural drift.

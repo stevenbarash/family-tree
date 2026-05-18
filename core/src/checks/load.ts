@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import matter from 'gray-matter';
 import type { RepoState, LoadedPage } from './types.ts';
 import { parseGedcomFile } from '../gedcom/parser.ts';
-import { parsePageMeta } from '../pages/schema.ts';
+import { parsePageMeta, parsePipelineFields } from '../pages/schema.ts';
 import { normalizeTranslationKeys } from '../pages/frontmatter.ts';
 import { migrate } from '../pages/migrations/index.ts';
 import { parseCoordsYaml } from '../family/places-coords.ts';
@@ -60,7 +60,8 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
       } catch (e) {
         // Surface as a parse error if the file CLAIMS to be an article
         // page (so a malformed canonical page or translation file gets
-        // flagged); silently skip otherwise (talk pages, research logs).
+        // flagged); silently skip the full-schema failure otherwise
+        // (talk pages, research logs).
         const claimedType = typeof (fmRaw as { type?: unknown }).type === 'string'
           ? (fmRaw as { type: string }).type
           : undefined;
@@ -69,6 +70,15 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
             path,
             error: e instanceof Error ? e.message : String(e),
           });
+        } else {
+          // Non-article file (talk page, meta page) — full PageMeta validation
+          // doesn't apply, but if the file carries translation-pipeline fields
+          // they should still be valid. Catches the path-vs-slug bug on talk
+          // pages, which the full-schema path silently skips.
+          const pipelineErr = parsePipelineFields(fmNormalized);
+          if (pipelineErr) {
+            parseErrors.push({ path, error: pipelineErr });
+          }
         }
         continue;
       }
