@@ -148,3 +148,72 @@ test('data-drift: correction with no record id and no page gedcom block → skip
   // No record to attach correction to; detector silently skips.
   assert.deepEqual(detectDataDrift(state), []);
 });
+
+test('data-drift: conflicting corrections across canonical EN pages → one conflict finding', () => {
+  // Two canonical EN pages (no lang field) both correct the same record/field
+  // with different values. This is real drift worth flagging.
+  const a: Correction = { field: 'death.date', value: '1989', source: 'src-a' };
+  const b: Correction = { field: 'death.date', value: '1990', source: 'src-b' };
+  const state = makeState(
+    [page('a', 'I1', [a]), page('b', 'I1', [b])],
+    new Map([['I1', rec('I1', { death: { date: '1988', place: 'Rome' } })]]),
+  );
+  const findings = detectDataDrift(state);
+  // One conflict, with severity error
+  const conflict = findings.find(f => /conflict/.test(f.message));
+  assert.ok(conflict, 'expected one conflict finding');
+  assert.equal(conflict.severity, 'error');
+});
+
+test('data-drift: translation-page corrections do NOT conflict with canonical EN', () => {
+  // A canonical EN page asserts a correction. Three translation pages
+  // (ru/uk/he) carry locale-prose translations of the SAME correction.
+  // This pattern is normal and must NOT surface as a conflict.
+  const en: Correction = { field: 'birth.date', value: 'c. 1881 (per 1928 census)', source: 'census' };
+  const ru: Correction = { field: 'birth.date', value: 'ок. 1881 (по переписи 1928)', source: 'census' };
+  const uk: Correction = { field: 'birth.date', value: 'бл. 1881 (за переписом 1928)', source: 'census' };
+  const he: Correction = { field: 'birth.date', value: 'בערך 1881 (לפי מפקד 1928)', source: 'census' };
+  // Build translation-page meta (lang set to a non-en BCP 47 code)
+  const transMeta = (lang: string, c: Correction): PageMeta => ({
+    ...metaWith('I1', [c]), lang,
+  });
+  const transPage = (slug: string, lang: string, c: Correction): LoadedPage => ({
+    slug, path: `/tmp/x/pages/${lang}/${slug}.md`, meta: transMeta(lang, c), body: '', text: '',
+  });
+  const state = makeState(
+    [
+      page('aidele', 'I1', [en]),                  // canonical EN (lang undefined)
+      transPage('aidele', 'ru', ru),
+      transPage('aidele', 'uk', uk),
+      transPage('aidele', 'he', he),
+    ],
+    new Map([['I1', rec('I1', { birth: { date: '1887', place: 'Teofipol' } })]]),
+  );
+  const findings = detectDataDrift(state);
+  // No conflict finding — only 4 active-correction info findings (one per page).
+  const conflicts = findings.filter(f => /conflict/.test(f.message));
+  assert.equal(conflicts.length, 0, 'translation prose should not conflict with canonical');
+  // All findings should be info-level (overlaying GEDCOM's 1887)
+  for (const f of findings) {
+    assert.equal(f.severity, 'info', `expected info, got ${f.severity}: ${f.message}`);
+  }
+});
+
+test('data-drift: lang: en is treated as canonical (not a translation)', () => {
+  // Explicit lang: en should NOT trigger the translation-exclusion path.
+  // The pages/en/ frontmatter typically omits lang entirely, but if it's
+  // set explicitly to 'en' the page is still canonical.
+  const a: Correction = { field: 'death.date', value: '1989', source: 'src-a' };
+  const b: Correction = { field: 'death.date', value: '1990', source: 'src-b' };
+  const enExplicit = (slug: string, c: Correction): LoadedPage => ({
+    slug, path: `/tmp/x/pages/${slug}.md`,
+    meta: { ...metaWith('I1', [c]), lang: 'en' }, body: '', text: '',
+  });
+  const state = makeState(
+    [enExplicit('a', a), enExplicit('b', b)],
+    new Map([['I1', rec('I1')]]),
+  );
+  const findings = detectDataDrift(state);
+  assert.ok(findings.some(f => /conflict/.test(f.message)),
+    'two lang:en pages with different values should still produce a conflict');
+});

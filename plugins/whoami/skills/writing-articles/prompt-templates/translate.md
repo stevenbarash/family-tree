@@ -104,6 +104,20 @@ copying the canonical's `type:` / `categories:` / `gedcom:` block),
 do NOT include `owner:` or `editors:` — those have been retired in
 favor of the pipeline-injected `author:`.
 
+## Frontmatter field-format rules (enforced by Zod + `wai check`)
+
+These are validated by the page schema and surface as `wai check
+--only schema` findings if violated. Match exactly:
+
+- `translation_of`: a bare page slug (`leah-rosinsky`), NOT a path
+  (`pages/en/leah-rosinsky.md`) and NOT a filename.
+  Regex: `^[a-z0-9][a-z0-9-]*$`
+- `lang`: a BCP 47 short code (`en`, `ru`, `uk`, `he`). Not `english`,
+  not `ru-RU`. Regex: `^[a-z]{2,3}$`
+- `canonical_sha`: the full 40-character git SHA, lowercase hex. Not
+  shortened. Regex: `^[a-f0-9]{40}$`
+- `translated_at`: ISO date `YYYY-MM-DD` (today, from the pipeline).
+
 ## Output format
 
 Return a JSON object with three keys (no markdown fence, just the JSON):

@@ -23,6 +23,16 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Added
 
+- **Defenses against frontmatter-drift bug class (5 layers):** A bug surfaced during Phase 1 verification — 3 translation files had `translation_of: pages/en/<slug>.md` (a path) instead of `<slug>` (a slug), causing my NAME.TRAN extractor to silently drop them. These five changes prevent the class:
+  1. **Tighter schema (`core/src/pages/schema.ts`):** added regex constraints to `translationOf` (slug-form only), `lang` (BCP 47 short code), and `canonicalSha` (40-char hex). Zod rejects future writes that don't match.
+  2. **load.ts walks per-locale dirs:** `core/src/checks/load.ts` previously only read `pages/*.md` (legacy pre-multilingual path), missing all canonical EN and translation files under `pages/{en,ru,uk,he}/`. Now walks all five paths. Bonus: surfaced 18 real pre-existing schema issues in translations and 7 prose-date format issues that had been invisible.
+  3. **`schema-drift` surfaces parse errors:** `load.ts` collects per-page Zod errors into `RepoState.parseErrors`; `detectSchemaDrift` emits one error-severity finding per. Previously parse failures were silently `continue`d, so malformed pages just disappeared from the loaded set.
+  4. **Idempotent `injectNameTran` + tests:** promoted the one-off `/tmp/inject-name-tran.mjs` to `core/src/gedcom/inject-name-tran.ts` (pure function: string in, string out). Strips existing `2 TRAN`/`3 LANG` lines before re-injecting, so re-running is a no-op. 9 new node:test cases including an explicit idempotency assertion.
+  5. **Locale-aware `data-drift`:** `detectCorrectionsConflicts` now skips non-`en` translation pages when looking for conflicts. Translation files carry locale-prose translations of the SAME canonical correction — comparing them to each other always looked like a conflict but wasn't. Adds 3 tests covering the new behavior.
+  Cumulative test count: core 498 (was 489), cli 306, frontend 81. `wai check` now surfaces real data signals it couldn't see before.
+
+
+
 - **`NAME.TRAN` cross-locale name canonicalization (GEDCOM 7 feature, Phase 1):** Per-individual ru/uk/he name renderings now live in `genealogy/barash-tree.ged` as `2 TRAN`/`3 LANG` substructures under each `1 NAME` line, rather than being re-derived per translation article. Backfilled 468 TRAN entries across 156 individuals from existing translation titles (after a 3-locale accuracy audit corrected 12 titles and swept 8 Hebrew typography issues). `DerivedRecord.nameTranslations?: Record<string,string>` exposes the map in `genealogy/derived/*.yml`; `wai i18n sync` reads it and passes the locale-specific value as `nameTranslation` to the translator. The prompt template (`translate.md`) instructs the agent to use the value verbatim as `titleTranslation` when present, eliminating per-article re-translation of names already adjudicated. Pipeline still falls back to fresh translation for individuals without TRAN entries (the 47 GEDCOM records that have no wiki page yet). Two new tests cover the read-and-forward path. Future translation backfills inherit the canonical names automatically; new individuals get TRANs promoted from translated titles in a follow-up sweep.
 
 ### Changed

@@ -45,9 +45,17 @@ const PageMetaSchema = z.object({
     z.date().transform(d => d.toISOString().slice(0, 10))
   ]).optional(),
   corrections: z.array(CorrectionSchema).default([]),
-  lang: z.string().min(1).optional(),
-  translationOf: z.string().min(1).optional(),
-  canonicalSha: z.string().min(1).optional(),
+  // BCP 47 short codes — we use plain two- or three-letter forms (en, ru, uk, he).
+  // Reject things like "english" or "ru-RU" that have crept in from agents who
+  // didn't know the convention.
+  lang: z.string().regex(/^[a-z]{2,3}$/, 'expected a BCP 47 short locale code like "ru" or "he"').optional(),
+  // Plain slug — same character class as the page slug itself (lowercase
+  // letters, digits, hyphens). Rejects path forms like "pages/en/x.md" that
+  // agents have occasionally written.
+  translationOf: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'expected a page slug, not a path or filename').optional(),
+  // 40-char git SHA. Agents have occasionally written shortened forms or
+  // descriptions; tighten to the full-length form the pipeline emits.
+  canonicalSha: z.string().regex(/^[a-f0-9]{40}$/, 'expected a full 40-character git SHA').optional(),
   translatedAt: z.union([
     z.string().regex(ISO_DATE, 'expected YYYY-MM-DD'),
     z.date().transform(d => d.toISOString().slice(0, 10))

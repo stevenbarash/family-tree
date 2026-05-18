@@ -145,7 +145,7 @@ schemaVersion: 1
 title: Эбби
 lang: ru
 translation_of: abby-rickelman
-canonical_sha: a3f2c19abc
+canonical_sha: a3f2c19abcdef0123456789abcdef0123456789a
 translated_at: '2026-05-17'
 owner: x
 editors: []
@@ -158,7 +158,7 @@ corrections: []
 русский body`;
   const page = parsePage('abby-rickelman', md);
   assert.equal(page.meta.translationOf, 'abby-rickelman');
-  assert.equal(page.meta.canonicalSha, 'a3f2c19abc');
+  assert.equal(page.meta.canonicalSha, 'a3f2c19abcdef0123456789abcdef0123456789a');
   assert.equal(page.meta.translatedAt, '2026-05-17');
   assert.equal(page.meta.lang, 'ru');
 });
@@ -198,7 +198,7 @@ test('serializePage: round-trips translation frontmatter', () => {
       corrections: [],
       lang: 'ru',
       translationOf: 'abby-rickelman',
-      canonicalSha: 'a3f2c19abc',
+      canonicalSha: 'a3f2c19abcdef0123456789abcdef0123456789a',
       translatedAt: '2026-05-17',
     },
     body: 'русский body\n',
@@ -207,7 +207,7 @@ test('serializePage: round-trips translation frontmatter', () => {
   // Disk form is snake_case for translation_of/canonical_sha/translated_at.
   assert.match(serialized, /^lang: ru$/m);
   assert.match(serialized, /^translation_of: abby-rickelman$/m);
-  assert.match(serialized, /^canonical_sha: a3f2c19abc$/m);
+  assert.match(serialized, /^canonical_sha: a3f2c19abcdef0123456789abcdef0123456789a$/m);
   assert.match(serialized, /^translated_at: '?2026-05-17'?$/m);
   const round = parsePage(page.slug, serialized);
   assert.deepEqual(round.meta, page.meta);

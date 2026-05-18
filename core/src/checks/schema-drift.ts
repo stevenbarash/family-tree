@@ -13,5 +13,38 @@ export const detectSchemaDrift: Detector = (state: RepoState): Finding[] => {
       });
     }
   }
+  // Surface frontmatter parse errors collected by load.ts. These are files
+  // that claimed to be article pages (type: person|family|event|tree) but
+  // failed Zod validation. Previously silently dropped — now flagged so the
+  // user sees malformed pages instead of mysteriously-missing ones.
+  // Examples: translation_of holding a path instead of a slug, lang holding
+  // "english" instead of "en", canonical_sha shorter than 40 chars.
+  for (const err of state.parseErrors ?? []) {
+    findings.push({
+      category: 'schema',
+      severity: 'error',
+      message: `frontmatter failed schema validation: ${shortenZodMessage(err.error)}`,
+      location: { file: err.path },
+    });
+  }
   return findings;
 };
+
+/**
+ * Zod error messages can be JSON dumps several lines long. Pull out the
+ * most useful one-line summary for a check-output context: the first
+ * `path` and `message` pair from the error structure when it's a JSON
+ * array (Zod's default), otherwise the raw string.
+ */
+function shortenZodMessage(raw: string): string {
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr) && arr.length > 0 && arr[0]?.path && arr[0]?.message) {
+      const path = Array.isArray(arr[0].path) ? arr[0].path.join('.') : String(arr[0].path);
+      return `${path}: ${arr[0].message}`;
+    }
+  } catch {
+    // not a JSON-shaped Zod error; fall through to raw
+  }
+  return raw.split('\n')[0]!.slice(0, 200);
+}

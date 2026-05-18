@@ -22,10 +22,23 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
 
   const pagesDir = join(rootDir, 'pages');
   const pages: LoadedPage[] = [];
-  if (existsSync(pagesDir)) {
-    for (const name of readdirSync(pagesDir)) {
+  const parseErrors: { path: string; error: string }[] = [];
+  // Article page types — frontmatter that claims to be one of these and
+  // fails Zod is a real malformed-page error worth flagging via schema-drift.
+  // Other types (talk pages with type: meta, translation-talk pages, etc.)
+  // are expected to fail this parser and are silently skipped as before.
+  const ARTICLE_TYPES = new Set(['person', 'family', 'event', 'tree']);
+  // Walk both the legacy top-level pages/*.md path AND the per-locale
+  // pages/{en,ru,uk,he}/*.md paths the multilingual migration introduced.
+  // Skips _archived and _meta subdirectories (intentional graveyards) and
+  // talk files (handled by their own paths).
+  const LOCALE_DIRS = ['en', 'ru', 'uk', 'he'];
+  const dirsToScan = [pagesDir, ...LOCALE_DIRS.map(loc => join(pagesDir, loc))];
+  for (const dir of dirsToScan) {
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir)) {
       if (!name.endsWith('.md')) continue;
-      const path = join(pagesDir, name);
+      const path = join(dir, name);
       if (!statSync(path).isFile()) continue;
       const raw = readFileSync(path, 'utf-8');
       const parsed = matter(raw);
@@ -35,10 +48,19 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
       try {
         const migrated = migrate(fmRaw, fmVersion);
         meta = parsePageMeta(migrated);
-      } catch {
-        // Skip pages whose frontmatter fails migration or schema validation
-        // (talk pages, research logs without structured frontmatter, future-version
-        // pages from a code rev we don't have, malformed types).
+      } catch (e) {
+        // Surface as a parse error if the file CLAIMS to be an article
+        // page (so a malformed canonical page or translation file gets
+        // flagged); silently skip otherwise (talk pages, research logs).
+        const claimedType = typeof (fmRaw as { type?: unknown }).type === 'string'
+          ? (fmRaw as { type: string }).type
+          : undefined;
+        if (claimedType && ARTICLE_TYPES.has(claimedType)) {
+          parseErrors.push({
+            path,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
         continue;
       }
       const slug = name.replace(/\.md$/, '');
@@ -72,5 +94,6 @@ export async function loadRepoState(rootDir: string): Promise<RepoState> {
     derivedDir,
     derived,
     placesCoords,
+    parseErrors,
   };
 }

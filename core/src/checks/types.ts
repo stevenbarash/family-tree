@@ -20,6 +20,15 @@ export interface RepoState {
   derivedDir: string;
   derived: ReadonlyMap<string, DerivedRecord>;
   placesCoords: ReadonlyArray<PlaceCoord>;
+  /**
+   * Pages whose frontmatter failed to parse / migrate / Zod-validate.
+   * load.ts collects these silently rather than throwing; schema-drift
+   * surfaces them as findings so `wai check` reports malformed pages
+   * instead of silently skipping them.
+   * Optional so existing test fixtures stay terse — detectors treat
+   * undefined and empty equivalently.
+   */
+  parseErrors?: ReadonlyArray<{ path: string; error: string }>;
 }
 
 export type FindingCategory = 'format' | 'data' | 'schema' | 'coverage' | 'consistency' | 'citation';
