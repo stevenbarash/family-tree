@@ -8,10 +8,14 @@ export const config = {
   //   - API routes (locale-agnostic route handlers)
   //   - Asset proxy (locale-agnostic)
   //   - Static files (_next/*, *.ico, etc.)
-  //   - PWA file-conventions (icon, apple-icon, manifest) — served from
-  //     `app/icon.tsx` / `app/apple-icon.tsx` / `app/manifest.ts` at the
-  //     root, not under `/[locale]/`. The next-intl proxy would otherwise
-  //     prepend the locale and break installability (browser fetches
-  //     `/manifest.webmanifest`, `/icon` at well-known URLs).
-  matcher: ["/((?!api|assets|_next|icon|apple-icon|manifest|.*\\..*).*)"]
+  //   - PWA file-conventions (icon, apple-icon) — served from
+  //     `app/icon.tsx` / `app/apple-icon.tsx` at the root, not under
+  //     `/[locale]/`. `manifest.webmanifest` is already excluded by
+  //     the `.*\\..*` clause (it contains a dot).
+  //
+  //   The `(?:$|/|\\?)` anchor after `icon` and `apple-icon` is what
+  //   prevents accidentally excluding article slugs like `/iconography`
+  //   or `/icon-bearer` — without it, the negative lookahead matches
+  //   any path *starting* with those tokens.
+  matcher: ["/((?!api|assets|_next|icon(?:$|/|\\?)|apple-icon(?:$|/|\\?)|.*\\..*).*)"]
 };

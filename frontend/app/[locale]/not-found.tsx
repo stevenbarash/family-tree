@@ -18,9 +18,12 @@ export default function NotFound() {
         <input
           type="search"
           name="q"
-          autoFocus
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder={t('searchPlaceholder')}
-          className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full rounded border border-input bg-background px-3 py-2.5 text-base shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:py-2 sm:text-sm"
         />
       </form>
       <div className="flex flex-wrap gap-3 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">

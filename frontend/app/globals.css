@@ -173,17 +173,30 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Prevent iOS Safari from zooming into the page when a text input
-     is focused. The trigger is font-size < 16px; bump anything below
-     the sm breakpoint up to 16px on small screens only, so the visual
-     hierarchy on desktop is preserved. */
-  @media (max-width: 640px) {
-    input:where([type="text"], [type="search"], [type="email"], [type="url"],
-                [type="tel"], [type="number"], [type="password"], :not([type])),
-    textarea,
-    select {
-      font-size: 16px;
-    }
+}
+
+/* Prevent iOS Safari from zooming into the page when a text input is
+   focused. The trigger is font-size < 16px; bump anything below the sm
+   breakpoint to 16px on small screens only.
+
+   IMPORTANT: this rule lives OUTSIDE @layer base on purpose. Tailwind v4's
+   @layer utilities (where `.text-sm`, `.text-xs` live) wins over @layer base
+   on layer order, and `:where()` would zero our specificity — both would let
+   utility classes silently re-introduce the zoom. Unlayered styles win over
+   all named layers, and explicit attribute selectors give us (0,1,1) — higher
+   than `.text-sm`'s (0,1,0). Don't refactor into @layer base. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="url"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="password"],
+  input:not([type]),
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
