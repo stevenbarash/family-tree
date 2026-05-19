@@ -1,4 +1,5 @@
 import { computeRelationship } from '@core/family/relationship.ts';
+import type { RelationshipKind } from '@core/family/relationship.ts';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
 
 export interface RelationshipFromSelfInput {
@@ -16,8 +17,10 @@ export interface RelationshipCrumb {
 }
 
 export interface RelationshipFromSelf {
-  /** Human-readable relationship label, e.g. "great-grandmother", "second cousin once removed". */
+  /** Human-readable English relationship label, e.g. "great-grandmother", "second cousin once removed". */
   label: string;
+  /** Structured form for UI localization. Prefer this over `label` for rendering. */
+  kind: RelationshipKind;
   /** Path of crumbs from self → LCA → target, both endpoints included. */
   crumbs: ReadonlyArray<RelationshipCrumb>;
   /** Total path length (number of hops). degree===1 is parent or child. */
@@ -40,6 +43,7 @@ export function computeRelationshipFromSelf(
   });
   return {
     label: rel.label,
+    kind: rel.kind,
     crumbs,
     degree: rel.path.length - 1,
   };

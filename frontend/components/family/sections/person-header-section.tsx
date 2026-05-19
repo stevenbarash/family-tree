@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
 import type { FamilyTreeView } from '@/lib/family';
 import { Stat, formatDates } from './shared';
+import { localizedRelationshipLabel } from '@/lib/relationship-label';
 
 interface Props {
   view: FamilyTreeView;
@@ -13,6 +14,7 @@ interface Props {
 
 export function PersonHeaderSection({ view, ancestorCount, generationCount }: Props) {
   const t = useTranslations('Page.FamilyTree.person');
+  const tLabel = useTranslations('Page.Article.Relationship.label');
   const person = view.root;
   const dates = formatDates(person);
   const { parents, spouses, children } = view.selectedRelations;
@@ -20,6 +22,9 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
   const { sourceCoverage } = view.coverage;
   const sourcedPercent = sourceCoverage.total > 0
     ? Math.round((sourceCoverage.cited / sourceCoverage.total) * 100)
+    : null;
+  const relationshipLabel = view.relationship
+    ? localizedRelationshipLabel(view.relationship.kind, tLabel)
     : null;
 
   return (
@@ -42,9 +47,9 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
           </p>
         ) : null}
 
-        {view.relationship ? (
+        {view.relationship && relationshipLabel ? (
           <p className="mt-1.5 font-display text-[0.72rem] uppercase tracking-[0.18em] text-muted-foreground">
-            {view.relationship.label}{' '}
+            {relationshipLabel}{' '}
             <span className="text-muted-foreground/60">
               {t('perspectiveSuffix', {
                 isMe: view.relationship.perspective.isMe ? 'true' : 'false',

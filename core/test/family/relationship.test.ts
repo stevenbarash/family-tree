@@ -138,3 +138,46 @@ test('computeRelationship: missing from-record returns null', () => {
   const r = computeRelationship({ records, fromRecord: 'I999', toRecord: 'I2' });
   assert.equal(r, null);
 });
+
+test('computeRelationship: kind is structured for self', () => {
+  const records = new Map<string, DerivedRecord>([['I1', person('I1', 'Self')]]);
+  const r = computeRelationship({ records, fromRecord: 'I1', toRecord: 'I1' });
+  assert.deepEqual(r?.kind, { kind: 'self' });
+});
+
+test('computeRelationship: kind is structured for father', () => {
+  const records = new Map<string, DerivedRecord>([
+    ['I1', person('I1', 'Self', { parents: [{ record: 'IF', name: 'Dad', role: 'father' }] })],
+    ['IF', person('IF', 'Dad', { children: [{ record: 'I1', name: 'Self', born: null }] })],
+  ]);
+  const r = computeRelationship({ records, fromRecord: 'I1', toRecord: 'IF' });
+  assert.deepEqual(r?.kind, { kind: 'ancestor', role: 'father', degree: 1 });
+});
+
+test('computeRelationship: kind is structured for grandchild', () => {
+  const records = new Map<string, DerivedRecord>([
+    ['I1', person('I1', 'Self', { parents: [{ record: 'IF', name: 'Dad', role: 'father' }] })],
+    ['IF', person('IF', 'Dad', { parents: [{ record: 'IGP', name: 'Gramps', role: 'father' }] })],
+    ['IGP', person('IGP', 'Gramps', { children: [{ record: 'IF', name: 'Dad', born: null }] })],
+  ]);
+  const r = computeRelationship({ records, fromRecord: 'IGP', toRecord: 'I1' });
+  assert.deepEqual(r?.kind, { kind: 'descendant', degree: 2 });
+});
+
+test('computeRelationship: kind is structured for second cousin once removed', () => {
+  // cousinDegree = min(aDist, bDist) - 1 = 3 - 1 = 2 (second cousin)
+  // removed = |aDist - bDist| = 1
+  const records = new Map<string, DerivedRecord>([
+    ['I1', person('I1', 'Self', { parents: [{ record: 'I1P', name: 'P1', role: 'father' }] })],
+    ['I1P', person('I1P', 'P1', { parents: [{ record: 'I1GP', name: 'GP1', role: 'father' }] })],
+    ['I1GP', person('I1GP', 'GP1', { parents: [{ record: 'IGG', name: 'GreatGrandpa', role: 'father' }] })],
+    ['IGG', person('IGG', 'GreatGrandpa')],
+    ['I2', person('I2', 'Cousin', { parents: [{ record: 'I2P', name: 'P2', role: 'father' }] })],
+    ['I2P', person('I2P', 'P2', { parents: [{ record: 'I2GP', name: 'GP2', role: 'father' }] })],
+    ['I2GP', person('I2GP', 'GP2', { parents: [{ record: 'I2GGP', name: 'GGP2', role: 'father' }] })],
+    ['I2GGP', person('I2GGP', 'GGP2', { parents: [{ record: 'IGG', name: 'GreatGrandpa', role: 'father' }] })],
+  ]);
+  const r = computeRelationship({ records, fromRecord: 'I1', toRecord: 'I2' });
+  assert.equal(r?.label, 'second cousin once removed');
+  assert.deepEqual(r?.kind, { kind: 'cousin', degree: 2, removed: 1 });
+});

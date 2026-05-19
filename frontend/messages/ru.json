@@ -77,7 +77,27 @@
       "navBack": "← Указатель",
       "categoriesLabel": "категории: {names}",
       "Relationship": {
-        "yours": "Ваш(а) {label}."
+        "yours": "Ваш(а) {label}.",
+        "label": {
+          "self": "это вы",
+          "sibling": "брат или сестра",
+          "ancestor1": "{role, select, father {отец} mother {мать} other {родитель}}",
+          "ancestor2": "{role, select, father {дед} mother {бабушка} other {дедушка или бабушка}}",
+          "ancestor3": "{role, select, father {прадед} mother {прабабушка} other {прадед или прабабушка}}",
+          "ancestorN": "{greats}× пра-{role, select, father {дед} mother {бабушка} other {дедушка или бабушка}}",
+          "descendant1": "ребёнок",
+          "descendant2": "внук или внучка",
+          "descendant3": "правнук или правнучка",
+          "descendantN": "{greats}× правнук или правнучка",
+          "auntUncle2": "тётя или дядя",
+          "auntUncle3": "двоюродная бабушка или дедушка",
+          "auntUncleN": "родственник {greats}-й степени по боковой линии",
+          "nieceNephew2": "племянник или племянница",
+          "nieceNephew3": "внучатый племянник или племянница",
+          "nieceNephewN": "племянник {greats}-й степени",
+          "cousin": "{degree, plural, =1 {двоюродный брат или сестра} =2 {троюродный брат или сестра} =3 {четвероюродный брат или сестра} =4 {пятиюродный брат или сестра} =5 {шестиюродный брат или сестра} other {#-юродный брат или сестра}}",
+          "cousinRemoved": "{degree, plural, =1 {двоюродный} =2 {троюродный} =3 {четвероюродный} =4 {пятиюродный} =5 {шестиюродный} other {#-юродный}} брат или сестра, {removed, plural, one {удалённый# раз} few {удалённый# раза} many {удалённый# раз} other {удалённый# раз}}"
+        }
       },
       "Freshness": {
         "created": "создано {date}",

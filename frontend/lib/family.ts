@@ -174,6 +174,7 @@ export interface FamilyTreeView {
   timeline: TimelineViewWithPortraits;
   relationship: {
     label: string;
+    kind: import('@core/family/relationship.ts').RelationshipKind;
     path: string[];
     crumbs: { record: string; name: string; slug?: string }[];
     perspective: { record: string; name: string; isMe: boolean };
@@ -578,6 +579,7 @@ function computeRelationshipFromPerspective(
   });
   return {
     label: rel.label,
+    kind: rel.kind,
     path: rel.path,
     crumbs,
     perspective: {

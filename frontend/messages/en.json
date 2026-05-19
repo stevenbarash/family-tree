@@ -77,7 +77,27 @@
       "navBack": "← Index",
       "categoriesLabel": "categories: {names}",
       "Relationship": {
-        "yours": "Your {label}."
+        "yours": "Your {label}.",
+        "label": {
+          "self": "yourself",
+          "sibling": "sibling",
+          "ancestor1": "{role, select, father {father} mother {mother} other {parent}}",
+          "ancestor2": "{role, select, father {grandfather} mother {grandmother} other {grandparent}}",
+          "ancestor3": "{role, select, father {great-grandfather} mother {great-grandmother} other {great-grandparent}}",
+          "ancestorN": "{greats}× great-{role, select, father {grandfather} mother {grandmother} other {grandparent}}",
+          "descendant1": "child",
+          "descendant2": "grandchild",
+          "descendant3": "great-grandchild",
+          "descendantN": "{greats}× great-grandchild",
+          "auntUncle2": "aunt or uncle",
+          "auntUncle3": "great-aunt or uncle",
+          "auntUncleN": "{greats}× great-aunt or uncle",
+          "nieceNephew2": "niece or nephew",
+          "nieceNephew3": "great-niece or nephew",
+          "nieceNephewN": "{greats}× great-niece or nephew",
+          "cousin": "{degree, plural, =1 {first cousin} =2 {second cousin} =3 {third cousin} =4 {fourth cousin} =5 {fifth cousin} other {#th cousin}}",
+          "cousinRemoved": "{degree, plural, =1 {first cousin} =2 {second cousin} =3 {third cousin} =4 {fourth cousin} =5 {fifth cousin} other {#th cousin}} {removed, plural, =1 {once removed} =2 {twice removed} =3 {three times removed} other {# times removed}}"
+        }
       },
       "Freshness": {
         "created": "created {date}",

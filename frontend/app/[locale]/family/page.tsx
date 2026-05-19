@@ -1,9 +1,16 @@
 import { Link } from '@/i18n/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
-import type { useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/routing';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getFamily, type AncestorView } from '@/lib/family';
+import { localizedRelationshipLabel } from '@/lib/relationship-label';
+import type { RelationshipKind } from '@core/family/relationship.ts';
+
+function ancestorKind(a: AncestorView): RelationshipKind {
+  if (a.generation === 0) return { kind: 'self' };
+  return { kind: 'ancestor', role: a.role ?? 'parent', degree: a.generation };
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +38,7 @@ function PersonCard({
   a: AncestorView;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const tLabel = useTranslations('Page.Article.Relationship.label');
   const b = a.birth?.date ?? null;
   const d = a.death?.date ?? null;
   let dates = '';
@@ -40,6 +48,7 @@ function PersonCard({
 
   const place = a.birth?.place ?? null;
   const line = t('lineSide', { side: a.side ?? 'other' });
+  const label = localizedRelationshipLabel(ancestorKind(a), tLabel);
   const titleNode = a.slug
     ? <Link href={`/${a.slug}`} className="text-primary underline-offset-4 hover:underline">{a.name}</Link>
     : a.name;
@@ -47,7 +56,7 @@ function PersonCard({
     <Card size="sm" className={`border-s-4 ${lineTone(a.side)}`}>
       <CardHeader>
         <CardDescription className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide">
-          <span>{a.label}</span>
+          <span>{label}</span>
           <span aria-hidden="true">/</span>
           <span>{line}</span>
         </CardDescription>

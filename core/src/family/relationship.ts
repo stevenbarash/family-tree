@@ -1,7 +1,27 @@
 import type { DerivedRecord } from '../gedcom/types.ts';
 
+/**
+ * Structured form of the relationship, suitable for localization in the
+ * UI layer. The `label` field (English) stays available for callers that
+ * just want a string; new callers should dispatch on `kind` and render via
+ * their translation catalog. `degree` semantics: 1 = direct parent/child,
+ * 2 = grandparent/aunt/grandchild, etc. `removed` for cousins: 0 = same
+ * generation, 1 = once removed, etc.
+ */
+export type RelationshipKind =
+  | { kind: 'self' }
+  | { kind: 'ancestor'; role: 'father' | 'mother' | 'parent'; degree: number }
+  | { kind: 'descendant'; degree: number }
+  | { kind: 'sibling' }
+  | { kind: 'auntUncle'; degree: number }
+  | { kind: 'nieceNephew'; degree: number }
+  | { kind: 'cousin'; degree: number; removed: number };
+
 export interface RelationshipResult {
+  /** English kinship term — kept for backward compatibility and debugging. */
   label: string;
+  /** Structured form. Prefer this for UI localization. */
+  kind: RelationshipKind;
   /** Records from `from` up to LCA then back down to `to`. Includes both endpoints. */
   path: string[];
 }
@@ -93,17 +113,36 @@ function cousinLabel(equalDist: number, removed: number): string {
   return rem ? `${ord} cousin ${rem}` : `${ord} cousin`;
 }
 
-function classify(aDist: number, bDist: number, fromRoles: ('father' | 'mother')[]): string {
-  if (aDist === 0 && bDist === 0) return 'self';
-  if (aDist === 0) return descendantLabel(bDist);
-  // Target's gender comes from their role in their child's family — the LAST hop in the chain.
-  if (bDist === 0) return ancestorLabel(aDist, fromRoles[fromRoles.length - 1]);
-  if (aDist === 1 && bDist === 1) return 'sibling';
-  if (aDist === 1) return nieceNephewLabel(bDist);
-  if (bDist === 1) return auntUncleLabel(aDist);
+function classify(
+  aDist: number,
+  bDist: number,
+  fromRoles: ('father' | 'mother')[],
+): { label: string; kind: RelationshipKind } {
+  if (aDist === 0 && bDist === 0) return { label: 'self', kind: { kind: 'self' } };
+  if (aDist === 0) {
+    return { label: descendantLabel(bDist), kind: { kind: 'descendant', degree: bDist } };
+  }
+  if (bDist === 0) {
+    // Target's gender comes from their role in their child's family — the LAST hop in the chain.
+    const role = fromRoles[fromRoles.length - 1] ?? undefined;
+    return {
+      label: ancestorLabel(aDist, role),
+      kind: { kind: 'ancestor', role: role ?? 'parent', degree: aDist },
+    };
+  }
+  if (aDist === 1 && bDist === 1) return { label: 'sibling', kind: { kind: 'sibling' } };
+  if (aDist === 1) {
+    return { label: nieceNephewLabel(bDist), kind: { kind: 'nieceNephew', degree: bDist } };
+  }
+  if (bDist === 1) {
+    return { label: auntUncleLabel(aDist), kind: { kind: 'auntUncle', degree: aDist } };
+  }
   const min = Math.min(aDist, bDist);
   const removed = Math.abs(aDist - bDist);
-  return cousinLabel(min, removed);
+  return {
+    label: cousinLabel(min, removed),
+    kind: { kind: 'cousin', degree: min - 1, removed },
+  };
 }
 
 export function computeRelationship(cfg: ComputeRelationshipConfig): RelationshipResult | null {
@@ -114,7 +153,7 @@ export function computeRelationship(cfg: ComputeRelationshipConfig): Relationshi
   if (!lca) return null;
   const aHit = aAnc.get(lca.record)!;
   const bHit = bAnc.get(lca.record)!;
-  const label = classify(aHit.distance, bHit.distance, aHit.roles);
+  const { label, kind } = classify(aHit.distance, bHit.distance, aHit.roles);
   const path = [...aHit.path, ...bHit.path.slice(0, -1).reverse()];
-  return { label, path };
+  return { label, kind, path };
 }
