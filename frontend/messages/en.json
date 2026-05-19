@@ -7,6 +7,14 @@
       "ru": "Русский",
       "uk": "Українська",
       "he": "עברית"
+    },
+    "CommandPalette": {
+      "openSearch": "Open search",
+      "searchButton": "Search",
+      "placeholder": "Search people, companies, places…",
+      "emptyStart": "Start typing to search.",
+      "emptyNoMatches": "No matches.",
+      "resultsHeading": "Results"
     }
   },
   "Page": {
@@ -113,6 +121,10 @@
         "heading": "Research notes",
         "help": "Captured on this person; folded into the article when the editor next runs.",
         "empty": "No notes yet. The first one you save creates the section in {slug}."
+      },
+      "SchemaError": {
+        "title": "Code is out of date",
+        "description": "This page was written by a newer version of the wiki (schema v{from}; this build understands v{current}). Pull the latest code to read it."
       }
     },
     "Family": {
@@ -338,6 +350,7 @@
   },
   "Loading": {
     "article": "Loading article",
-    "tree": "Loading family tree"
+    "tree": "Loading family tree",
+    "map": "Loading map"
   }
 }

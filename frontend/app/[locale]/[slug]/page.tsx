@@ -52,12 +52,10 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
     if (err instanceof FutureSchemaVersionError) {
       return (
         <main className="mx-auto max-w-3xl p-6">
-          <Link href="/" className="text-sm text-muted-foreground">← Index</Link>
-          <h1 className="text-3xl font-bold mt-4 mb-2">Code is out of date</h1>
+          <Link href="/" className="text-sm text-muted-foreground">{t('navBack')}</Link>
+          <h1 className="text-3xl font-bold mt-4 mb-2">{t('SchemaError.title')}</h1>
           <p className="text-muted-foreground">
-            This page was written by a newer version of the wiki
-            (schema v{err.fromVersion}; this build understands v{err.current}).
-            Pull the latest code to read it.
+            {t('SchemaError.description', { from: String(err.fromVersion), current: String(err.current) })}
           </p>
         </main>
       );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Command,
   CommandDialog,
@@ -25,6 +26,7 @@ interface Props {
 
 export default function CommandPaletteDialog({ open, onOpenChange }: Props) {
   const router = useRouter();
+  const t = useTranslations('Chrome.CommandPalette');
   const [q, setQ] = useState('');
   const [resultsFor, setResultsFor] = useState<{ q: string; hits: SearchHit[] }>({ q: '', hits: [] });
   const trimmed = q.trim();
@@ -67,18 +69,18 @@ export default function CommandPaletteDialog({ open, onOpenChange }: Props) {
     <CommandDialog open={open} onOpenChange={handleOpenChange}>
       <Command shouldFilter={false}>
         <CommandInput
-          placeholder="Search people, companies, places…"
+          placeholder={t('placeholder')}
           value={q}
           onValueChange={setQ}
         />
         <CommandList>
           {!trimmed ? (
-            <CommandEmpty>Start typing to search.</CommandEmpty>
+            <CommandEmpty>{t('emptyStart')}</CommandEmpty>
           ) : displayResults.length === 0 ? (
-            <CommandEmpty>No matches.</CommandEmpty>
+            <CommandEmpty>{t('emptyNoMatches')}</CommandEmpty>
           ) : null}
           {displayResults.length > 0 ? (
-            <CommandGroup heading="Results">
+            <CommandGroup heading={t('resultsHeading')}>
               {displayResults.map(r => (
                 <CommandItem
                   key={r.slug}

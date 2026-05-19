@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +16,7 @@ const CommandPaletteDialog = dynamic(() => import('./command-palette-dialog'), {
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const t = useTranslations('Chrome.CommandPalette');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -35,10 +37,10 @@ export function CommandPalette() {
         size="sm"
         onClick={() => { setOpen(true); setHasOpened(true); }}
         className="gap-2"
-        aria-label="Open search"
+        aria-label={t('openSearch')}
       >
         <Search data-icon="inline-start" />
-        <span className="hidden sm:inline">Search</span>
+        <span className="hidden sm:inline">{t('searchButton')}</span>
         <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-[0.65rem] text-muted-foreground sm:inline">
           ⌘K
         </kbd>
