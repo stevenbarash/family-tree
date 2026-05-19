@@ -75,6 +75,12 @@ export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter 
         '--append-system-prompt', systemPrompt,
         '--tools', allowedTools,
       ];
+      // WHOAMI_MODEL lets callers swap the sub-model per run — useful for
+      // cost/quality experiments (sonnet vs opus vs haiku) without
+      // touching the user's global `claude` config. Accepts an alias
+      // (`opus`, `sonnet`, `haiku`) or a full id (`claude-opus-4-7`).
+      const model = process.env.WHOAMI_MODEL;
+      if (model) { args.push('--model', model); }
 
       let proc: { stdout: string; stderr: string; code: number };
       try {

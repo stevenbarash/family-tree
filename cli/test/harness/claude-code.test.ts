@@ -8,6 +8,16 @@ function fakeSpawn(stdoutText: string, stderrText = '', code = 0) {
   };
 }
 
+/** Spawn variant that captures the args it was called with for assertion. */
+function capturingSpawn(stdoutText: string): { spawn: ReturnType<typeof fakeSpawn>; captured: { args: string[] } } {
+  const captured = { args: [] as string[] };
+  const spawn = async (_cmd: string, args: string[], _stdin: string) => {
+    captured.args = args;
+    return { stdout: stdoutText, stderr: '', code: 0 };
+  };
+  return { spawn, captured };
+}
+
 function makeFakeReader(skillContent = 'SKILL', templateContent = 'TEMPLATE'): (path: string) => string | null {
   return (p: string) => p.endsWith('SKILL.md') ? skillContent : (p.endsWith('.md') ? templateContent : null);
 }
@@ -351,4 +361,33 @@ test('claude-code adapter: unmatched quote in preamble does not swallow the real
   });
   assert.equal(res.ok, true);
   if (res.ok) assert.equal(res.result.answer, 42);
+});
+
+test('claude-code adapter: WHOAMI_MODEL appends --model flag', async () => {
+  const prev = process.env.WHOAMI_MODEL;
+  process.env.WHOAMI_MODEL = 'claude-sonnet-4-6';
+  try {
+    const { spawn, captured } = capturingSpawn(JSON.stringify({ result: '{"x":1}' }));
+    const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+    await a.invoke({ skill: 'writing-articles', template: 'interview', context: {}, outputSchema: {} });
+    const modelIdx = captured.args.indexOf('--model');
+    assert.ok(modelIdx >= 0, '--model flag not passed to spawn');
+    assert.equal(captured.args[modelIdx + 1], 'claude-sonnet-4-6');
+  } finally {
+    if (prev === undefined) delete process.env.WHOAMI_MODEL;
+    else process.env.WHOAMI_MODEL = prev;
+  }
+});
+
+test('claude-code adapter: WHOAMI_MODEL unset → no --model flag', async () => {
+  const prev = process.env.WHOAMI_MODEL;
+  delete process.env.WHOAMI_MODEL;
+  try {
+    const { spawn, captured } = capturingSpawn(JSON.stringify({ result: '{"x":1}' }));
+    const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+    await a.invoke({ skill: 'writing-articles', template: 'interview', context: {}, outputSchema: {} });
+    assert.equal(captured.args.indexOf('--model'), -1);
+  } finally {
+    if (prev !== undefined) process.env.WHOAMI_MODEL = prev;
+  }
 });
