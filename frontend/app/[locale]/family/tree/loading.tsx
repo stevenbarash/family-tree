@@ -26,13 +26,13 @@ export default function FamilyTreeLoading() {
 
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
         <section className="mb-12">
-          <Skeleton className="mb-4 h-3 w-32" />
-          <Skeleton className="h-[520px] w-full rounded-md" />
+          <Skeleton className="mb-3 h-9 w-2/3 sm:h-12" />
+          <Skeleton className="h-4 w-1/2" />
         </section>
 
         <section className="mb-12">
-          <Skeleton className="mb-3 h-9 w-2/3 sm:h-12" />
-          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="mb-4 h-3 w-32" />
+          <Skeleton className="h-[520px] w-full rounded-md" />
         </section>
 
         <section className="mb-12">

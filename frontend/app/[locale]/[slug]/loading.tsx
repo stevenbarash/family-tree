@@ -11,7 +11,6 @@ export default function ArticleLoading() {
     >
       <Skeleton className="h-4 w-16" />
       <header className="mt-7 mb-8 border-b pb-6">
-        <Skeleton className="mb-3 h-3 w-20" />
         <Skeleton className="h-10 w-3/4 sm:h-12" />
         <Skeleton className="mt-3 h-10 w-2/3 sm:h-12" />
         <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1">

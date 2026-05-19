@@ -150,9 +150,6 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
         locale={locale}
       />
       <header className="mt-7 mb-8 border-b pb-6">
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">
-          {page.meta.type}
-        </p>
         <h1 className="text-4xl font-semibold leading-tight tracking-normal text-foreground sm:text-5xl">
           {page.meta.title}
         </h1>
@@ -182,12 +179,12 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
               <span>{sourceCount} {sourceCount === 1 ? 'source' : 'sources'} cited</span>
             ) : null}
             {liveNoteCount > 0 || openGapCount > 0 ? (
-              <Link
-                href={`/${toTalkSlug(slug)}`}
+              <a
+                href={openGapCount > 0 ? '#talk-threads-heading' : '#research-notes-heading'}
                 className="underline-offset-4 hover:text-foreground hover:underline"
               >
-                talk: {formatTalkLabel(liveNoteCount, openGapCount)} →
-              </Link>
+                talk: {formatTalkLabel(liveNoteCount, openGapCount)} ↓
+              </a>
             ) : null}
           </div>
         ) : null}
