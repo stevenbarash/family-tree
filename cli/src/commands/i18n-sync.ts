@@ -27,6 +27,7 @@ import { execSync } from 'node:child_process';
 import { parsePage } from '@core/pages/frontmatter.ts';
 import { toSlug } from '@core/pages/slug.ts';
 import { isLocale, TARGET_LOCALES, type Locale } from '@core/i18n/index.ts';
+import { parseTalkThreads } from '@core/pages/talk-threads.ts';
 
 /**
  * A previously-established (English title → target-locale title) pair
@@ -73,11 +74,65 @@ export interface TranslateResponse {
 
 export type Translator = (req: TranslateRequest) => Promise<TranslateResponse>;
 
+/**
+ * Request for translating an editorial talk page. The "Talk-page
+ * translation" is a separate concern from the article translation:
+ * different format (research notes + threads + agent log), different
+ * semantics (editorial workspace, not encyclopedia content), and
+ * different verbatim-preserve rules (HTML-comment IDs, gap slugs,
+ * source URLs, pipeline UUIDs all stay unchanged across locales).
+ *
+ * `articleTitleTranslation` lets the translator anchor the localized
+ * talk-page title (e.g. `"Обсуждение: Авраам Гарольд Франкель"`)
+ * against the translated article title so the two stay in sync.
+ */
+export interface TranslateTalkRequest {
+  canonicalTalkBody: string;
+  canonicalTalkMeta: Record<string, unknown>;
+  locale: Locale;
+  /** The translated article title, e.g. "Авраам Гарольд Франкель". Used
+   *  to construct the talk-page title and to ensure terms match across
+   *  the article ↔ talk-page surfaces. */
+  articleTitleTranslation: string;
+  /** Pre-translated body of the article, for term/name consistency
+   *  across the two surfaces. Optional — the translator can work
+   *  without it if the article translation is fresh in context. */
+  articleTranslatedBody?: string;
+  /** Optional existing translated talk-page body for incremental
+   *  re-sync (preserve human edits between syncs). */
+  existingTalkTranslation?: string;
+}
+
+export interface TranslateTalkResponse {
+  /** Translated talk-page body (everything after the frontmatter). */
+  body: string;
+  /** Localized "Talk:" prefix to use in the title frontmatter. e.g.
+   *  "Talk", "Обсуждение", "Обговорення", "שיחה". The orchestrator
+   *  composes the title as `<prefix>: <articleTitleTranslation>`. */
+  titlePrefix: string;
+  /** Audit entries (markdown bullet list under "## Unresolved") for
+   *  any talk-page translation decisions the human should review.
+   *  Folded into the single sibling .translation.talk.md under a
+   *  dedicated subsection. */
+  auditEntries: string;
+}
+
+export type TalkTranslator = (req: TranslateTalkRequest) => Promise<TranslateTalkResponse>;
+
 export interface RunI18nSyncOpts {
   rootDir: string;
   slug: string;
   locale: string;
   translator: Translator;
+  /** Optional talk-page translator. When provided AND `includeTalk` is
+   *  true (default) AND `pages/en/<slug>.talk.md` exists, runs after
+   *  the article translator and writes `pages/{locale}/<slug>.talk.md`
+   *  alongside the article. */
+  talkTranslator?: TalkTranslator;
+  /** Default true. When false, skip talk-page translation even if a
+   *  talkTranslator is provided and the EN talk exists. Mirrors the
+   *  CLI's `--no-talk` flag. */
+  includeTalk?: boolean;
   write: (s: string) => void;
 }
 
@@ -184,6 +239,81 @@ translated_at: '${today}'
 ---
 `;
   const translationFile = `${frontmatter}${response.body}`;
+
+  // ─── Talk-page translation (optional) ──────────────────────────────
+  // Runs after the article translation when (1) the orchestrator
+  // includes a talkTranslator, (2) the caller hasn't opted out via
+  // includeTalk: false (mirrors the CLI's `--no-talk` flag), and (3)
+  // the EN canonical has an editorial talk page at
+  // pages/en/<slug>.talk.md. Skipped silently otherwise — many short
+  // articles have no talk page and that's fine.
+  const includeTalk = opts.includeTalk !== false;
+  const enTalkPath = join(opts.rootDir, 'pages', 'en', `${opts.slug}.talk.md`);
+  const localizedTalkPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.talk.md`);
+  const willTranslateTalk = includeTalk && !!opts.talkTranslator && existsSync(enTalkPath);
+  let talkAuditSection = '';
+  if (willTranslateTalk && opts.talkTranslator) {
+    const enTalkRaw = await readFile(enTalkPath, 'utf8');
+    // Talk pages carry type: meta which intentionally fails the article
+    // schema, so don't run them through parsePage. The format is stable
+    // (`---\n<yaml>\n---\n<body>`) — split by hand.
+    const enTalkBody = stripFrontmatter(enTalkRaw);
+    const enTalkSha = execSync(
+      `git -C "${opts.rootDir}" log -1 --format=%H -- pages/en/${opts.slug}.talk.md`,
+      { encoding: 'utf8' },
+    ).trim();
+    const existingTalkTranslation = existsSync(localizedTalkPath)
+      ? await readFile(localizedTalkPath, 'utf8')
+      : undefined;
+
+    opts.write(`translating ${opts.slug}.talk -> ${opts.locale}...\n`);
+    const talkResponse = await opts.talkTranslator({
+      canonicalTalkBody: enTalkBody,
+      canonicalTalkMeta: {},
+      locale: opts.locale as Locale,
+      articleTitleTranslation: stripTitleQuotes(response.titleTranslation),
+      articleTranslatedBody: response.body,
+      existingTalkTranslation,
+    });
+
+    // Categories field follows the same EN spec: [Open editorial questions]
+    // iff the translated body has at least one ::open thread (markers
+    // preserve verbatim across locales, so the count should match EN).
+    const openCount = parseTalkThreads(talkResponse.body)
+      .filter(t => t.marker === 'open').length;
+    const categories = openCount > 0 ? '[Open editorial questions]' : '[]';
+    const subjectTitle = stripTitleQuotes(response.titleTranslation);
+    const localizedTalkTitle = `"${talkResponse.titlePrefix}: ${subjectTitle}"`;
+
+    // Frontmatter shape: 7 baseline fields (per the editorial-guide
+    // format spec) PLUS the translation stamps (lang, translation_of,
+    // canonical_sha, translated_at) — the translated talk is still
+    // translated content with its own staleness lifecycle. The
+    // talk-page-format detector skips non-EN paths so these extras
+    // don't trip rule 1's frontmatter contract.
+    const talkPageFrontmatter = `---
+schemaVersion: 1
+title: ${localizedTalkTitle}
+author: ${authorModel}
+type: meta
+aliases: []
+categories: ${categories}
+created: '${today}'
+lang: ${opts.locale}
+translation_of: ${opts.slug}
+canonical_sha: ${enTalkSha}
+translated_at: '${today}'
+---
+`;
+    await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
+    await writeFile(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
+
+    // Fold the talk-page translation audit into the single .translation.talk.md.
+    talkAuditSection = talkResponse.auditEntries.trim()
+      ? `\n### Talk-page translation\n\n${talkResponse.auditEntries.trim()}\n`
+      : '';
+  }
+
   const talkFile = `---
 type: translation-talk
 author: ${authorModel}
@@ -195,8 +325,7 @@ synced_at: '${today}'
 
 # Translation notes — ${opts.locale} (${response.titleTranslation})
 
-${response.talk}
-`;
+${response.talk}${talkAuditSection}`;
 
   await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
   await writeFile(existingTranslationPath, translationFile);
@@ -204,6 +333,29 @@ ${response.talk}
 
   opts.write(`wrote pages/${opts.locale}/${opts.slug}.md\n`);
   opts.write(`wrote pages/${opts.locale}/${opts.slug}.translation.talk.md\n`);
+  if (willTranslateTalk) {
+    opts.write(`wrote pages/${opts.locale}/${opts.slug}.talk.md\n`);
+  }
+}
+
+/** Strip surrounding YAML quotes if present so the value is usable as
+ *  a substring (e.g. composing a Talk-page title). */
+function stripTitleQuotes(t: string): string {
+  return t.trim().replace(/^["']|["']$/g, '');
+}
+
+/** Split off the YAML frontmatter and return only the body, trimmed of
+ *  leading newlines. Format assumed: `---\n<yaml>\n---\n<body>`. When
+ *  no frontmatter is present, returns the raw text trimmed. */
+function stripFrontmatter(raw: string): string {
+  const lines = raw.split('\n');
+  if (lines[0]?.trim() !== '---') return raw.trimStart();
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i]!.trim() === '---') {
+      return lines.slice(i + 1).join('\n').trimStart();
+    }
+  }
+  return raw.trimStart();
 }
 
 /**

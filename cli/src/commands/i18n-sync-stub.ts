@@ -6,7 +6,7 @@
  * (frontmatter, talk file, git plumbing) without depending on an LLM.
  */
 
-import type { Translator } from './i18n-sync.ts';
+import type { Translator, TalkTranslator } from './i18n-sync.ts';
 
 export const stubTranslator: Translator = async (req) => ({
   body: req.canonicalBody,
@@ -20,4 +20,18 @@ export const stubTranslator: Translator = async (req) => ({
   // otherwise fall back to bracket-prefixing for the stub's smoke-test value.
   titleTranslation: req.nameTranslation
     ?? `[${req.locale}] ${(req.canonicalMeta as { title?: string }).title ?? req.canonicalMeta['title'] ?? ''}`,
+});
+
+/**
+ * Stub talk translator paired with `stubTranslator`. Echoes the EN
+ * editorial talk body verbatim and uses the EN "Talk" prefix, so the
+ * orchestrator's full write path (talk-page frontmatter, audit-section
+ * fold-in) can be exercised offline. The real agent talk translator
+ * lands in Phase B.2 alongside a `translate-talk` template in the
+ * writing-articles skill.
+ */
+export const stubTalkTranslator: TalkTranslator = async (req) => ({
+  body: req.canonicalTalkBody,
+  titlePrefix: 'Talk',
+  auditEntries: `- [ ] **[stub]** Stub talk translator used for ${req.locale}; real agent talk-translation lands in Phase B.2.`,
 });

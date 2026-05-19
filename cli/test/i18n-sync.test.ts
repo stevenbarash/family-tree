@@ -4,7 +4,7 @@ import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { runI18nSync, type Translator } from '../src/commands/i18n-sync.js';
+import { runI18nSync, type Translator, type TalkTranslator } from '../src/commands/i18n-sync.js';
 
 const stubTranslator: Translator = async (req) => ({
   body: req.canonicalBody,
@@ -285,6 +285,174 @@ test('wai i18n sync: passes related-translation context to translator', async ()
   assert.equal(boris?.enTitle, 'Boris Krasnov');
   assert.equal(boris?.localeTitle, 'Борис Краснов');
   assert.match(stdout, /2 related translation/);
+
+  await rm(root, { recursive: true });
+});
+
+// ─── Talk-page translation (Phase B.1) ──────────────────────────────
+
+const stubTalkTranslator: TalkTranslator = async (req) => ({
+  body: req.canonicalTalkBody,
+  titlePrefix: 'Talk',
+  auditEntries: `- [ ] **[stub]** Stub talk translator used for ${req.locale}.`,
+});
+
+async function setupArticleAndTalk(root: string, slug: string, talkBody: string): Promise<void> {
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', `${slug}.md`),
+    `---\nschemaVersion: 1\ntitle: ${slug}\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nEN article body`,
+  );
+  await writeFile(
+    join(root, 'pages', 'en', `${slug}.talk.md`),
+    `---\nschemaVersion: 1\ntitle: "Talk: ${slug}"\nauthor: Claude Opus 4.7\ntype: meta\naliases: []\ncategories: []\ncreated: '2026-05-01'\n---\n\n${talkBody}`,
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+}
+
+test('wai i18n sync: writes translated talk page when EN talk exists + talkTranslator provided', async () => {
+  const root = join(tmpdir(), `whoami-i18n-talk-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA captured fact.\n');
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    write: (s) => { stdout += s; },
+  });
+
+  const talkPath = join(root, 'pages', 'ru', 'abby.talk.md');
+  const content = await readFile(talkPath, 'utf8');
+  // Format-spec-compliant frontmatter
+  assert.match(content, /^schemaVersion: 1$/m);
+  assert.match(content, /^type: meta$/m);
+  assert.match(content, /^aliases: \[\]$/m);
+  assert.match(content, /^categories: \[\]$/m); // no ::open threads in the fixture
+  // Localized "Talk:" + article-translated subject
+  assert.match(content, /^title: "Talk: \[ru\] abby"$/m);
+  // Translation-stamp fields
+  assert.match(content, /^lang: ru$/m);
+  assert.match(content, /^translation_of: abby$/m);
+  assert.match(content, /^canonical_sha: [a-f0-9]+$/m);
+  assert.match(content, /^translated_at: '\d{4}-\d{2}-\d{2}'$/m);
+  // Body echoed from EN talk
+  assert.match(content, /A captured fact/);
+  // Status message
+  assert.match(stdout, /wrote pages\/ru\/abby\.talk\.md/);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: categories: [Open editorial questions] when translated talk has ::open threads', async () => {
+  const root = join(tmpdir(), `whoami-i18n-talk-open-${Date.now()}`);
+  await setupArticleAndTalk(
+    root,
+    'abby',
+    '## Some open question\n::open\n\nthe body of the open thread\n',
+  );
+
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    write: () => {},
+  });
+
+  const content = await readFile(join(root, 'pages', 'ru', 'abby.talk.md'), 'utf8');
+  assert.match(content, /^categories: \[Open editorial questions\]$/m);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: skips talk-page translation when includeTalk: false (mirrors --no-talk)', async () => {
+  const root = join(tmpdir(), `whoami-i18n-no-talk-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    includeTalk: false,
+    write: (s) => { stdout += s; },
+  });
+
+  // The article + translation.talk.md still get written
+  await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+  await readFile(join(root, 'pages', 'ru', 'abby.translation.talk.md'), 'utf8');
+  // But the localized talk page does NOT
+  await assert.rejects(
+    () => readFile(join(root, 'pages', 'ru', 'abby.talk.md'), 'utf8'),
+    /ENOENT/,
+  );
+  assert.doesNotMatch(stdout, /wrote pages\/ru\/abby\.talk\.md/);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: skips talk-page translation when EN talk does not exist (silent)', async () => {
+  const root = join(tmpdir(), `whoami-i18n-no-en-talk-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', 'abby.md'),
+    `---\nschemaVersion: 1\ntitle: abby\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nbody`,
+  );
+  execSync(`git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`);
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    write: (s) => { stdout += s; },
+  });
+
+  await assert.rejects(() => readFile(join(root, 'pages', 'ru', 'abby.talk.md'), 'utf8'), /ENOENT/);
+  // Article still translated
+  await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: skips talk-page translation when talkTranslator not provided', async () => {
+  // Mirror the agent-translator path in Phase B.1 where the real talk
+  // translator doesn't exist yet — the orchestrator must NOT write a
+  // half-translated talk file silently.
+  const root = join(tmpdir(), `whoami-i18n-no-talk-translator-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');
+
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    // talkTranslator: undefined
+    write: () => {},
+  });
+
+  await assert.rejects(() => readFile(join(root, 'pages', 'ru', 'abby.talk.md'), 'utf8'), /ENOENT/);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: folds talk-page audit entries into the .translation.talk.md', async () => {
+  const root = join(tmpdir(), `whoami-i18n-audit-fold-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');
+
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    write: () => {},
+  });
+
+  const auditContent = await readFile(join(root, 'pages', 'ru', 'abby.translation.talk.md'), 'utf8');
+  // Article translation audit still present
+  assert.match(auditContent, /## Unresolved/);
+  // New talk-page audit section folded in
+  assert.match(auditContent, /### Talk-page translation/);
+  assert.match(auditContent, /Stub talk translator used for ru/);
 
   await rm(root, { recursive: true });
 });

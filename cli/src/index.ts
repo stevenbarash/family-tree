@@ -124,10 +124,16 @@ Quality:
                               Tab-separated output for grep / sort.
   i18n sync <slug> <locale>   Translate pages/en/<slug>.md into <locale>,
                               writing pages/<locale>/<slug>.md and the sibling
-                              <slug>.translation.talk.md. Default invokes the
-                              editor agent via the harness adapter.
+                              <slug>.translation.talk.md. When the EN canonical
+                              has an editorial talk page (pages/en/<slug>.talk.md)
+                              and the stub is active, also writes the localized
+                              talk page at pages/<locale>/<slug>.talk.md.
+                              Default invokes the editor agent via the harness
+                              adapter.
         [--stub]                Use the offline echo translator (skips the
                               harness; for tests / dry runs).
+        [--no-talk]             Skip talk-page translation even when EN talk
+                              exists. Article translation still runs.
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -491,7 +497,7 @@ async function main(): Promise<number> {
           const slug = args.positional[1];
           const locale = args.positional[2];
           if (!slug || !locale) {
-            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub]\n');
+            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub] [--no-talk]\n');
             return 2;
           }
           // Default: the real agent translator invokes the harness
@@ -502,11 +508,21 @@ async function main(): Promise<number> {
           const translator = useStub
             ? (await import('./commands/i18n-sync-stub.js')).stubTranslator
             : (await import('./commands/agent-translator.js')).agentTranslator;
+          // Talk-page translation: only the stub path is implemented in
+          // Phase B.1. The real agent talk translator lands in Phase B.2
+          // along with the `translate-talk` template in writing-articles.
+          // Pass undefined on the agent path so runI18nSync skips talk
+          // silently rather than writing a half-translated file.
+          const talkTranslator = useStub
+            ? (await import('./commands/i18n-sync-stub.js')).stubTalkTranslator
+            : undefined;
           await runI18nSync({
             rootDir: root,
             slug,
             locale,
             translator,
+            talkTranslator,
+            includeTalk: !args.flags['no-talk'],
             write,
           });
           return 0;
