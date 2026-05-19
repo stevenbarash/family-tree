@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { detectTalkPageFormat } from '../../src/checks/talk-page-format.ts';
 import type { LoadedPage, RepoState } from '../../src/checks/types.ts';
 
-function loadedPage(slug: string, text: string): LoadedPage {
-  return { slug, path: `/fake/${slug}.md`, meta: {} as any, body: text, text };
+function loadedPage(slug: string, text: string, locale: 'en' | 'ru' | 'uk' | 'he' = 'en'): LoadedPage {
+  return { slug, path: `/fake/pages/${locale}/${slug}.md`, meta: {} as any, body: text, text };
 }
 
 function state(pages: LoadedPage[]): RepoState {
@@ -195,6 +195,42 @@ test('bespoke thread-container ## headings ignored by ordering check', () => {
 test('file without frontmatter → no findings (other detectors handle that)', () => {
   const text = '## Some content\n\nbody\n';
   assert.deepEqual(detectTalkPageFormat(state([loadedPage('foo.talk', text)])), []);
+});
+
+test('translated talk page (non-EN path) is skipped entirely', () => {
+  // A localized talk page can carry localized "Talk:" prefix ("Обсуждение:")
+  // and translation-stamp frontmatter the EN spec doesn't describe. The
+  // detector should not flag any of it.
+  const text = [
+    '---',
+    'title: "Обсуждение: Авраам Гарольд Франкель"',
+    'author: Claude Opus 4.7',
+    'type: meta',
+    'lang: ru',
+    'translation_of: abraham-harold-frankel',
+    'canonical_sha: abc123',
+    'translated_at: 2026-05-18',
+    '---',
+    '',
+    '## Some open question',
+    '::open',
+    '',
+    'body',
+  ].join('\n');
+  assert.deepEqual(detectTalkPageFormat(state([loadedPage('abraham-harold-frankel.talk', text, 'ru')])), []);
+});
+
+test('legacy top-level pages/<slug>.talk.md path is still checked', () => {
+  // load.ts walks both per-locale and legacy top-level paths; both are EN.
+  const page: LoadedPage = {
+    slug: 'foo.talk',
+    path: '/fake/pages/foo.talk.md',
+    meta: {} as any,
+    body: '',
+    text: fm({ type: 'person' }),
+  };
+  const findings = detectTalkPageFormat(state([page]));
+  assert.ok(findings.some(f => f.message.includes('type is "person"')));
 });
 
 test('multiple findings on one file all coexist', () => {

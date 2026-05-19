@@ -36,10 +36,22 @@ export const detectTalkPageFormat: Detector = (state: RepoState): Finding[] => {
   const findings: Finding[] = [];
   for (const page of state.pages) {
     if (!page.slug.endsWith('.talk')) continue;
+    // Only check EN canonicals. Translated talk pages live under
+    // pages/{ru,uk,he}/ and carry locale-specific frontmatter (localized
+    // "Talk:" prefix, translation-stamp fields) the EN spec doesn't
+    // describe; running this detector on them would surface noise.
+    if (!isEnglishCanonical(page.path)) continue;
     findings.push(...detectInPage(page));
   }
   return findings;
 };
+
+function isEnglishCanonical(path: string): boolean {
+  // `pages/en/<slug>.talk.md` — match either the per-locale layout or the
+  // legacy top-level `pages/<slug>.talk.md` path (load.ts still walks both).
+  return /(?:^|\/)pages\/en\/[^/]+\.talk\.md$/.test(path)
+    || /(?:^|\/)pages\/[^/]+\.talk\.md$/.test(path);
+}
 
 interface FrontmatterField {
   line: number;
