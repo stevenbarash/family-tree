@@ -87,7 +87,6 @@ export default async function HomePage({
           ])}
         </p>
         <nav className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          <Link href="/family" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navFamily')}</Link>
           <Link href="/family/tree" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navTree')}</Link>
           <Link href="/search" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navSearch')}</Link>
         </nav>

@@ -119,11 +119,11 @@ export default async function FamilyTreePage({ params, searchParams }: Props) {
       <header className="sticky top-0 z-20 border-b rule-hair bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <Link
-            href="/family"
+            href="/"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="size-4 rtl:scale-x-[-1]" aria-hidden />
-            <span className="font-display tracking-tight">{t('navFamily')}</span>
+            <span className="font-display tracking-tight">{t('navIndex')}</span>
           </Link>
           <div className="font-display text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground/80">
             {t('registry')}

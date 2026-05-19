@@ -13,7 +13,7 @@ The project has two halves:
 1. **The family tree.** `/family/tree` is the spine — an interactive
    browser of ancestors, descendants, siblings, cousins, lifespans, and
    birthplaces, joined from a GEDCOM file plus per-individual derived
-   records. `/family` is the line summary view.
+   records.
 2. **The articles.** Wiki pages about the people on the tree (and the
    places and events they were part of). An agent — Claude Code, Codex,
    OpenCode — reads the GEDCOM-derived data and any user-supplied
@@ -37,7 +37,7 @@ covering local conventions:
 | Package          | What it is                                                                       |
 | ---------------- | -------------------------------------------------------------------------------- |
 | `core/`          | Platform-agnostic logic. GEDCOM ingestion, the family graph (ancestors, descendants, cohort, relationship calc), page parsing, search. Pure TypeScript, no React, no I/O above the function boundary. |
-| `frontend/`      | Next.js 16 (App Router) renderer. Hosts `/family/tree` (the interactive tree), article pages at `/[slug]`, the family-line summary `/family`, and `/search`. |
+| `frontend/`      | Next.js 16 (App Router) renderer. Hosts `/family/tree` (the interactive tree), article pages at `/[slug]`, and `/search`. |
 | `cli/`           | The `wai` CLI — the surface agents use to read, write, and search articles. |
 | `plugins/whoami/`| The agent extension. Skills, agent definitions, and editorial guides that load when an agent is writing or revising articles. |
 | `evals/`         | Eval suite for benchmarking agent harness × model quality on article authoring. |

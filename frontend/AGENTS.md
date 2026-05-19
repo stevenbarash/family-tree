@@ -15,7 +15,6 @@ browseable wiki UI:
 
 - `/` — index of all pages
 - `/[slug]` — render a wiki page from `pages/<slug>.md`
-- `/family` — family-line summary
 - `/family/tree` — interactive family browser (siblings, cousins,
   descendants, lineage, lifespans, places-of-birth map, coverage prompts,
   shareable relationship links)

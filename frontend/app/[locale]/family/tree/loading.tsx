@@ -15,7 +15,7 @@ export default function FamilyTreeLoading() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <ArrowLeft className="size-4 rtl:scale-x-[-1]" aria-hidden />
-            <span className="font-display tracking-tight">{tPage('navFamily')}</span>
+            <span className="font-display tracking-tight">{tPage('navIndex')}</span>
           </div>
           <div className="font-display text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground/80">
             {tPage('registry')}

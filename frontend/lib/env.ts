@@ -17,7 +17,7 @@ export const DEFAULT_AUTHOR: AuthorIdentity = {
   email: process.env.WHOAMI_AUTHOR_EMAIL ?? 'whoami@local',
 };
 
-/** GEDCOM record id of the perspective person on /family. Hardcoded today;
+/** GEDCOM record id of the perspective person on /family/tree. Hardcoded today;
  *  later versions will pick up the viewer from session/profile. */
 export const SELF_RECORD = process.env.WHOAMI_SELF_RECORD ?? 'I28906360944';
 

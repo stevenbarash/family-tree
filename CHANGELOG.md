@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
+### Removed
+
+- **`/family` page deprecated and removed** — the paternal/maternal line summary view is redundant now that `/family/tree` renders the full interactive browser (lineage, cohort, descendants, places, timeline). Deleted `frontend/app/[locale]/family/page.tsx`, dropped `getFamily()` + `FamilyView` + `AncestorView` from `frontend/lib/family.ts`, and removed the `Page.Family` translation namespace from all four locales (~21 keys × 4). Dangling-link fixes: the homepage `Family →` nav (was the second link in the chrome nav) is gone, and the `/family/tree` sticky-header back-link retargets from `/family` → `/` with the renamed `Page.FamilyTree.navIndex` key (translations reused from the deleted `Page.Family.navIndex`).
+
 ### Changed
 
 - **Close-out polish: fetch-error fallback strings and command-palette dialog title localized** — a review pass on the dangling-strings work surfaced two reader-visible English islands that the earlier passes had missed:
