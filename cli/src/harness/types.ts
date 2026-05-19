@@ -4,7 +4,8 @@ export type HarnessTemplate =
   | 'draft-person'
   | 'draft-episode'
   | 'interview'
-  | 'translate';
+  | 'translate'
+  | 'translate-talk';
 
 export interface HarnessRequest<T = unknown> {
   /** Skill bundle name; v1 always 'writing-articles' */

@@ -32,6 +32,7 @@ const LIVE_COMMANDS = new Set([
   'author', 'revert', 'history',
   'rebuild-search', 'migrate', 'export',
   'doctor', 'healthz', 'config',
+  'i18n',
   'help', 'version',
 ]);
 

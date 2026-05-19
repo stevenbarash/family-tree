@@ -125,11 +125,11 @@ Quality:
   i18n sync <slug> <locale>   Translate pages/en/<slug>.md into <locale>,
                               writing pages/<locale>/<slug>.md and the sibling
                               <slug>.translation.talk.md. When the EN canonical
-                              has an editorial talk page (pages/en/<slug>.talk.md)
-                              and the stub is active, also writes the localized
-                              talk page at pages/<locale>/<slug>.talk.md.
-                              Default invokes the editor agent via the harness
-                              adapter.
+                              has an editorial talk page (pages/en/<slug>.talk.md),
+                              also writes the localized talk page at
+                              pages/<locale>/<slug>.talk.md. Default invokes
+                              the editor agent via the harness adapter (one
+                              call for the article, a second for the talk).
         [--stub]                Use the offline echo translator (skips the
                               harness; for tests / dry runs).
         [--no-talk]             Skip talk-page translation even when EN talk
@@ -508,14 +508,12 @@ async function main(): Promise<number> {
           const translator = useStub
             ? (await import('./commands/i18n-sync-stub.js')).stubTranslator
             : (await import('./commands/agent-translator.js')).agentTranslator;
-          // Talk-page translation: only the stub path is implemented in
-          // Phase B.1. The real agent talk translator lands in Phase B.2
-          // along with the `translate-talk` template in writing-articles.
-          // Pass undefined on the agent path so runI18nSync skips talk
-          // silently rather than writing a half-translated file.
+          // Talk-page translation: stub path echoes; agent path invokes
+          // the `translate-talk` template in `writing-articles` via the
+          // harness adapter.
           const talkTranslator = useStub
             ? (await import('./commands/i18n-sync-stub.js')).stubTalkTranslator
-            : undefined;
+            : (await import('./commands/agent-translator.js')).agentTalkTranslator;
           await runI18nSync({
             rootDir: root,
             slug,

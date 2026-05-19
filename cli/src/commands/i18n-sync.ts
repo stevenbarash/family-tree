@@ -87,6 +87,9 @@ export type Translator = (req: TranslateRequest) => Promise<TranslateResponse>;
  * against the translated article title so the two stay in sync.
  */
 export interface TranslateTalkRequest {
+  /** The article slug (without `.talk` suffix). Used by the agent
+   *  prompt as the page identifier. */
+  slug: string;
   canonicalTalkBody: string;
   canonicalTalkMeta: Record<string, unknown>;
   locale: Locale;
@@ -268,6 +271,7 @@ translated_at: '${today}'
 
     opts.write(`translating ${opts.slug}.talk -> ${opts.locale}...\n`);
     const talkResponse = await opts.talkTranslator({
+      slug: opts.slug,
       canonicalTalkBody: enTalkBody,
       canonicalTalkMeta: {},
       locale: opts.locale as Locale,

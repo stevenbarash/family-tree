@@ -9,7 +9,7 @@
 
 import { selectHarness } from '../harness/index.js';
 import type { HarnessName } from '../harness/index.js';
-import type { Translator } from './i18n-sync.js';
+import type { Translator, TalkTranslator } from './i18n-sync.js';
 
 export const agentTranslator: Translator = async (req) => {
   const harness = selectHarness(
@@ -97,3 +97,69 @@ function relatedTranslationsBlock(related: import('./i18n-sync.js').RelatedTrans
   const lines = related.map(r => `  ${r.enTitle}  →  ${r.localeTitle}    (slug: ${r.slug})`);
   return `These wikilinked slugs are already translated in this locale. Mirror their\nsurname and given-name renderings exactly so the article set stays consistent:\n\n${lines.join('\n')}`;
 }
+
+/**
+ * Real agent-driven talk-page translator for `wai i18n sync`. Mirrors
+ * `agentTranslator` but invokes the `translate-talk` template (talk
+ * pages have a different contract — preserve thread markers, HTML
+ * note IDs, gap slugs, source URLs, pipeline UUIDs verbatim; translate
+ * only prose and headings). Used as the default talkTranslator from
+ * Phase B.2 onward; `--stub` flips back to `stubTalkTranslator` for
+ * tests and dry runs.
+ */
+export const agentTalkTranslator: TalkTranslator = async (req) => {
+  const harness = selectHarness(
+    process.env.WHOAMI_HARNESS as HarnessName | undefined,
+  );
+
+  const response = await harness.invoke<
+    {
+      LOCALE: string;
+      SLUG: string;
+      SUBJECT_SEX: string;
+      ARTICLE_TITLE_TRANSLATION: string;
+      ARTICLE_TRANSLATED_BODY_OR_NONE: string;
+      EXISTING_TALK_TRANSLATION_OR_NONE: string;
+      TALK_BODY: string;
+    },
+    {
+      body: string;
+      titlePrefix: string;
+      auditEntries: string;
+    }
+  >({
+    skill: 'writing-articles',
+    template: 'translate-talk',
+    context: {
+      LOCALE: req.locale,
+      SLUG: req.slug,
+      // Talk-page meta doesn't carry subject sex (the article's GEDCOM
+      // record is the source). The orchestrator could plumb it through
+      // — for now the agent infers from prose and locale convention.
+      SUBJECT_SEX: 'not-tracked-for-talk-pages',
+      ARTICLE_TITLE_TRANSLATION: req.articleTitleTranslation,
+      ARTICLE_TRANSLATED_BODY_OR_NONE: req.articleTranslatedBody ?? '(none — article was not translated in this run, use the talk-page context alone)',
+      EXISTING_TALK_TRANSLATION_OR_NONE: req.existingTalkTranslation ?? '(none — first translation of this talk page into this locale)',
+      TALK_BODY: req.canonicalTalkBody,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        body: { type: 'string' },
+        titlePrefix: { type: 'string' },
+        auditEntries: { type: 'string' },
+      },
+      required: ['body', 'titlePrefix', 'auditEntries'],
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Agent talk translation failed: ${response.error}`);
+  }
+
+  return {
+    body: response.result.body,
+    titlePrefix: response.result.titlePrefix,
+    auditEntries: response.result.auditEntries,
+  };
+};

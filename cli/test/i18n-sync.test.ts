@@ -436,6 +436,35 @@ test('wai i18n sync: skips talk-page translation when talkTranslator not provide
   await rm(root, { recursive: true });
 });
 
+test('wai i18n sync: passes slug + article-title translation to talkTranslator', async () => {
+  const root = join(tmpdir(), `whoami-i18n-talk-context-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby-rickelman', '## Research notes\n\nA fact.\n');
+
+  let captured: { slug?: string; articleTitleTranslation?: string; canonicalTalkBody?: string } = {};
+  const captureTalkTranslator: TalkTranslator = async (req) => {
+    captured = {
+      slug: req.slug,
+      articleTitleTranslation: req.articleTitleTranslation,
+      canonicalTalkBody: req.canonicalTalkBody,
+    };
+    return { body: req.canonicalTalkBody, titlePrefix: 'Talk', auditEntries: '' };
+  };
+
+  await runI18nSync({
+    rootDir: root, slug: 'abby-rickelman', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: captureTalkTranslator,
+    write: () => {},
+  });
+
+  assert.equal(captured.slug, 'abby-rickelman');
+  // Stub translator titleTranslation: `[ru] ${title}`; orchestrator strips surrounding quotes
+  assert.equal(captured.articleTitleTranslation, '[ru] abby-rickelman');
+  assert.match(captured.canonicalTalkBody!, /A fact\./);
+
+  await rm(root, { recursive: true });
+});
+
 test('wai i18n sync: folds talk-page audit entries into the .translation.talk.md', async () => {
   const root = join(tmpdir(), `whoami-i18n-audit-fold-${Date.now()}`);
   await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');

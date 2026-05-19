@@ -21,7 +21,7 @@ into prose.
 
 ## Templates
 
-The harness adapter calls this skill with one of five templates:
+The harness adapter calls this skill with one of seven templates:
 
 - `research-questions` — Phase 2; emit web-search queries from gaps.
 - `outline` — Phase 3; emit drafting plan + episode spinoffs.
@@ -30,8 +30,16 @@ The harness adapter calls this skill with one of five templates:
   episode).
 - `interview` — used by `wai interview`; emit Q&A questions tailored
   to gaps in the evidence drawer.
+- `translate` — used by `wai i18n sync`; translate the canonical EN
+  article into a target locale + emit a translation-talk audit log of
+  non-trivial editorial choices.
+- `translate-talk` — used by `wai i18n sync` Phase B.2 onward;
+  translate the editorial talk page (research notes + threads + agent
+  log) into a target locale, preserving structural elements (thread
+  markers, HTML note IDs, gap slugs, source URLs, pipeline UUIDs)
+  verbatim and emitting audit entries for non-trivial editorial calls.
 
-All five templates are implemented. The harness adapter resolves
+All seven templates are implemented. The harness adapter resolves
 `prompt-templates/<template>.md` automatically when invoked.
 
 ## Three-stream weaving rule
