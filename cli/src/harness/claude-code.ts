@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import type { HarnessAdapter, HarnessRequest, HarnessResponse } from './types.js';
 
 type SpawnFn = (cmd: string, args: string[], stdin: string) => Promise<{ stdout: string; stderr: string; code: number }>;
@@ -121,11 +121,36 @@ export function claudeCodeAdapter(opts: ClaudeCodeOptions = {}): HarnessAdapter 
  * In the bundled CJS case, process.argv[1] = <repo>/cli/dist/wai.cjs;
  * two levels up from cli/dist/ lands at the repo root, then we descend
  * into plugins/whoami/skills/.
- * For non-standard layouts, set WHOAMI_SKILLS_DIR to override.
+ *
+ * When the binary is installed outside the repo (e.g. copied to
+ * ~/.local/bin/wai), the literal `../../plugins/whoami/skills` is
+ * meaningless — that path resolves to `~/plugins/whoami/skills`, which
+ * doesn't exist. To stay robust without forcing the caller to set
+ * WHOAMI_SKILLS_DIR, walk up from the binary looking for the marker.
+ * Returns the literal default path if no marker is found, leaving the
+ * "not found at <path>" error message intact for diagnostic clarity.
  */
 function defaultSkillsDir(): string {
-  const binaryDir = dirname(process.argv[1]);
-  return join(binaryDir, '..', '..', 'plugins', 'whoami', 'skills');
+  const fallback = join(dirname(process.argv[1]), '..', '..', 'plugins', 'whoami', 'skills');
+  // First try: the legacy literal path. Fast path for the in-repo
+  // bundled case and for the test fixtures that mock readSkillFile.
+  if (existsSync(fallback)) return fallback;
+
+  // Walk-up search. Start from cwd, then the binary dir, then up to /
+  // (bounded depth to avoid filesystem-walk pathology). The first
+  // ancestor containing `plugins/whoami/skills/SKILL.md` wins.
+  const seeds = [process.cwd(), dirname(process.argv[1])];
+  for (const seed of seeds) {
+    let dir = seed;
+    for (let i = 0; i < 8; i++) {
+      const candidate = join(dir, 'plugins', 'whoami', 'skills');
+      if (existsSync(candidate)) return candidate;
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  return fallback;
 }
 
 function defaultReadSkillFile(path: string): string | null {

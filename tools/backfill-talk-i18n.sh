@@ -59,10 +59,39 @@ if [ ! -d "$WHOAMI_ROOT/pages/en" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_FILE="$SCRIPT_DIR/backfill-talk-i18n.log"
+
+# Pin Opus for translation by default. Per the memory note,
+# `feedback_opus_for_translation`, the Haiku/Sonnet alternatives drop
+# audit entries and (Haiku) drift from the **[kind-tag]** format. The
+# user can still override on the command line: `WHOAMI_MODEL=… script`.
+export WHOAMI_MODEL="${WHOAMI_MODEL:-claude-opus-4-7}"
+
+# Pin the skills dir explicitly. defaultSkillsDir() in the harness
+# computes its path relative to process.argv[1], which breaks when
+# `wai` is installed at ~/.local/bin/wai (or any path outside the
+# repo): ../../plugins/whoami/skills then resolves to ~/plugins/...
+# which doesn't exist. Setting WHOAMI_SKILLS_DIR overrides that.
+export WHOAMI_SKILLS_DIR="${WHOAMI_SKILLS_DIR:-$REPO_ROOT/plugins/whoami/skills}"
 
 log() {
   printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" | tee -a "$LOG_FILE"
+}
+
+# Count thread markers in a talk-page body. Used by the structural-
+# preservation check: ::open / ::closed / ::superseded / ::gap counts
+# must match between EN source and locale output (translator MUST
+# preserve markers verbatim). Returns "open closed superseded gap" as
+# a space-separated quartet.
+marker_counts() {
+  local f="$1"
+  local open closed superseded gap
+  open=$(grep -c '^::open' "$f" 2>/dev/null || true)
+  closed=$(grep -c '^::closed' "$f" 2>/dev/null || true)
+  superseded=$(grep -c '^::superseded' "$f" 2>/dev/null || true)
+  gap=$(grep -c '^::gap' "$f" 2>/dev/null || true)
+  echo "$open $closed $superseded $gap"
 }
 
 if [ -n "$SINGLE_LOCALE" ]; then
@@ -117,7 +146,10 @@ fi
 
 done_count=0
 fail_count=0
+drift_count=0
+missing_count=0
 start_ts=$(date +%s)
+log "translator pinned to: ${WHOAMI_MODEL}"
 
 while read slug locale; do
   if [ $LIMIT -gt 0 ] && [ $done_count -ge $LIMIT ]; then
@@ -129,9 +161,45 @@ while read slug locale; do
   if ! WHOAMI_ROOT="$WHOAMI_ROOT" wai i18n sync "$slug" "$locale" --talk-only 2>&1 | tee -a "$LOG_FILE"; then
     fail_count=$((fail_count + 1))
     log "  FAILED: $slug $locale (continuing)"
+    continue
+  fi
+
+  # Per-call validation: the new locale talk page must (1) exist on
+  # disk, and (2) match the EN source on ::open / ::closed /
+  # ::superseded / ::gap marker counts (the translator MUST preserve
+  # these verbatim). Mismatches indicate the translator dropped or
+  # invented thread markers — silent quality regression — so surface
+  # them in the log without aborting the run.
+  en_talk="$WHOAMI_ROOT/pages/en/$slug.talk.md"
+  locale_talk="$WHOAMI_ROOT/pages/$locale/$slug.talk.md"
+  if [ ! -f "$locale_talk" ]; then
+    missing_count=$((missing_count + 1))
+    log "  VALIDATION: $slug $locale — wai exit was 0 but $locale_talk missing"
+    continue
+  fi
+  en_markers=$(marker_counts "$en_talk")
+  loc_markers=$(marker_counts "$locale_talk")
+  if [ "$en_markers" != "$loc_markers" ]; then
+    drift_count=$((drift_count + 1))
+    log "  DRIFT: $slug $locale — marker counts differ. EN={$en_markers} locale={$loc_markers} (open closed superseded gap)"
   fi
 done < "$WORK_TMP"
 
 end_ts=$(date +%s)
 elapsed=$((end_ts - start_ts))
-log "done. $done_count attempted, $fail_count failed, ${elapsed}s wall-clock"
+log "syncs done. $done_count attempted, $fail_count failed, $missing_count silently-missing, $drift_count marker-drift, ${elapsed}s wall-clock"
+
+# End-of-run global check: `wai check --only schema,format` against the
+# data repo. The new translated talk pages live under pages/{ru,uk,he}/
+# which the EN-only gate of detectTalkPageFormat ignores, so any non-
+# zero count here surfaces drift caught by other detectors (schema-drift,
+# format-drift on date strings, pipeline-frontmatter-drift). Useful
+# tripwire: bulk run shouldn't introduce new findings.
+log "running wai check --only schema,format for post-run validation..."
+if check_output=$(WHOAMI_ROOT="$WHOAMI_ROOT" wai check --only schema,format 2>&1); then
+  echo "$check_output" | tail -5 | tee -a "$LOG_FILE"
+  log "wai check: clean (no schema/format findings)"
+else
+  echo "$check_output" | tail -20 | tee -a "$LOG_FILE"
+  log "wai check: findings reported above. Review them; clean check expected after the talk-page backfill."
+fi
