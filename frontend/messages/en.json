@@ -270,12 +270,7 @@
     "notFoundHelp": "It may have been renamed, archived, or never existed. If you were looking for a person, search by their name — the wiki indexes aliases and GEDCOM-derived fields, so it often finds people whose canonical page slug isn’t obvious.",
     "searchPlaceholder": "Search for a name…",
     "linkHome": "← Home",
-    "linkFamilyTree": "Family tree →",
-    "boundaryLabel": "Error",
-    "boundaryHeading": "Something went wrong.",
-    "boundaryHelp": "An unexpected error happened while loading this page. Pulling the latest code is usually the first thing to try; if it persists, the message below may point at the cause.",
-    "boundaryDetailsLabel": "Details",
-    "boundaryRetry": "Try again"
+    "linkFamilyTree": "Family tree →"
   },
   "Loading": {
     "article": "Loading article",
