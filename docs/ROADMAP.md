@@ -54,7 +54,7 @@ track:
 | Track | Next item | Lift |
 |---|---|---|
 | **Contribution** | **E.0** — Identity & session state | M |
-| **Reading** | Reading-surface audit | S |
+| **Reading** | Header/composition fixes per audit (M2 swap, C2 cut, R2 link, D1 demote) | XS–S each |
 | **Authoring** | Cost telemetry on `wai author` | S |
 | **Infrastructure** | P0.2 privacy-gate re-enable decision | XS |
 
@@ -62,7 +62,7 @@ Three of those four are S/XS — the contribution-track E.0 is the only
 M item near the top. A reasonable sequencing for the next ~2 weeks:
 
 1. P0.2 decision (XS, opens the door for E.3's audio gate)
-2. Reading-surface audit (S, independent, results may shape Reading-track sequence)
+2. ~~Reading-surface audit~~ ✅ shipped 2026-05-19; header/composition fixes (XS–S each) ready to land
 3. Cost telemetry on `wai author` (S, info-gathering for Authoring track)
 4. Begin E.0 in earnest
 
@@ -106,7 +106,7 @@ frontier.
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ⏳ ready | **Reading-surface audit** | S | New, 2026-05-19. Honest sit-down audit of the article page, home page, and family-tree page after the May 2026 build-out. Identifies what's redundant, what's mis-prioritized, what should be cut vs. demoted. Gates everything below. |
+| ✅ shipped | **Reading-surface audit** | S | Shipped 2026-05-19 — [`docs/reviews/2026-05-19-reading-surface-audit.md`](./reviews/2026-05-19-reading-surface-audit.md). Inventoried home dashboard (8 blocks), article page (10 blocks), and family-tree page (10 sections). Identified 4 redundancies (chart vs lineage; freshness "talk:" link vs inline panel; intentional dual-surfacing of frontier; person-header vs sticky chrome), 3 mis-prioritizations (article-header visual weight; chart-before-H1; home-nav 5-link equality), 3 cut candidates (`MediaSection`, article type label, `/index` header chrome) and 3 demote candidates (`CoverageSection` → stat; `ConflictsSection` → bottom; categories pills → muted line). Sequenced 8 XS/S composition fixes + 1 M-lift localization pass that unblock Pedigree T/D, P1.4, P2.3/7/11/12 to proceed in any order. |
 | ✅ shipped | **`/[locale]/roadmap` site page** | S | Shipped 2026-05-19. `frontend/lib/roadmap.ts` parses `docs/ROADMAP.md` into typed sections (snapshot, track, parking, cut, shipped, narrative) with per-section item counts and aggregate totals; mirrors the `lib/changelog.ts` cache + render pattern. Route at `frontend/app/[locale]/roadmap/page.tsx` with side-rail index and section blocks coloured by kind. Chrome translated to all 4 locales under `Page.Roadmap` (24 keys × 4); body stays English. `.roadmap-prose` table-first typography added to `globals.css`. 9 parser tests; full frontend suite 89/89 green. |
 | ⏳ ready | **Pedigree follow-on T** Talk-page candidates format + parser | M | [Pedigree follow-on T](#pedigree-chart-follow-ons-extends-p11) — `## Candidates` section in talk files; parser in `core/`; `wai candidates list <slug>` CLI surface |
 | ⏳ ready | **Pedigree follow-on D** Research drawer | M | [Pedigree follow-on D](#pedigree-chart-follow-ons-extends-p11) — side-panel `Sheet` opened on chart node click. Depends on F (shipped) + benefits from T. **This is the chart's transition from "view of state" → "entry point for research."** |
