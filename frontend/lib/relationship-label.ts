@@ -4,6 +4,23 @@ import type { RelationshipKind } from '@core/family/relationship.ts';
 type LabelT = ReturnType<typeof useTranslations<'Page.Article.Relationship.label'>>;
 
 /**
+ * Grammatical gender of the relationship target, used by the `yours`
+ * message template to pick the right possessive pronoun in languages
+ * that mark gender on possessives (Russian "Ваш" vs "Ваша", etc.).
+ *
+ * We only know the target's gender for ancestors (from the GEDCOM role).
+ * Everything else defaults to `other` — the message catalog falls back
+ * to a gender-neutral form for those cases.
+ */
+export function relationshipGender(kind: RelationshipKind): 'male' | 'female' | 'other' {
+  if (kind.kind === 'ancestor') {
+    if (kind.role === 'father') return 'male';
+    if (kind.role === 'mother') return 'female';
+  }
+  return 'other';
+}
+
+/**
  * Render a `RelationshipKind` as a localized kinship term. The caller passes
  * a translator scoped to `Page.Article.Relationship.label` — e.g.
  * `const t = useTranslations('Page.Article.Relationship.label')`.

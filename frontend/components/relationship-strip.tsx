@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 import type { RelationshipFromSelf } from '@/lib/relationship-from-self';
-import { localizedRelationshipLabel } from '@/lib/relationship-label';
+import { localizedRelationshipLabel, relationshipGender } from '@/lib/relationship-label';
 
 interface Props {
   relationship: RelationshipFromSelf;
@@ -20,9 +20,10 @@ export function RelationshipStrip({ relationship }: Props) {
   const t = useTranslations('Page.Article.Relationship');
   const tLabel = useTranslations('Page.Article.Relationship.label');
   const label = localizedRelationshipLabel(relationship.kind, tLabel);
+  const gender = relationshipGender(relationship.kind);
   return (
     <p className="mt-3 text-base font-medium text-foreground/90">
-      {t('yours', { label })}
+      {t('yours', { label, gender })}
     </p>
   );
 }

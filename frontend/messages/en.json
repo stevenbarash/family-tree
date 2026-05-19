@@ -85,7 +85,7 @@
       "navBack": "← Index",
       "categoriesLabel": "categories: {names}",
       "Relationship": {
-        "yours": "Your {label}.",
+        "yours": "{gender, select, other {Your {label}.}}",
         "label": {
           "self": "yourself",
           "sibling": "sibling",

@@ -85,14 +85,14 @@
       "navBack": "אינדקס ←",
       "categoriesLabel": "קטגוריות: {names}",
       "Relationship": {
-        "yours": "ה{label} שלך.",
+        "yours": "{gender, select, other {{label} שלך.}}",
         "label": {
-          "self": "אתה",
+          "self": "זה אתה",
           "sibling": "אח או אחות",
           "ancestor1": "{role, select, father {אבא} mother {אמא} other {הורה}}",
           "ancestor2": "{role, select, father {סבא} mother {סבתא} other {סב או סבתא}}",
           "ancestor3": "{role, select, father {סבא רבא} mother {סבתא רבא} other {סב רבא או סבתא רבא}}",
-          "ancestorN": "{role, select, father {סבא} mother {סבתא} other {סב או סבתא}} בדרגה {greats}+ אחורה",
+          "ancestorN": "{role, select, father {אב קדמון} mother {אם קדמונה} other {קדמון}} מדרגה {greats}+ אחורה",
           "descendant1": "ילד או ילדה",
           "descendant2": "נכד או נכדה",
           "descendant3": "נין או נינה",
@@ -103,8 +103,8 @@
           "nieceNephew2": "אחיין או אחיינית",
           "nieceNephew3": "בן או בת אחיין",
           "nieceNephewN": "אחיין בדרגה {greats}+",
-          "cousin": "{degree, plural, =1 {בן או בת דוד} =2 {שני בני דודים} =3 {שלישי בני דודים} =4 {רביעי בני דודים} =5 {חמישי בני דודים} other {# בני דודים}}",
-          "cousinRemoved": "{degree, plural, =1 {בן או בת דוד} =2 {שני בני דודים} =3 {שלישי בני דודים} =4 {רביעי בני דודים} =5 {חמישי בני דודים} other {# בני דודים}} {removed, plural, one {במרחק דור אחד} two {במרחק שני דורות} many {במרחק # דורות} other {במרחק # דורות}}"
+          "cousin": "{degree, plural, =1 {בן או בת דוד} =2 {בן או בת דוד מדרגה שנייה} =3 {בן או בת דוד מדרגה שלישית} =4 {בן או בת דוד מדרגה רביעית} =5 {בן או בת דוד מדרגה חמישית} other {בן או בת דוד מדרגה #}}",
+          "cousinRemoved": "{degree, plural, =1 {בן או בת דוד} =2 {בן או בת דוד מדרגה שנייה} =3 {בן או בת דוד מדרגה שלישית} =4 {בן או בת דוד מדרגה רביעית} =5 {בן או בת דוד מדרגה חמישית} other {בן או בת דוד מדרגה #}} {removed, plural, one {במרחק דור אחד} two {במרחק שני דורות} many {במרחק # דורות} other {במרחק # דורות}}"
         }
       },
       "Freshness": {
@@ -126,12 +126,12 @@
           "agentSuffix": " (סוכן)",
           "editedPrefix": "נערך",
           "editedBy": " על-ידי {by}",
-          "retractedBy": "נמשך על-ידי {by}",
+          "retractedBy": "הוסר על-ידי {by}",
           "editAria": "ערוך הערה",
-          "retractAria": "משוך הערה",
+          "retractAria": "הסר הערה",
           "restoreAria": "שחזר הערה",
           "historyAria": "הצג היסטוריית הערה",
-          "confirmRetract": "למשוך הערה זו? ניתן לשחזר מהפאנל."
+          "confirmRetract": "להסיר הערה זו? ניתן לשחזר מהפאנל."
         },
         "Add": {
           "authorPlaceholder": "השם שלך (לא חובה, נשמר)",
