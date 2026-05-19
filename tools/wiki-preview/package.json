@@ -9,9 +9,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "express": "^4.21.0",
+    "express": "^5.2.1",
     "gray-matter": "^4.0.3",
-    "remark-directive": "^3.0.0",
+    "remark-directive": "^4.0.0",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.0",
@@ -20,8 +20,8 @@
     "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^24.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.0"
   }
