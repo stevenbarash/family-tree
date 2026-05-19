@@ -150,6 +150,29 @@
   }
   html {
     @apply font-sans;
+    scroll-padding-top: 4rem;
+  }
+
+  /* Safe-area-inset padding for notched devices (iPhone X+, etc.).
+     With viewport-fit=cover, content can be drawn into the notch/
+     home-indicator area; pad the body so sticky headers and footer
+     chrome land in the safe region. */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Prevent iOS Safari from zooming into the page when a text input
+     is focused. The trigger is font-size < 16px; bump anything below
+     the sm breakpoint up to 16px on small screens only, so the visual
+     hierarchy on desktop is preserved. */
+  @media (max-width: 640px) {
+    input:where([type="text"], [type="search"], [type="email"], [type="url"],
+                [type="tel"], [type="number"], [type="password"], :not([type])),
+    textarea,
+    select {
+      font-size: 16px;
+    }
   }
 }
 
@@ -164,6 +187,16 @@
   .wiki-article :where(a) {
     text-decoration-thickness: 0.08em;
     text-underline-offset: 0.18em;
+  }
+  .wiki-article :where(table) {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .wiki-article :where(pre) {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .rule-hair {
@@ -284,7 +317,10 @@
   }
 
   .changelog-prose table {
-    width: 100%;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
     font-size: 0.85rem;
     margin: 1rem 0;
@@ -391,7 +427,10 @@
     margin: 1.5rem 0;
   }
   .roadmap-prose table {
-    width: 100%;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
     font-size: 0.82rem;
     margin: 1rem 0;

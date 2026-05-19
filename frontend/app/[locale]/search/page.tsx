@@ -67,17 +67,20 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const placeHref = (p?: string) => buildHref({ place: p ?? null });
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
       <Link href="/" className="text-sm text-muted-foreground">{t('navIndex')}</Link>
-      <h1 className="text-3xl font-bold mt-4 mb-4">{t('heading')}</h1>
+      <h1 className="mt-4 mb-4 text-3xl font-bold sm:text-4xl">{t('heading')}</h1>
       <form className="mb-6">
         <input
           type="search"
           name="q"
           defaultValue={q}
           placeholder={t('placeholder')}
-          autoFocus
-          className="w-full rounded border border-input bg-background px-3 py-2 text-sm shadow-sm"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-base shadow-sm sm:py-2 sm:text-sm"
         />
       </form>
 
@@ -90,7 +93,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
           <nav className="mb-4 flex flex-wrap gap-1.5 border-b rule-hair pb-2">
             <Link
               href={tabHref()}
-              className={`rounded-md px-2 py-1 text-xs font-display uppercase tracking-[0.16em] transition-colors ${
+              className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-display uppercase tracking-[0.16em] transition-colors ${
                 !type ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
               }`}
             >
@@ -104,7 +107,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                 <Link
                   key={tp}
                   href={tabHref(tp)}
-                  className={`rounded-md px-2 py-1 text-xs font-display uppercase tracking-[0.16em] transition-colors ${
+                  className={`inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-display uppercase tracking-[0.16em] transition-colors ${
                     active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
                   }`}
                 >
@@ -122,7 +125,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
               {place ? (
                 <Link
                   href={placeHref()}
-                  className="rounded-md px-2 py-0.5 text-xs font-mono uppercase tracking-[0.08em] text-muted-foreground hover:bg-accent/45"
+                  className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-mono uppercase tracking-[0.08em] text-muted-foreground hover:bg-accent/45"
                 >
                   {t('clearPlaces')}
                 </Link>
@@ -133,7 +136,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
                   <Link
                     key={bucket}
                     href={placeHref(active ? undefined : bucket)}
-                    className={`rounded-md px-2 py-0.5 text-xs font-mono uppercase tracking-[0.08em] transition-colors ${
+                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-mono uppercase tracking-[0.08em] transition-colors ${
                       active ? 'bg-foreground/10 text-foreground' : 'text-muted-foreground hover:bg-accent/45'
                     }`}
                   >
