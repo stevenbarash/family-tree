@@ -55,6 +55,7 @@ import { detectStaleCanonicalSha } from '@core/checks/stale-canonical-sha.ts';
 import { detectInfoboxNameDrift } from '@core/checks/infobox-name-drift.ts';
 import { detectPipelineFrontmatterDrift } from '@core/checks/pipeline-frontmatter-drift.ts';
 import { detectTalkThreadShape } from '@core/checks/talk-thread-shape.ts';
+import { detectTalkPageFormat } from '@core/checks/talk-page-format.ts';
 import type { Detector, FindingCategory, Severity } from '@core/checks/types.ts';
 import { runDetectors } from './commands/check/run-detectors.js';
 import { checkBundleFreshness } from './bundle-freshness.js';
@@ -451,6 +452,7 @@ async function main(): Promise<number> {
             detectStaleCanonicalSha,
             detectPipelineFrontmatterDrift,
             detectTalkThreadShape,
+            detectTalkPageFormat,
             ...(includeConsistency ? [detectConsistencyDrift, detectInfoboxNameDrift] : []),
             ...(includeCitation ? [detectCitationDrift] : []),
           ],

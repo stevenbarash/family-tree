@@ -146,6 +146,38 @@ A talk page may also carry a `## Research notes` section (dated bullet log of ca
 
 Do NOT use section headers like `## Active gaps` or `## Open editorial questions` — those don't render any UI affordance and aren't counted. Each thread stands on its own with its `## Heading` + `::marker`.
 
+### Frontmatter
+
+Talk-page frontmatter is fixed-shape — `wai check` enforces it, and the i18n translator depends on it. Use exactly these fields in this order:
+
+```yaml
+---
+schemaVersion: 1
+title: "Talk: <Subject>"
+author: <agent or human name>
+type: meta
+aliases: []
+categories: []
+created: YYYY-MM-DD
+---
+```
+
+- **`title`** — always quoted with the `Talk:` prefix (e.g. `"Talk: Asya Goltsman"`), even when the page covers a family or event. The prefix is what readers see in the rendered h1 and how talk pages are distinguished from articles at a glance.
+- **`type`** — always `meta`. Talk pages are editorial workspace about an article, not the article itself; the parser, the search index, and the homepage gap-card all treat `meta` as the talk-page signal.
+- **`categories`** — `[]` by default. Auto-populated to `[Open editorial questions]` when the page has at least one `::open` thread (the detector adds and removes this tag as threads open and close).
+- **`aliases`** — talk pages don't take aliases; always `[]`.
+- **`schemaVersion`, `author`, `created`** — verbatim from the article-page conventions.
+
+### Section ordering
+
+When two or more of the canonical top-level sections appear on a talk page, they go in this order:
+
+1. `## Research notes`
+2. `## Drafting plan`
+3. `## Agent log`
+
+Reader-natural order: captured facts first, then the plan derived from them, then the process log. Any section may be omitted (stub pages often carry only `## Agent log`). Bespoke top-level headings used as editorial-thread containers (e.g. `## Birth year 1881 (1928 census) vs. 1887 (GEDCOM)` on `aidele.talk.md`) are preserved in their original position — the order rule only governs the relative position of the three canonical sections when they coexist.
+
 ## Citation system
 
 Inline citations use markdown footnote syntax (`text[^id]` in the body, `[^id]: ...` definitions at the bottom of the page under a `## References` heading). Each footnote definition wraps a `:::cite-*` directive describing the source.
