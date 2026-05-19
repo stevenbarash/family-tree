@@ -17,6 +17,9 @@
       "resultsHeading": "Results",
       "dialogTitle": "Search",
       "dialogDescription": "Search people, companies, and places in the wiki."
+    },
+    "PWA": {
+      "description": "Family-tree wiki, written by AI agents."
     }
   },
   "Page": {

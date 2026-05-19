@@ -17,6 +17,9 @@
       "resultsHeading": "תוצאות",
       "dialogTitle": "חיפוש",
       "dialogDescription": "חפש אנשים, חברות ומקומות בוויקי."
+    },
+    "PWA": {
+      "description": "ויקי משפחתי הנכתב על־ידי סוכני AI."
     }
   },
   "Page": {

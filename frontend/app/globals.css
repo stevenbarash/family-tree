@@ -147,6 +147,12 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    /* Safe-area-inset padding for notched devices (iPhone X+, etc.).
+       With viewport-fit=cover, content can be drawn into the notch/
+       home-indicator area; pad the body so sticky headers and footer
+       chrome land in the safe region. */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
   html {
     @apply font-sans;
@@ -163,16 +169,6 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-
-  /* Safe-area-inset padding for notched devices (iPhone X+, etc.).
-     With viewport-fit=cover, content can be drawn into the notch/
-     home-indicator area; pad the body so sticky headers and footer
-     chrome land in the safe region. */
-  body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
 }
 
 /* Prevent iOS Safari from zooming into the page when a text input is

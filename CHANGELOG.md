@@ -25,6 +25,20 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 - **`/family` page deprecated and removed** — the paternal/maternal line summary view is redundant now that `/family/tree` renders the full interactive browser (lineage, cohort, descendants, places, timeline). Deleted `frontend/app/[locale]/family/page.tsx`, dropped `getFamily()` + `FamilyView` + `AncestorView` from `frontend/lib/family.ts`, and removed the `Page.Family` translation namespace from all four locales (~21 keys × 4). Dangling-link fixes: the homepage `Family →` nav (was the second link in the chrome nav) is gone, and the `/family/tree` sticky-header back-link retargets from `/family` → `/` with the renamed `Page.FamilyTree.navIndex` key (translations reused from the deleted `Page.Family.navIndex`).
 
+### Changed
+
+- **PWA polish round 2 — review-deferred items** — four smell-level items from the post-PWA review, now landed:
+  - **Locale-aware manifest.** `app/manifest.ts` is now async, reads the `NEXT_LOCALE` cookie via `cookies()`, and emits the right `lang` / `dir` / `description` per request. A Hebrew-reading user installing from `/he` sees a Hebrew description on the install sheet and `dir: rtl` for correct sheet alignment; brand `name` / `short_name` stay untranslated since `whoami.wiki` isn't a translatable phrase. New `Chrome.PWA.description` key in all four locales. Verified per-locale: en `lang=en dir=ltr`, ru `lang=ru dir=ltr "Семейная вики-энциклопедия…"`, uk `lang=uk dir=ltr "Сімейна вікі-енциклопедія…"`, he `lang=he dir=rtl "ויקי משפחתי…"`.
+  - **`orientation: 'portrait'` dropped** — defaults to `'any'`. The pedigree chart, wide infoboxes, and lifespans timeline all benefit from rotating the phone; locking portrait was a usability regression on those pages.
+  - **Shared monogram helper.** `app/icon.tsx` and `app/apple-icon.tsx` no longer duplicate the same ~25 lines of ImageResponse JSX; both call `renderMonogram(px)` from `lib/pwa-icon.tsx`. The safe-zone math (`fontSize = px * 0.625`, glyph inside the maskable 80% radius) and brand palette (`#0a0a0a` / `#fafafa`) live in one place, so the 192/512/180 sizes can't drift apart.
+  - **Two `body {}` blocks in `globals.css` merged.** Cosmetic cleanup from two sequential Edits in the prior commits.
+
+  Deliberately NOT changed (would create regressions):
+  - **`statusBarStyle: 'default'`** stays — switching to `'black-translucent'` forces iOS status-bar text white on a white-bg page → invisible.
+  - **`scroll-padding-top: 4rem` stays global** — on pages without a sticky header it just lands anchor jumps 4rem above target = slightly nicer reading position. Net improvement everywhere, not a leak.
+
+  Frontend typecheck clean; suite 95/95; drift tests 7/7.
+
 ### Fixed
 
 - **Code-review fixes on the mobile + PWA pass** — five real bugs surfaced by reviewing the prior two commits:
