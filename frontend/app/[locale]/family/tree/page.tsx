@@ -173,12 +173,12 @@ export default async function FamilyTreePage({ params, searchParams }: Props) {
         <PersonHeaderSection view={view} ancestorCount={ancestorCount} generationCount={generationCount} />
         <PedigreeSection view={view} />
         <FamilySection view={view} />
-        <ConflictsSection view={view} />
         <CoverageSection view={view} />
         <PlacesSection view={view} />
         <LifespansSection view={view} />
         <DescendantsSection view={view} />
         <LineageSection view={view} />
+        <ConflictsSection view={view} />
 
         {isEmpty ? (
           <p className="font-display text-center text-sm text-muted-foreground">

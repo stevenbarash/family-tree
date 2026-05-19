@@ -12,7 +12,7 @@ interface Props {
  */
 export function RelationshipStrip({ relationship }: Props) {
   return (
-    <p className="mt-3 text-base italic text-muted-foreground/90">
+    <p className="mt-3 text-base font-medium text-foreground/90">
       Your {relationship.label}.
     </p>
   );

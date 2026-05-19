@@ -157,13 +157,9 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
           <RelationshipStrip relationship={relationship} />
         ) : null}
         {!isRestricted && page.meta.categories.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {page.meta.categories.map(category => (
-              <span key={category} className="rounded-full border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                {category}
-              </span>
-            ))}
-          </div>
+          <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">
+            categories: {page.meta.categories.join(' · ')}
+          </p>
         ) : null}
         {showStrip ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">

@@ -90,8 +90,6 @@ export default async function HomePage({
           <Link href="/family" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navFamily')}</Link>
           <Link href="/family/tree" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navTree')}</Link>
           <Link href="/search" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navSearch')}</Link>
-          <Link href="/changelog" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navChangelog')}</Link>
-          <Link href="/roadmap" className="font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t('navRoadmap')}</Link>
         </nav>
       </header>
 
@@ -179,6 +177,12 @@ export default async function HomePage({
             {t('browseAllTalkPages', { count: talk.length })}
           </Link>
         ) : null}
+        <Link href="/changelog" className="hover:text-foreground hover:underline">
+          {t('navChangelog')}
+        </Link>
+        <Link href="/roadmap" className="hover:text-foreground hover:underline">
+          {t('navRoadmap')}
+        </Link>
       </footer>
     </main>
   );
