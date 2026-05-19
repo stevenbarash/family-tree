@@ -5,8 +5,8 @@
 > the work shipped since, and the contribution-track design conversation
 > of 2026-05-19.
 
-**Last updated:** 2026-05-19 (restructured around three tracks + infrastructure;
-contribution track defined; parked items consolidated)
+**Last updated:** 2026-05-19 (added P2.17 mobile-friendliness baseline + P2.18
+PWA tier 1 as ✅ shipped; P2.19 PWA tier 2 offline support added as ⏳ ready)
 **Cadence:** revisit at the end of each completed track milestone, or when
 a new review document lands. Status lines are the source of truth — keep
 them honest.
@@ -118,6 +118,9 @@ frontier.
 | ⏳ ready | **P2.10** `<bdi>` sweep on family-tree components for RTL | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
 | ⏳ ready | **P2.11** Hide home-page browse-all footer when `live.length === 0` | XS | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
 | ⏳ ready | **P2.12** `/[locale]/gaps` listing route | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
+| ✅ shipped | **P2.17** Mobile-friendliness baseline | S | Shipped 2026-05-19 (`dcf96a7`). Explicit `viewport` export with `viewport-fit=cover`; `env(safe-area-inset-*)` padding on `<body>` for notched phones; iOS auto-zoom-on-focus suppressed by raising inputs/textarea/select to 16px below the `sm` breakpoint; wide tables (`.changelog-prose`, `.roadmap-prose`, `.wiki-article :where(table, pre)`) become horizontal-scroll containers instead of overflowing the viewport; `/search` page polished — responsive padding, `autoFocus` dropped, `text-base` input with `enterKeyHint="search"`, larger tap targets on filter chips. |
+| ✅ shipped | **P2.18** PWA Tier 1 — installability | S | Shipped 2026-05-19 (`5320ce1`). `app/manifest.ts` (Next 16 file-convention manifest at `/manifest.webmanifest`, `display: standalone`, scope `/`); `app/icon.tsx` + `app/apple-icon.tsx` dynamically render 512/180 PNG icons via `next/og`'s `ImageResponse` (no `sharp`/`imagemagick` dependency); `themeColor` (light + dark media), `appleWebApp` (capable, title), `formatDetection: telephone=no` (stops iOS auto-linking GEDCOM years as `tel:` links); `proxy.ts` matcher excludes `icon\|apple-icon\|manifest` so next-intl doesn't prepend the locale to well-known URLs. Tier 2 (offline support) tracked as P2.19 below. |
+| ⏳ ready | **P2.19** PWA Tier 2 — offline support via service worker | M | New, 2026-05-19. Cache app shell + read-only article HTML so the wiki is browsable on a plane / no-signal Tailscale. Strategy decisions: Serwist (Workbox 7 wrapper, recommended by Next docs) vs. hand-rolled `public/sw.js`; cache strategies per route (stale-while-revalidate for `/[locale]/[slug]`, network-first with offline-fallback for `/api/notes/*`); versioning + dev/prod parity (`updateViaCache: 'none'` for sw, content-hashed shell). Plan sketched at [`2026-05-19-pwa-offline-support.md`](./superpowers/plans/2026-05-19-pwa-offline-support.md). |
 
 ---
 
@@ -231,6 +234,8 @@ it was not on the original plan. Listed for honest accounting (Rule 12).
 | **P2.2** Red-links flow (`wai redlinks`) | (no plan) | Shipped 2026-05-09 in `839a714` |
 | **P2.5** Skip-to-content + alt text on portraits/avatars | (no plan) | Shipped 2026-05-15 |
 | **P2.15** Locale-aware `readTalkBody` (talk-page i18n B.3) | (no plan) | Shipped 2026-05-19 |
+| **P2.17** Mobile-friendliness baseline (viewport, iOS input zoom, table overflow, /search polish) | (no plan) | Shipped 2026-05-19 in `dcf96a7` |
+| **P2.18** PWA Tier 1 — installability (manifest, icons, theme color, apple meta, formatDetection) | (no plan) | Shipped 2026-05-19 in `5320ce1` |
 | **Pedigree F** Chart frontier slots | [plan](./superpowers/plans/2026-05-18-pedigree-frontier-slots.md) | Shipped 2026-05-18 |
 | **GEDCOM 5.5.1 → 7.0.18 upgrade** | [plan](./superpowers/plans/2026-05-17-gedcom-7-upgrade.md) | Foundational for all multilingual and source-criticism work |
 | **Multilingual support — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-17-multilingual-support-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-17-multilingual-support-plan-2-chrome-translations.md) · [3](./superpowers/plans/2026-05-17-multilingual-support-plan-3-translation-pipeline.md) | en/ru/uk/he with RTL Hebrew |

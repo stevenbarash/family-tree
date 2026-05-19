@@ -27,7 +27,7 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ### Added
 
-- **PWA Tier 1: installability + native-feel polish** — followup to the mobile-friendliness pass below. The wiki can now be installed to a phone's home screen and behaves like a standalone app when launched from there.
+- **PWA Tier 1: installability + native-feel polish (closes P2.18)** — followup to the mobile-friendliness pass below (P2.17). The wiki can now be installed to a phone's home screen and behaves like a standalone app when launched from there.
   - **`frontend/app/manifest.ts`** (Next 16 file-convention manifest, served at `/manifest.webmanifest`): name `whoami.wiki`, short_name `whoami`, `display: standalone`, `orientation: portrait`, theme/background `#ffffff`, scope `/`, three icon entries (192/512 PNG + 180 maskable).
   - **`frontend/app/icon.tsx` + `frontend/app/apple-icon.tsx`** dynamically render PWA icons via `next/og`'s `ImageResponse` — a serif "w" on near-black background, sized 512×512 and 180×180 respectively. No PNG-generation tooling required (no `sharp`/`imagemagick` dependency); icons rebuild on theme changes if we ever swap the palette. Verified rasterization in dev — 13.7KB and 3.2KB PNGs.
   - **Root metadata additions** in `frontend/app/[locale]/layout.tsx`:
@@ -46,7 +46,7 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ### Changed
 
-- **Mobile-friendliness pass** — the wiki was usable but not deliberate on phones. Five low-risk fixes across the frontend that take the small-screen experience from "works if you zoom" to "works as-is":
+- **Mobile-friendliness pass (closes P2.17)** — the wiki was usable but not deliberate on phones. Five low-risk fixes across the frontend that take the small-screen experience from "works if you zoom" to "works as-is":
   - **Explicit `viewport` export in `frontend/app/[locale]/layout.tsx`** with `width: device-width`, `initialScale: 1`, `viewportFit: cover`. Next was emitting a default tag, but `viewport-fit=cover` is what unlocks `env(safe-area-inset-*)` on notched iPhones.
   - **Safe-area-inset padding on `<body>`** in `globals.css` so sticky chrome (`/family/tree` header) and the home indicator don't collide with content.
   - **iOS auto-zoom-on-focus suppressed.** Below the `sm` breakpoint (640px), `input[type=text|search|email|url|tel|number|password]`, `textarea`, and `select` get `font-size: 16px` — Safari triggers zoom on any input < 16px, and the search box (`text-sm`), note-author input (`text-xs`), and textarea (`text-sm`) all qualified. Visual hierarchy on desktop unchanged.
