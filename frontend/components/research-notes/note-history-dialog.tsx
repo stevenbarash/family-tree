@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,8 @@ type Fetched =
   | { state: 'loaded'; events: NoteEvent[] };
 
 export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
+  const t = useTranslations('Page.Article.ResearchNotes.History');
+  const locale = useLocale();
   const [fetched, setFetched] = useState<Fetched>({ state: 'loading' });
   // Bumped by Retry to force a refetch without conflating with `fetched`.
   const [nonce, setNonce] = useState(0);
@@ -65,28 +68,43 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Note history</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
         </DialogHeader>
-        {renderBody(fetched, () => setNonce((n) => n + 1))}
+        {renderBody(fetched, () => setNonce((n) => n + 1), t, locale)}
       </DialogContent>
     </Dialog>
   );
 }
 
-function renderBody(fetched: Fetched, retry: () => void): ReactNode {
+function eventLabel(
+  kind: NoteEventKind,
+  t: ReturnType<typeof useTranslations<'Page.Article.ResearchNotes.History'>>,
+): string {
+  if (kind === 'created') return t('eventCreated');
+  if (kind === 'edited') return t('eventEdited');
+  if (kind === 'retracted') return t('eventRetracted');
+  return t('eventRestored');
+}
+
+function renderBody(
+  fetched: Fetched,
+  retry: () => void,
+  t: ReturnType<typeof useTranslations<'Page.Article.ResearchNotes.History'>>,
+  locale: string,
+): ReactNode {
   if (fetched.state === 'loading') {
-    return <p className="text-sm text-muted-foreground">Loading history…</p>;
+    return <p className="text-sm text-muted-foreground">{t('loading')}</p>;
   }
   if (fetched.state === 'error') {
     return (
       <div className="space-y-2">
         <p className="text-sm text-destructive">{fetched.message}</p>
-        <Button size="sm" variant="outline" onClick={retry}>Retry</Button>
+        <Button size="sm" variant="outline" onClick={retry}>{t('retry')}</Button>
       </div>
     );
   }
   if (fetched.events.length === 0) {
-    return <p className="text-sm text-muted-foreground">No history for this note.</p>;
+    return <p className="text-sm text-muted-foreground">{t('empty')}</p>;
   }
   return (
     <ol className="space-y-3">
@@ -94,19 +112,19 @@ function renderBody(fetched: Fetched, retry: () => void): ReactNode {
         <li key={i} className="border-s-2 border-border ps-3">
           <div className="flex items-baseline gap-2 text-sm">
             <span className="font-display text-[0.7rem] uppercase tracking-[0.18em] text-muted-foreground">
-              {e.kind}
+              {eventLabel(e.kind, t)}
             </span>
             <span className="text-foreground" title={e.at ?? undefined}>
-              {e.at ? formatRelative(e.at) : 'unknown time'}
+              {e.at ? formatRelative(e.at, locale) : t('unknownTime')}
             </span>
             <span className="text-muted-foreground">
-              {e.by ? `by ${e.by}` : <em>(unknown)</em>}
+              {e.by ? t('byAuthor', { by: e.by }) : <em>{t('unknownAuthor')}</em>}
             </span>
           </div>
           {e.kind === 'edited' && typeof e.prevText === 'string' ? (
             <details className="mt-1">
               <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                Show snapshot
+                {t('showSnapshot')}
               </summary>
               <pre className="mt-1 whitespace-pre-wrap rounded-sm bg-muted/50 p-2 font-mono text-xs">
                 {e.prevText}

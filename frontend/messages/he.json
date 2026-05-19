@@ -120,7 +120,50 @@
       "ResearchNotes": {
         "heading": "הערות מחקר",
         "help": "נרשמו על אדם זה; יוטמעו במאמר בהפעלה הבאה של העורך.",
-        "empty": "אין הערות עדיין. הראשונה שתשמור תיצור את הסעיף ב-{slug}."
+        "empty": "אין הערות עדיין. הראשונה שתשמור תיצור את הסעיף ב-{slug}.",
+        "Item": {
+          "byAuthor": "מאת {by}",
+          "agentSuffix": " (סוכן)",
+          "editedPrefix": "נערך",
+          "editedBy": " על-ידי {by}",
+          "retractedBy": "נמשך על-ידי {by}",
+          "editAria": "ערוך הערה",
+          "retractAria": "משוך הערה",
+          "restoreAria": "שחזר הערה",
+          "historyAria": "הצג היסטוריית הערה",
+          "confirmRetract": "למשוך הערה זו? ניתן לשחזר מהפאנל."
+        },
+        "Add": {
+          "authorPlaceholder": "השם שלך (לא חובה, נשמר)",
+          "authorAria": "השם שלך",
+          "bodyPlaceholder": "מה למדת? (Cmd/Ctrl+Enter כדי לשמור)",
+          "emptyError": "כתוב משהו תחילה",
+          "authorError": "השם: אותיות, ספרות, נקודה, מקף, קו תחתון בלבד",
+          "filedHint": "יישמר תחת תאריך היום ב-{slug}.talk",
+          "submit": "הוסף הערה",
+          "saving": "שומר…"
+        },
+        "Edit": {
+          "help": "Cmd/Ctrl+Enter לשמירה · Esc לביטול",
+          "emptyError": "כתוב משהו תחילה",
+          "cancel": "ביטול",
+          "save": "שמור",
+          "saving": "שומר…"
+        },
+        "History": {
+          "title": "היסטוריית הערה",
+          "loading": "טוען היסטוריה…",
+          "retry": "נסה שוב",
+          "empty": "אין היסטוריה להערה זו.",
+          "byAuthor": "מאת {by}",
+          "unknownAuthor": "(לא ידוע)",
+          "unknownTime": "זמן לא ידוע",
+          "showSnapshot": "הצג תצלום",
+          "eventCreated": "נוצר",
+          "eventEdited": "נערך",
+          "eventRetracted": "נמשך",
+          "eventRestored": "שוחזר"
+        }
       },
       "SchemaError": {
         "title": "הקוד מיושן",

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2, Undo2 } from 'lucide-react';
 import { EditNoteForm } from './edit-note-form';
@@ -42,12 +43,14 @@ export function NoteItem({ slug, note }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const t = useTranslations('Page.Article.ResearchNotes.Item');
+  const locale = useLocale();
 
   const isDeleted = !!note.deletedAt;
   const canMutate = !note.isLegacy && !isDeleted;
 
   const onDelete = () => {
-    if (!confirm('Retract this note? Reversible from the panel.')) return;
+    if (!confirm(t('confirmRetract'))) return;
     setError(null);
     startTransition(async () => {
       const res = await fetch(`/api/notes/${encodeURIComponent(slug)}/${note.id}`, {
@@ -98,9 +101,9 @@ export function NoteItem({ slug, note }: Props) {
           </div>
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <span>
-              by {note.by}
-              {note.kind === 'agent' ? ' (agent)' : ''}
-              {note.createdAt ? ` · ${formatRelative(note.createdAt)}` : ''}
+              {t('byAuthor', { by: note.by })}
+              {note.kind === 'agent' ? t('agentSuffix') : ''}
+              {note.createdAt ? ` · ${formatRelative(note.createdAt, locale)}` : ''}
             </span>
             {note.editedAt ? (
               <span>
@@ -109,28 +112,28 @@ export function NoteItem({ slug, note }: Props) {
                   type="button"
                   onClick={() => { setHistoryEverOpened(true); setHistoryOpen(true); }}
                   className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label="Show note history"
+                  aria-label={t('historyAria')}
                 >
-                  edited {formatRelative(note.editedAt)}{note.editedBy ? ` by ${note.editedBy}` : ''}
+                  {t('editedPrefix')} {formatRelative(note.editedAt, locale)}{note.editedBy ? t('editedBy', { by: note.editedBy }) : ''}
                 </button>
               </span>
             ) : null}
             {isDeleted ? (
-              <span>· retracted by {note.deletedBy} · {formatRelative(note.deletedAt)}</span>
+              <span>· {t('retractedBy', { by: note.deletedBy ?? '' })} · {formatRelative(note.deletedAt, locale)}</span>
             ) : null}
             <span className="ms-auto flex gap-1 opacity-0 transition-opacity group-hover/note:opacity-100">
               {canMutate ? (
                 <>
-                  <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={() => setEditing(true)} aria-label="Edit note">
+                  <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={() => setEditing(true)} aria-label={t('editAria')}>
                     <Pencil className="size-3" />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={onDelete} aria-label="Retract note">
+                  <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={onDelete} aria-label={t('retractAria')}>
                     <Trash2 className="size-3" />
                   </Button>
                 </>
               ) : null}
               {isDeleted ? (
-                <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={onRestore} aria-label="Restore note">
+                <Button size="sm" variant="ghost" className="h-6 px-1.5" disabled={isPending} onClick={onRestore} aria-label={t('restoreAria')}>
                   <Undo2 className="size-3" />
                 </Button>
               ) : null}

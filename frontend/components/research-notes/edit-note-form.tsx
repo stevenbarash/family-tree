@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function EditNoteForm({ slug, id, initialText, onCancel, onSaved }: Props) {
+  const t = useTranslations('Page.Article.ResearchNotes.Edit');
   const [text, setText] = useState(initialText);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -20,7 +22,7 @@ export function EditNoteForm({ slug, id, initialText, onCancel, onSaved }: Props
   const submit = () => {
     const body = text.trim();
     if (body === '') {
-      setError('write something first');
+      setError(t('emptyError'));
       return;
     }
     setError(null);
@@ -60,11 +62,11 @@ export function EditNoteForm({ slug, id, initialText, onCancel, onSaved }: Props
       />
       <div className="flex items-center justify-between gap-3">
         <span className={error ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
-          {error ?? 'Cmd/Ctrl+Enter to save · Esc to cancel'}
+          {error ?? t('help')}
         </span>
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
-          <Button size="sm" onClick={submit} disabled={isPending}>{isPending ? 'Saving…' : 'Save'}</Button>
+          <Button size="sm" variant="ghost" onClick={onCancel} disabled={isPending}>{t('cancel')}</Button>
+          <Button size="sm" onClick={submit} disabled={isPending}>{isPending ? t('saving') : t('save')}</Button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function AddNoteForm({ slug }: Props) {
+  const t = useTranslations('Page.Article.ResearchNotes.Add');
   const [text, setText] = useState('');
   // The input is server-rendered as empty (no `window` on the server) and
   // hydrated from localStorage post-mount. Hydrating in `useState` directly
@@ -37,14 +39,14 @@ export function AddNoteForm({ slug }: Props) {
   const submit = () => {
     const note = text.trim();
     if (!note) {
-      setError('write something first');
+      setError(t('emptyError'));
       return;
     }
     setError(null);
     const trimmedAuthor = author.trim();
     const validAuthor = trimmedAuthor && /^[A-Za-z0-9._-]+$/.test(trimmedAuthor);
     if (trimmedAuthor && !validAuthor) {
-      setError('your name: letters, numbers, dot, dash, underscore only');
+      setError(t('authorError'));
       return;
     }
     startTransition(async () => {
@@ -81,13 +83,13 @@ export function AddNoteForm({ slug }: Props) {
         value={author}
         onChange={(e) => setAuthor(e.target.value)}
         onBlur={onAuthorBlur}
-        placeholder="Your name (optional, remembered)"
+        placeholder={t('authorPlaceholder')}
         className="h-8 rounded-md border bg-transparent px-2 text-xs"
         disabled={isSubmitting}
-        aria-label="Your name"
+        aria-label={t('authorAria')}
       />
       <Textarea
-        placeholder="What did you learn? (Cmd/Ctrl+Enter to save)"
+        placeholder={t('bodyPlaceholder')}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKey}
@@ -97,10 +99,10 @@ export function AddNoteForm({ slug }: Props) {
       />
       <div className="flex items-center justify-between gap-3">
         <span className={error ? 'text-xs text-destructive' : 'text-xs text-muted-foreground'}>
-          {error ?? `Will be filed under today's date in ${slug}.talk`}
+          {error ?? t('filedHint', { slug })}
         </span>
         <Button onClick={submit} disabled={isSubmitting} size="sm">
-          {isSubmitting ? 'Saving…' : 'Add note'}
+          {isSubmitting ? t('saving') : t('submit')}
         </Button>
       </div>
     </div>

@@ -120,7 +120,50 @@
       "ResearchNotes": {
         "heading": "Research notes",
         "help": "Captured on this person; folded into the article when the editor next runs.",
-        "empty": "No notes yet. The first one you save creates the section in {slug}."
+        "empty": "No notes yet. The first one you save creates the section in {slug}.",
+        "Item": {
+          "byAuthor": "by {by}",
+          "agentSuffix": " (agent)",
+          "editedPrefix": "edited",
+          "editedBy": " by {by}",
+          "retractedBy": "retracted by {by}",
+          "editAria": "Edit note",
+          "retractAria": "Retract note",
+          "restoreAria": "Restore note",
+          "historyAria": "Show note history",
+          "confirmRetract": "Retract this note? Reversible from the panel."
+        },
+        "Add": {
+          "authorPlaceholder": "Your name (optional, remembered)",
+          "authorAria": "Your name",
+          "bodyPlaceholder": "What did you learn? (Cmd/Ctrl+Enter to save)",
+          "emptyError": "write something first",
+          "authorError": "your name: letters, numbers, dot, dash, underscore only",
+          "filedHint": "Will be filed under today's date in {slug}.talk",
+          "submit": "Add note",
+          "saving": "Saving…"
+        },
+        "Edit": {
+          "help": "Cmd/Ctrl+Enter to save · Esc to cancel",
+          "emptyError": "write something first",
+          "cancel": "Cancel",
+          "save": "Save",
+          "saving": "Saving…"
+        },
+        "History": {
+          "title": "Note history",
+          "loading": "Loading history…",
+          "retry": "Retry",
+          "empty": "No history for this note.",
+          "byAuthor": "by {by}",
+          "unknownAuthor": "(unknown)",
+          "unknownTime": "unknown time",
+          "showSnapshot": "Show snapshot",
+          "eventCreated": "created",
+          "eventEdited": "edited",
+          "eventRetracted": "retracted",
+          "eventRestored": "restored"
+        }
       },
       "SchemaError": {
         "title": "Code is out of date",
