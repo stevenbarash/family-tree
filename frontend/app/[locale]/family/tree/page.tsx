@@ -90,7 +90,7 @@ export default async function FamilyTreePage({ params, searchParams }: Props) {
   const notes = notesSlug
     ? await (async () => {
         const [talkBody, { index }] = await Promise.all([
-          readTalkBody(toTalkSlug(notesSlug)),
+          readTalkBody(toTalkSlug(notesSlug), locale),
           getCachedList(),
         ]);
         return buildNotesView(talkBody, index);

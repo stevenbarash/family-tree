@@ -519,10 +519,35 @@ export async function restoreNoteOnDisk(
  * Read the talk-page body, returning '' when no talk page exists.
  * Used by the article and tree pages so they can fire the read in
  * parallel with the rest of their data fetching.
+ *
+ * Locale-aware (Phase B.3): when `locale` is non-`en`, tries
+ * `pages/{locale}/<talkSlug>.md` first and falls back to the EN
+ * canonical when the localized file is missing. Callers on
+ * `/<locale>/<slug>` routes pass their `locale` so readers on the
+ * Russian wiki see Russian editorial threads (once those translations
+ * have been produced by `wai i18n sync` from the B.1/B.2 pipeline).
  */
-export async function readTalkBody(talkSlug: string): Promise<string> {
+export async function readTalkBody(talkSlug: string, locale: string = 'en'): Promise<string> {
+  return readTalkBodyWithStore(getPageStore(), talkSlug, locale);
+}
+
+/** DI-friendly internal: same logic, accepts the store explicitly so
+ *  tests can pass a tmpdir-backed PageStore without env-var setup. */
+export async function readTalkBodyWithStore(
+  store: PageStore,
+  talkSlug: string,
+  locale: string,
+): Promise<string> {
+  if (locale && locale !== 'en') {
+    try {
+      return (await store.read(talkSlug, { locale })).body;
+    } catch (err) {
+      if (!(err instanceof PageNotFoundError)) throw err;
+      // Fall through to the EN canonical.
+    }
+  }
   try {
-    return (await getPageStore().read(talkSlug)).body;
+    return (await store.read(talkSlug)).body;
   } catch (err) {
     if (err instanceof PageNotFoundError) return '';
     throw err;

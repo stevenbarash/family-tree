@@ -67,7 +67,7 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   const derivedPromise = page.meta.gedcom?.record
     ? loadDerivedRecord(WHOAMI_ROOT, page.meta.gedcom.record)
     : Promise.resolve(null);
-  const talkBodyPromise = isTalkSlug(slug) ? Promise.resolve('') : readTalkBody(toTalkSlug(slug));
+  const talkBodyPromise = isTalkSlug(slug) ? Promise.resolve('') : readTalkBody(toTalkSlug(slug), locale);
   const snapshotsPromise = page.meta.gedcom?.snapshot
     ? getCachedSnapshots(GENEALOGY_DIR)
     : Promise.resolve([]);
