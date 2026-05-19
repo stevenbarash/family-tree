@@ -151,6 +151,17 @@
   html {
     @apply font-sans;
     scroll-padding-top: 4rem;
+    /* Prevent iOS landscape from inflating font sizes on rotate. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Drop the default blue tap-flash on Android Chrome — focus-visible
+     rings give better feedback for keyboard users; tap feedback is
+     handled by hover/active states on each element. */
+  a, button, summary, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   /* Safe-area-inset padding for notched devices (iPhone X+, etc.).

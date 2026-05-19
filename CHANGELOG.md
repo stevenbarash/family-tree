@@ -25,6 +25,25 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 - **`/family` page deprecated and removed** — the paternal/maternal line summary view is redundant now that `/family/tree` renders the full interactive browser (lineage, cohort, descendants, places, timeline). Deleted `frontend/app/[locale]/family/page.tsx`, dropped `getFamily()` + `FamilyView` + `AncestorView` from `frontend/lib/family.ts`, and removed the `Page.Family` translation namespace from all four locales (~21 keys × 4). Dangling-link fixes: the homepage `Family →` nav (was the second link in the chrome nav) is gone, and the `/family/tree` sticky-header back-link retargets from `/family` → `/` with the renamed `Page.FamilyTree.navIndex` key (translations reused from the deleted `Page.Family.navIndex`).
 
+### Added
+
+- **PWA Tier 1: installability + native-feel polish** — followup to the mobile-friendliness pass below. The wiki can now be installed to a phone's home screen and behaves like a standalone app when launched from there.
+  - **`frontend/app/manifest.ts`** (Next 16 file-convention manifest, served at `/manifest.webmanifest`): name `whoami.wiki`, short_name `whoami`, `display: standalone`, `orientation: portrait`, theme/background `#ffffff`, scope `/`, three icon entries (192/512 PNG + 180 maskable).
+  - **`frontend/app/icon.tsx` + `frontend/app/apple-icon.tsx`** dynamically render PWA icons via `next/og`'s `ImageResponse` — a serif "w" on near-black background, sized 512×512 and 180×180 respectively. No PNG-generation tooling required (no `sharp`/`imagemagick` dependency); icons rebuild on theme changes if we ever swap the palette. Verified rasterization in dev — 13.7KB and 3.2KB PNGs.
+  - **Root metadata additions** in `frontend/app/[locale]/layout.tsx`:
+    - `themeColor` with light (`#ffffff`) + dark (`#0a0a0a`) media queries so Android Chrome's status bar matches the active scheme
+    - `appleWebApp` (capable, title `whoami.wiki`, statusBarStyle `default`) so iOS Add-to-Home-Screen produces a clean standalone PWA
+    - `applicationName` (Next emits both `application-name` and `mobile-web-app-capable`)
+    - **`formatDetection: { telephone: false, date: false, address: false, email: false }`** — critical for a genealogy app. iOS Safari otherwise auto-links GEDCOM-shaped date strings (`1903`, `1903–1968`) as `tel:` links, creating mis-tap targets all over lineage views.
+  - **Proxy matcher exclusion** in `frontend/proxy.ts` — the next-intl middleware was prepending `/en` to `/icon` and `/apple-icon` (no `.` in the path so it didn't match the existing dot-exclusion). Added `icon|apple-icon|manifest` to the non-match group so PWA file-convention URLs resolve at the root. `/manifest.webmanifest` was already bypassing via the `.*\..*` clause.
+  - **CSS polish** in `globals.css`:
+    - `-webkit-text-size-adjust: 100%` on `html` (prevent iOS landscape font inflation on rotate)
+    - `-webkit-tap-highlight-color: transparent` + `touch-action: manipulation` on `a, button, summary, [role="button"]` (drops the default Android blue tap-flash and the legacy 300ms tap delay on older mobile WebViews)
+
+  **Out of scope, deferred:** service worker / offline support (Tier 2 — needs a separate plan, Workbox 7 + Serwist + caching strategy decisions for the article-read vs. notes-write split), Web Push notifications (Tier 3 — no use case for a private family wiki).
+
+  Verified: `/manifest.webmanifest` returns 200 with `application/manifest+json`; `/icon` returns a 512×512 RGBA PNG; `/apple-icon` returns a 180×180 RGBA PNG; rendered HTML carries all expected `<meta>` and `<link rel>` tags. Frontend typecheck clean; suite 95/95.
+
 ### Changed
 
 - **Mobile-friendliness pass** — the wiki was usable but not deliberate on phones. Five low-risk fixes across the frontend that take the small-screen experience from "works if you zoom" to "works as-is":

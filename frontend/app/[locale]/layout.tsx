@@ -30,12 +30,30 @@ export function generateStaticParams() {
 export const metadata: Metadata = {
   title: "Whoami Wiki",
   description: "Family-shared genealogy wiki",
+  applicationName: "whoami.wiki",
+  appleWebApp: {
+    capable: true,
+    title: "whoami.wiki",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    // GEDCOM dates ("1903", phone-shaped record IDs) get auto-linked to
+    // tel: on iOS otherwise — annoying tap targets in lineage views.
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default async function LocaleLayout({
