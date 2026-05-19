@@ -465,6 +465,134 @@ test('wai i18n sync: passes slug + article-title translation to talkTranslator',
   await rm(root, { recursive: true });
 });
 
+async function setupForTalkOnly(root: string, slug: string, talkBody: string): Promise<void> {
+  // EN canonical (article + talk) + already-translated ru article + audit.
+  await setupArticleAndTalk(root, slug, talkBody);
+  await mkdir(join(root, 'pages', 'ru'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'ru', `${slug}.md`),
+    `---\nschemaVersion: 1\ntitle: "[ru] ${slug}"\nauthor: Claude Opus 4.7\nlang: ru\ntranslation_of: ${slug}\ncanonical_sha: abc\ntranslated_at: '2026-05-18'\n---\nPrior translated article body\n`,
+  );
+  await writeFile(
+    join(root, 'pages', 'ru', `${slug}.translation.talk.md`),
+    `---\ntype: translation-talk\nauthor: Claude Opus 4.7\ntranslation_of: ${slug}\nlang: ru\ncanonical_sha_when_logged: abc\nsynced_at: '2026-05-18'\n---\n\n# Translation notes — ru (Prior)\n\n## Unresolved\n\n- [ ] **[idiom]** Canonical: ...prior article-translation entry...\n\n## Resolved\n`,
+  );
+}
+
+test('wai i18n sync --talk-only: writes only the talk page, leaves article translation untouched', async () => {
+  const root = join(tmpdir(), `whoami-talk-only-basic-${Date.now()}`);
+  await setupForTalkOnly(root, 'abby', '## Research notes\n\nA fact.\n');
+
+  // Snapshot article translation before the run to assert non-mutation.
+  const articleBefore = await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+
+  let stdout = '';
+  let articleTranslatorCalled = false;
+  const articleTranslator: Translator = async (req) => {
+    articleTranslatorCalled = true;
+    return { body: req.canonicalBody, talk: '## Unresolved\n\n## Resolved\n', titleTranslation: 'should-not-be-used' };
+  };
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: articleTranslator,
+    talkTranslator: stubTalkTranslator,
+    talkOnly: true,
+    write: (s) => { stdout += s; },
+  });
+
+  // Article translator was NOT called
+  assert.equal(articleTranslatorCalled, false);
+  // Article translation file unchanged
+  const articleAfter = await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+  assert.equal(articleAfter, articleBefore);
+  // Talk page WAS written
+  const talkPath = join(root, 'pages', 'ru', 'abby.talk.md');
+  const talk = await readFile(talkPath, 'utf8');
+  assert.match(talk, /^title: "Talk: \[ru\] abby"$/m);
+  assert.match(stdout, /wrote pages\/ru\/abby\.talk\.md/);
+  assert.match(stdout, /talk-only/);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync --talk-only: refuses when article translation missing', async () => {
+  const root = join(tmpdir(), `whoami-talk-only-noart-${Date.now()}`);
+  await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');
+  // Note: did NOT create pages/ru/abby.md
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator,
+    talkTranslator: stubTalkTranslator,
+    talkOnly: true,
+    write: (s) => { stdout += s; },
+  });
+
+  assert.match(stdout, /--talk-only refuses/);
+  await assert.rejects(() => readFile(join(root, 'pages', 'ru', 'abby.talk.md'), 'utf8'), /ENOENT/);
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync --talk-only: replaces prior ### Talk-page translation subsection (no duplicates)', async () => {
+  const root = join(tmpdir(), `whoami-talk-only-replace-${Date.now()}`);
+  await setupForTalkOnly(root, 'abby', '## Some open question\n::open\n\nbody\n');
+
+  // Manually seed the audit file with a prior talk-page subsection (simulating
+  // a second --talk-only run after an earlier one).
+  await writeFile(
+    join(root, 'pages', 'ru', 'abby.translation.talk.md'),
+    [
+      `---`,
+      `type: translation-talk`,
+      `author: Claude Opus 4.7`,
+      `translation_of: abby`,
+      `lang: ru`,
+      `canonical_sha_when_logged: abc`,
+      `synced_at: '2026-05-18'`,
+      `---`,
+      ``,
+      `# Translation notes — ru (Prior)`,
+      ``,
+      `## Unresolved`,
+      ``,
+      `- [ ] **[idiom]** Prior article entry`,
+      ``,
+      `### Talk-page translation`,
+      ``,
+      `- [ ] **[stale]** This was from the previous --talk-only run and should be replaced`,
+      ``,
+      `## Resolved`,
+      ``,
+    ].join('\n'),
+  );
+
+  const richTalkTranslator: TalkTranslator = async () => ({
+    body: '## Open thread\n::open\n\nbody\n',
+    titlePrefix: 'Talk',
+    auditEntries: '- [ ] **[fresh]** Newly produced entry',
+  });
+  await runI18nSync({
+    rootDir: root, slug: 'abby', locale: 'ru',
+    translator: stubTranslator, talkTranslator: richTalkTranslator,
+    talkOnly: true, write: () => {},
+  });
+
+  const audit = await readFile(join(root, 'pages', 'ru', 'abby.translation.talk.md'), 'utf8');
+  // Prior article-translation entry preserved
+  assert.match(audit, /Prior article entry/);
+  // Fresh entry present
+  assert.match(audit, /Newly produced entry/);
+  // Stale prior talk-page entry REMOVED (no duplicates)
+  assert.doesNotMatch(audit, /from the previous --talk-only run/);
+  // Only ONE "### Talk-page translation" heading
+  const headings = audit.match(/^### Talk-page translation/gm) ?? [];
+  assert.equal(headings.length, 1);
+
+  await rm(root, { recursive: true });
+});
+
 test('wai i18n sync: folds talk-page audit entries inside ## Unresolved (before ## Resolved)', async () => {
   const root = join(tmpdir(), `whoami-i18n-audit-fold-${Date.now()}`);
   await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');

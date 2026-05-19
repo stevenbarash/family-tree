@@ -136,6 +136,14 @@ export interface RunI18nSyncOpts {
    *  talkTranslator is provided and the EN talk exists. Mirrors the
    *  CLI's `--no-talk` flag. */
   includeTalk?: boolean;
+  /** When true, skip the article translator entirely and translate only
+   *  the talk page (using the existing article translation for term
+   *  consistency). Refuses if `pages/{locale}/<slug>.md` doesn't yet
+   *  exist — there's no article context to anchor the talk translation
+   *  against. Mirrors the CLI's `--talk-only` flag; the bulk-backfill
+   *  pathway uses this to avoid re-translating 181 articles per locale
+   *  whose translations are already current. */
+  talkOnly?: boolean;
   write: (s: string) => void;
 }
 
@@ -153,6 +161,14 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
   if (!existsSync(canonicalPath)) {
     opts.write(`canonical not found: pages/en/${opts.slug}.md\n`);
     return;
+  }
+
+  // Talk-only branch: skip the article translator; reuse the existing
+  // article translation as anchor context for the talk translator;
+  // write only the localized talk page + update the audit file's
+  // ### Talk-page translation subsection in place.
+  if (opts.talkOnly) {
+    return runTalkOnly(opts, canonicalPath);
   }
 
   const canonicalRaw = await readFile(canonicalPath, 'utf8');
@@ -354,6 +370,116 @@ ${articleTalk}`;
  *  a substring (e.g. composing a Talk-page title). */
 function stripTitleQuotes(t: string): string {
   return t.trim().replace(/^["']|["']$/g, '');
+}
+
+/**
+ * Talk-only sync path. Reuses the existing article translation for
+ * anchor context (title + body) and runs only the talk translator.
+ * Used by the P2.16 bulk-backfill where the 181 existing article
+ * translations per locale are current and re-translating would burn
+ * money for ~no benefit.
+ *
+ * Refusals (emit to `write`, return — these are user-correctable):
+ *   - `talkTranslator` not provided (programmer error / agent path off)
+ *   - `pages/{locale}/<slug>.md` missing (no article translation to anchor)
+ *   - `pages/en/<slug>.talk.md` missing (nothing to translate)
+ */
+async function runTalkOnly(opts: RunI18nSyncOpts, canonicalPath: string): Promise<void> {
+  if (!opts.talkTranslator) {
+    opts.write(`--talk-only requires a talk translator; aborting\n`);
+    return;
+  }
+  const existingArticlePath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.md`);
+  if (!existsSync(existingArticlePath)) {
+    opts.write(`--talk-only refuses: pages/${opts.locale}/${opts.slug}.md missing — run a full sync first to create the article translation\n`);
+    return;
+  }
+  const enTalkPath = join(opts.rootDir, 'pages', 'en', `${opts.slug}.talk.md`);
+  if (!existsSync(enTalkPath)) {
+    opts.write(`--talk-only: no EN talk page at pages/en/${opts.slug}.talk.md; nothing to translate\n`);
+    return;
+  }
+
+  // Read existing article translation for title + body anchor context.
+  const articleRaw = await readFile(existingArticlePath, 'utf8');
+  const articleTitleMatch = articleRaw.match(/^title:\s*(.+?)\s*$/m);
+  const articleTitle = articleTitleMatch ? stripTitleQuotes(articleTitleMatch[1]!) : opts.slug;
+  const articleBody = stripFrontmatter(articleRaw);
+
+  // Read EN talk + (optionally) existing localized talk for incremental re-sync.
+  const enTalkRaw = await readFile(enTalkPath, 'utf8');
+  const enTalkBody = stripFrontmatter(enTalkRaw);
+  const enTalkSha = execSync(
+    `git -C "${opts.rootDir}" log -1 --format=%H -- pages/en/${opts.slug}.talk.md`,
+    { encoding: 'utf8' },
+  ).trim();
+  const localizedTalkPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.talk.md`);
+  const existingTalkTranslation = existsSync(localizedTalkPath)
+    ? await readFile(localizedTalkPath, 'utf8')
+    : undefined;
+
+  opts.write(`translating ${opts.slug}.talk -> ${opts.locale} (talk-only)...\n`);
+  const talkResponse = await opts.talkTranslator({
+    slug: opts.slug,
+    canonicalTalkBody: enTalkBody,
+    canonicalTalkMeta: {},
+    locale: opts.locale as Locale,
+    articleTitleTranslation: articleTitle,
+    articleTranslatedBody: articleBody,
+    existingTalkTranslation,
+  });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const authorModel = process.env.WAI_AUTHOR_MODEL ?? 'Claude Opus 4.7';
+  const openCount = parseTalkThreads(talkResponse.body).filter(t => t.marker === 'open').length;
+  const categories = openCount > 0 ? '[Open editorial questions]' : '[]';
+  const localizedTalkTitle = `"${talkResponse.titlePrefix}: ${articleTitle}"`;
+
+  const talkPageFrontmatter = `---
+schemaVersion: 1
+title: ${localizedTalkTitle}
+author: ${authorModel}
+type: meta
+aliases: []
+categories: ${categories}
+created: '${today}'
+lang: ${opts.locale}
+translation_of: ${opts.slug}
+canonical_sha: ${enTalkSha}
+translated_at: '${today}'
+---
+`;
+  await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
+  await writeFile(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
+  opts.write(`wrote pages/${opts.locale}/${opts.slug}.talk.md\n`);
+
+  // Update the audit file's ### Talk-page translation subsection in
+  // place. If a prior subsection exists from a previous run, strip it
+  // first so we don't accumulate duplicates.
+  const auditPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.translation.talk.md`);
+  if (talkResponse.auditEntries.trim() && existsSync(auditPath)) {
+    const auditRaw = await readFile(auditPath, 'utf8');
+    const stripped = stripExistingTalkSection(auditRaw);
+    const newSection = `\n### Talk-page translation\n\n${talkResponse.auditEntries.trim()}\n`;
+    const updated = mergeIntoUnresolved(stripped, newSection);
+    await writeFile(auditPath, updated);
+    opts.write(`updated pages/${opts.locale}/${opts.slug}.translation.talk.md (talk-page audit)\n`);
+  }
+  // Don't suppress useful warnings: when there ARE talk entries but no
+  // audit file exists, surface it. (Practical: --talk-only is meant to
+  // run after a full sync, so the audit file should always exist; if it
+  // doesn't, something's off and the entries would otherwise be lost.)
+  else if (talkResponse.auditEntries.trim() && !existsSync(auditPath)) {
+    opts.write(`warning: talk audit entries produced but no audit file at pages/${opts.locale}/${opts.slug}.translation.talk.md — entries not persisted\n`);
+  }
+}
+
+/** Strip any prior `### Talk-page translation` subsection from a
+ *  translation.talk.md body so the merge-in step doesn't accumulate
+ *  duplicates across re-syncs. Removes from the subsection heading
+ *  through to the next `## ` or `### ` heading (or end of file). */
+function stripExistingTalkSection(audit: string): string {
+  return audit.replace(/\n### Talk-page translation\n[\s\S]*?(?=\n##\s|\n###\s|$)/, '');
 }
 
 /** Insert `section` at the end of the `## Unresolved` block of `talk`,

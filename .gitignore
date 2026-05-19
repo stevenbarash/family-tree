@@ -8,3 +8,4 @@ dist/
 .superpowers/
 .claude/settings.local.json
 web/
+tools/backfill-talk-i18n.log

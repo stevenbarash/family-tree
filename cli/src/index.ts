@@ -134,6 +134,12 @@ Quality:
                               harness; for tests / dry runs).
         [--no-talk]             Skip talk-page translation even when EN talk
                               exists. Article translation still runs.
+        [--talk-only]           Skip article translation; translate ONLY the
+                              talk page. Requires an existing article
+                              translation at pages/<locale>/<slug>.md (the
+                              talk translator reads it for term-consistency
+                              context). Useful for bulk-backfill of talk
+                              pages against current article translations.
   grep-claims <phrase>        Find every occurrence of a phrase across pages,
                               talk pages, and source transcripts. Use as the
                               first step of any factual correction so you can
@@ -497,7 +503,7 @@ async function main(): Promise<number> {
           const slug = args.positional[1];
           const locale = args.positional[2];
           if (!slug || !locale) {
-            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub] [--no-talk]\n');
+            process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub] [--no-talk] [--talk-only]\n');
             return 2;
           }
           // Default: the real agent translator invokes the harness
@@ -521,6 +527,7 @@ async function main(): Promise<number> {
             translator,
             talkTranslator,
             includeTalk: !args.flags['no-talk'],
+            talkOnly: !!args.flags['talk-only'],
             write,
           });
           return 0;
