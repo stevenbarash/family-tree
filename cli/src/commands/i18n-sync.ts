@@ -312,12 +312,20 @@ translated_at: '${today}'
     await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
     await writeFile(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
 
-    // Fold the talk-page translation audit into the single .translation.talk.md.
+    // Fold the talk-page translation audit into the single
+    // .translation.talk.md. The entries are checkbox-style unresolved
+    // decisions semantically equivalent to the article's `## Unresolved`
+    // items, so they belong INSIDE that section — appending after the
+    // entire response.talk string would land them under `## Resolved`,
+    // which is for human-confirmed decisions, not waiting-for-review.
     talkAuditSection = talkResponse.auditEntries.trim()
       ? `\n### Talk-page translation\n\n${talkResponse.auditEntries.trim()}\n`
       : '';
   }
 
+  const articleTalk = talkAuditSection
+    ? mergeIntoUnresolved(response.talk, talkAuditSection)
+    : response.talk;
   const talkFile = `---
 type: translation-talk
 author: ${authorModel}
@@ -329,7 +337,7 @@ synced_at: '${today}'
 
 # Translation notes — ${opts.locale} (${response.titleTranslation})
 
-${response.talk}${talkAuditSection}`;
+${articleTalk}`;
 
   await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
   await writeFile(existingTranslationPath, translationFile);
@@ -346,6 +354,20 @@ ${response.talk}${talkAuditSection}`;
  *  a substring (e.g. composing a Talk-page title). */
 function stripTitleQuotes(t: string): string {
   return t.trim().replace(/^["']|["']$/g, '');
+}
+
+/** Insert `section` at the end of the `## Unresolved` block of `talk`,
+ *  just before the next `## ` heading (typically `## Resolved`). When
+ *  `## Unresolved` is missing, appends `section` to the end as a
+ *  last-resort fallback so entries never get silently dropped. */
+function mergeIntoUnresolved(talk: string, section: string): string {
+  const match = talk.match(/(## Unresolved[\s\S]*?)(\n## [A-Za-z])/);
+  if (match) {
+    return talk.replace(/(## Unresolved[\s\S]*?)(\n## [A-Za-z])/, `$1${section}$2`);
+  }
+  // No "## Resolved" follows — the Unresolved section runs to EOF (or
+  // there is no Unresolved at all). Append.
+  return talk.endsWith('\n') ? `${talk}${section}` : `${talk}\n${section}`;
 }
 
 /** Split off the YAML frontmatter and return only the body, trimmed of

@@ -465,7 +465,7 @@ test('wai i18n sync: passes slug + article-title translation to talkTranslator',
   await rm(root, { recursive: true });
 });
 
-test('wai i18n sync: folds talk-page audit entries into the .translation.talk.md', async () => {
+test('wai i18n sync: folds talk-page audit entries inside ## Unresolved (before ## Resolved)', async () => {
   const root = join(tmpdir(), `whoami-i18n-audit-fold-${Date.now()}`);
   await setupArticleAndTalk(root, 'abby', '## Research notes\n\nA fact.\n');
 
@@ -477,11 +477,18 @@ test('wai i18n sync: folds talk-page audit entries into the .translation.talk.md
   });
 
   const auditContent = await readFile(join(root, 'pages', 'ru', 'abby.translation.talk.md'), 'utf8');
-  // Article translation audit still present
   assert.match(auditContent, /## Unresolved/);
-  // New talk-page audit section folded in
   assert.match(auditContent, /### Talk-page translation/);
   assert.match(auditContent, /Stub talk translator used for ru/);
+  // Placement check: the ### Talk-page translation heading lives
+  // inside the ## Unresolved section, NOT under ## Resolved.
+  // Talk-page entries are unresolved decisions awaiting human review;
+  // landing them under Resolved would mark them as already-confirmed.
+  const unresolvedIdx = auditContent.indexOf('## Unresolved');
+  const resolvedIdx = auditContent.indexOf('## Resolved');
+  const talkSecIdx = auditContent.indexOf('### Talk-page translation');
+  assert.ok(unresolvedIdx >= 0 && resolvedIdx > unresolvedIdx && talkSecIdx > unresolvedIdx);
+  assert.ok(talkSecIdx < resolvedIdx, '### Talk-page translation must appear before ## Resolved (inside Unresolved)');
 
   await rm(root, { recursive: true });
 });
