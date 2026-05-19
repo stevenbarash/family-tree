@@ -27,6 +27,8 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 
 ### Fixed
 
+- **Atomic writes for `wai i18n sync` output files** — `runI18nSync` and `runTalkOnly` were calling `fs.writeFile` directly for the translated article, the `.translation.talk.md` audit, and the localized `.talk.md`. SIGINT mid-write could leave a half-written file that the bulk-backfill's resume logic then skips (file exists → counted as "already done", silent corruption). Now all 4 user-facing writes go through a new `atomicWrite(path, content)` helper that writes to `<path>.tmp` and atomically renames — same pattern the core PageStore has used since v2. Backfill script complementary: a SIGINT/SIGTERM trap logs the slug+locale where the interrupt landed before exit 130, so post-mortem is a one-grep.
+
 - **Harness `defaultSkillsDir()` walks up to find the skills marker** — surfaces when the `wai` binary is installed outside the repo (e.g. `~/.local/bin/wai` byte-copy of the bundle). The legacy path `dirname(argv[1])/../../plugins/whoami/skills` resolves to `~/plugins/whoami/skills` for that install layout, which doesn't exist; talks-only sync was blowing up with `harness: skill not found at /Users/<user>/plugins/whoami/skills/SKILL.md`. New behaviour: try the legacy path, then walk up from `cwd` and from the binary dir (bounded depth 8) looking for any ancestor that contains `plugins/whoami/skills/`. The first match wins; falls back to the legacy literal for unchanged error semantics when nothing matches. Caught by the P2.16 backfill dry-validation.
 
 ### Added

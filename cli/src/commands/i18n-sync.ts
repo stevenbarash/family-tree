@@ -20,7 +20,7 @@
  *   - `pages/en/<slug>.md` missing: nothing to translate from.
  */
 
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, rename, unlink } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
@@ -326,7 +326,7 @@ translated_at: '${today}'
 ---
 `;
     await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
-    await writeFile(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
+    await atomicWrite(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
 
     // Fold the talk-page translation audit into the single
     // .translation.talk.md. The entries are checkbox-style unresolved
@@ -356,8 +356,8 @@ synced_at: '${today}'
 ${articleTalk}`;
 
   await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
-  await writeFile(existingTranslationPath, translationFile);
-  await writeFile(existingTalkPath, talkFile);
+  await atomicWrite(existingTranslationPath, translationFile);
+  await atomicWrite(existingTalkPath, talkFile);
 
   opts.write(`wrote pages/${opts.locale}/${opts.slug}.md\n`);
   opts.write(`wrote pages/${opts.locale}/${opts.slug}.translation.talk.md\n`);
@@ -370,6 +370,28 @@ ${articleTalk}`;
  *  a substring (e.g. composing a Talk-page title). */
 function stripTitleQuotes(t: string): string {
   return t.trim().replace(/^["']|["']$/g, '');
+}
+
+/**
+ * Write `path` atomically: write `path.tmp`, fsync-implicit-via-rename
+ * to `path`. SIGINT-safe: an interrupted run leaves either the old
+ * file intact or `path.tmp` orphaned (next run rewrites it). The
+ * data-repo's PageStore uses the same .tmp+rename pattern; this
+ * orchestrator was bypassing it with raw `writeFile`, which on
+ * interrupt could leave a half-written page that the backfill's
+ * resume logic would then skip as "already done."
+ */
+async function atomicWrite(path: string, content: string): Promise<void> {
+  const tmp = `${path}.tmp`;
+  try {
+    await writeFile(tmp, content);
+    await rename(tmp, path);
+  } catch (err) {
+    // Best-effort cleanup of the tmp if we crashed between writeFile and
+    // rename. Swallow tmp-cleanup errors — the original error matters more.
+    try { await unlink(tmp); } catch { /* ignore */ }
+    throw err;
+  }
 }
 
 /**
@@ -450,7 +472,7 @@ translated_at: '${today}'
 ---
 `;
   await mkdir(join(opts.rootDir, 'pages', opts.locale), { recursive: true });
-  await writeFile(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
+  await atomicWrite(localizedTalkPath, `${talkPageFrontmatter}\n${talkResponse.body}`);
   opts.write(`wrote pages/${opts.locale}/${opts.slug}.talk.md\n`);
 
   // Update the audit file's ### Talk-page translation subsection in
@@ -462,7 +484,7 @@ translated_at: '${today}'
     const stripped = stripExistingTalkSection(auditRaw);
     const newSection = `\n### Talk-page translation\n\n${talkResponse.auditEntries.trim()}\n`;
     const updated = mergeIntoUnresolved(stripped, newSection);
-    await writeFile(auditPath, updated);
+    await atomicWrite(auditPath, updated);
     opts.write(`updated pages/${opts.locale}/${opts.slug}.translation.talk.md (talk-page audit)\n`);
   }
   // Don't suppress useful warnings: when there ARE talk entries but no

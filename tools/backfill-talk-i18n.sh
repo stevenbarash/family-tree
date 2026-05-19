@@ -148,14 +148,36 @@ done_count=0
 fail_count=0
 drift_count=0
 missing_count=0
+current_slug=""
+current_locale=""
 start_ts=$(date +%s)
 log "translator pinned to: ${WHOAMI_MODEL}"
+
+# Catch INT (Ctrl-C) and TERM (kill) so the post-mortem one-grep is
+# obvious. wai itself uses atomicWrite (.tmp + rename) for the files
+# it produces, so an interrupt either fully writes a page or leaves
+# `.tmp` orphans alongside the previous content; either way the resume
+# logic will redo the affected pair safely.
+on_interrupt() {
+  local sig="$1"
+  if [ -n "$current_slug" ]; then
+    log "INTERRUPTED by ${sig} at $current_slug $current_locale (sync may be partial)"
+  else
+    log "INTERRUPTED by ${sig} before any sync started"
+  fi
+  log "to resume: rerun the same command — pairs already on disk are auto-skipped"
+  exit 130
+}
+trap 'on_interrupt INT' INT
+trap 'on_interrupt TERM' TERM
 
 while read slug locale; do
   if [ $LIMIT -gt 0 ] && [ $done_count -ge $LIMIT ]; then
     log "limit reached ($LIMIT); stopping"
     break
   fi
+  current_slug="$slug"
+  current_locale="$locale"
   done_count=$((done_count + 1))
   log "[$done_count/$todo_count] sync $slug $locale --talk-only"
   if ! WHOAMI_ROOT="$WHOAMI_ROOT" wai i18n sync "$slug" "$locale" --talk-only 2>&1 | tee -a "$LOG_FILE"; then
