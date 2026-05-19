@@ -93,6 +93,19 @@ export interface CoverageView {
   knownTotal: number;
   possibleTotal: number;
   frontier: ResearchFrontierView[];
+  /** Source-citation coverage across the known ancestors (P0.4).
+   *  `cited` = ancestors whose `DerivedRecord.sources` is non-empty;
+   *  `total` = `knownTotal`. Surfaces the source-coverage gap the
+   *  2026-05-07 platform review flagged ("78% un-cited individuals is
+   *  not a finished tree"). UI shows `cited`/`total` + percent so the
+   *  gap is visible — the review's stated theory: "People will fix
+   *  what they can see." */
+  sourceCoverage: SourceCoverageView;
+}
+
+export interface SourceCoverageView {
+  cited: number;
+  total: number;
 }
 
 export interface FamilyOfOriginView {
@@ -374,6 +387,18 @@ export async function getFamilyTree(
   const knownTotal = coverageByGen.reduce((s, g) => s + g.known, 0);
   const possibleTotal = coverageByGen.reduce((s, g) => s + g.possible, 0);
 
+  // Source-citation coverage (P0.4). Count ancestors whose derived
+  // record carries at least one source — `records` is the already-
+  // loaded DerivedRecord map; no extra I/O.
+  let citedCount = 0;
+  for (const group of core.byGeneration) {
+    for (const person of [...group.paternal, ...group.maternal]) {
+      const rec = records.get(person.record);
+      if (rec && rec.sources && rec.sources.length > 0) citedCount++;
+    }
+  }
+  const sourceCoverage: SourceCoverageView = { cited: citedCount, total: knownTotal };
+
   const frontierAll: ResearchFrontierView[] = [];
   for (const group of core.byGeneration) {
     const consider = [
@@ -466,7 +491,7 @@ export async function getFamilyTree(
     selectedMedia: records.get(targetRecord)?.media ?? [],
     cohort: { siblings, cousins },
     descendants: { byGeneration: descendantsByGen, total: descendantsRaw.total },
-    coverage: { byGeneration: coverageByGen, knownTotal, possibleTotal, frontier },
+    coverage: { byGeneration: coverageByGen, knownTotal, possibleTotal, frontier, sourceCoverage },
     places,
     placesMap,
     timeline,

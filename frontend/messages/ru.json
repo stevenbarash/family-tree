@@ -141,7 +141,8 @@
         "perGeneration": "По поколениям",
         "researchFrontier": "Граница исследования",
         "missing": "отсутствует {what, select, father {отец} mother {мать} both {родители} other {{what}}}",
-        "complete": "Родословная заполнена до настроенной глубины."
+        "complete": "Родословная заполнена до настроенной глубины.",
+        "sourceCoverage": "{cited} / {total} с источниками ({percent}%)"
       },
       "descendants": {
         "title": "Потомки",

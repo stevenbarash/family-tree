@@ -141,7 +141,8 @@
         "perGeneration": "לפי דורות",
         "researchFrontier": "גבול המחקר",
         "missing": "חסר {what, select, father {אב} mother {אם} both {הורים} other {{what}}}",
-        "complete": "שושלת היוחסין מלאה עד לעומק שהוגדר."
+        "complete": "שושלת היוחסין מלאה עד לעומק שהוגדר.",
+        "sourceCoverage": "{cited} / {total} עם מקורות ({percent}%)"
       },
       "descendants": {
         "title": "צאצאים",

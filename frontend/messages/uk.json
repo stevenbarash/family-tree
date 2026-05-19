@@ -141,7 +141,8 @@
         "perGeneration": "За поколіннями",
         "researchFrontier": "Межа дослідження",
         "missing": "відсутній {what, select, father {батько} mother {мати} both {батьки} other {{what}}}",
-        "complete": "Родовід заповнений до налаштованої глибини."
+        "complete": "Родовід заповнений до налаштованої глибини.",
+        "sourceCoverage": "{cited} / {total} з джерелами ({percent}%)"
       },
       "descendants": {
         "title": "Нащадки",

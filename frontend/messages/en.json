@@ -141,7 +141,8 @@
         "perGeneration": "Per generation",
         "researchFrontier": "Research frontier",
         "missing": "missing {what, select, father {father} mother {mother} both {parents} other {{what}}}",
-        "complete": "Lineage is complete to the configured depth."
+        "complete": "Lineage is complete to the configured depth.",
+        "sourceCoverage": "{cited} / {total} cited ({percent}%)"
       },
       "descendants": {
         "title": "Descendants",

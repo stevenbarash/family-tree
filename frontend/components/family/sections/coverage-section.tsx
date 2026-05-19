@@ -16,15 +16,32 @@ export function CoverageSection({ view }: Props) {
   const { coverage } = view;
   if (coverage.knownTotal === 0) return null;
 
+  // Source-coverage percentage. knownTotal > 0 guaranteed by the early
+  // return above, so the division is safe. Math.round to a whole number;
+  // we want "39%" not "39.4%" — the metric exists to make the gap
+  // visible, not to be a precise instrument.
+  const sourcePercent = Math.round(
+    (coverage.sourceCoverage.cited / coverage.sourceCoverage.total) * 100,
+  );
+
   return (
     <section className="registry-rise mb-12" style={{ animationDelay: '100ms' }}>
       <SectionHeader
         title={t('title')}
         count={coverage.knownTotal}
         after={
-          <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
-            {t('knownOfPossible', { known: String(coverage.knownTotal), possible: String(coverage.possibleTotal) })}
-          </p>
+          <div className="flex flex-col items-end gap-0.5">
+            <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
+              {t('knownOfPossible', { known: String(coverage.knownTotal), possible: String(coverage.possibleTotal) })}
+            </p>
+            <p className="font-mono text-[0.7rem] tabular-nums text-muted-foreground/80">
+              {t('sourceCoverage', {
+                cited: String(coverage.sourceCoverage.cited),
+                total: String(coverage.sourceCoverage.total),
+                percent: String(sourcePercent),
+              })}
+            </p>
+          </div>
         }
       />
       <div className="grid gap-4 md:grid-cols-[auto_1fr]">
