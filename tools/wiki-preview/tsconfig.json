@@ -9,7 +9,6 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
       "@core/*": ["../../core/src/*"]
     }

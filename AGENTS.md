@@ -120,7 +120,9 @@ Tests use `node:test` and `node:assert/strict` — not Jest, Vitest, or Bun.
 
 ### Code style
 
-- **TypeScript everywhere**, with `tsc --noEmit` as the typecheck gate.
+- **TypeScript 6 everywhere**, with `tsc --noEmit` as the typecheck gate.
+  TS 6 (bumped 2026-05-19) changed a handful of defaults from TS 5; see
+  "TypeScript 6 conventions" below for the ones that bite new code.
 - **Pure logic in `core/`**: no React, no I/O above the function boundary.
   Tests pass in `Map<string, DerivedRecord>` rather than reading files.
 - **Frontend is Next 16** with breaking changes from earlier versions —
@@ -132,6 +134,41 @@ Tests use `node:test` and `node:assert/strict` — not Jest, Vitest, or Bun.
   here. No page-bg tints (parchment/sepia/gradients), drop caps, or
   noise overlays. Creativity in type and layout is fine; tinting page
   chrome is not.
+
+### TypeScript 6 conventions
+
+The repo runs on TypeScript 6 (`^6.0.0`, resolves to 6.0.3 today). A few
+defaults differ from older training-data instinct — keep these in mind
+when adding files or tsconfigs:
+
+- **`@types/*` packages are no longer auto-loaded.** TS 6 changed the
+  default `types` compiler option from "every `@types/*` in
+  `node_modules`" to `[]`. A new tsconfig that touches Node builtins
+  (`node:fs`, `node:test`, `process`, etc.) will emit `TS2591: Cannot
+  find name 'node:test'`. Add `"types": ["node"]` to fix.
+  `core/tsconfig.json`, `cli/tsconfig.json`, and `evals/tsconfig.json`
+  set it; the others compile clean without (Next's `next-env.d.ts` and
+  test-tree shape happen to pull node types via reference). If in
+  doubt, set it explicitly.
+- **Don't add `baseUrl` to new tsconfigs.** TS 6 deprecates it. `paths`
+  resolves relative to the tsconfig's directory by default — `baseUrl:
+  "."` is redundant and emits a deprecation diagnostic. Removed from
+  `cli/` and `tools/wiki-preview/`.
+- **Import attributes use `with`, not `assert`** — the `assert`
+  keyword for import attributes is now an error. (No callers in the
+  repo today.)
+- **`namespace Foo {}`, not `module Foo {}`** — the legacy `module`
+  keyword for namespace declarations is now an error.
+- **New stdlib worth reaching for:** `Map.prototype.getOrInsert` /
+  `getOrInsertComputed` for upsert patterns (replaces the
+  `if (!m.has(k)) m.set(k, …)` dance — common in
+  `core/family/` and `core/search/doc-builder.ts`); `RegExp.escape(str)`
+  for building regexes from untrusted strings (the slug→regex paths in
+  `wikilinks.ts` are the natural callers).
+- **TS 6 is the bridge to TS 7.** TS 7 is the native (Go) rewrite
+  targeting ~10× compile speed. The deprecations above are there so
+  the TS 7 jump is mechanical, not a rewrite — don't reintroduce the
+  patterns TS 6 is calling out.
 
 ### Commit messages
 
