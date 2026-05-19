@@ -73,6 +73,26 @@
         "openCount": "{n, plural, one {שאלה פתוחה אחת} two {שתי שאלות פתוחות} many {# שאלות פתוחות} other {# שאלות פתוחות}}",
         "resolvedCount": "{n, plural, one {נפתר אחד} two {שניים נפתרו} many {# נפתרו} other {# נפתרו}}",
         "supersededCount": "{n, plural, one {הוחלף אחד} two {שניים הוחלפו} many {# הוחלפו} other {# הוחלפו}}"
+      },
+      "navBack": "אינדקס ←",
+      "categoriesLabel": "קטגוריות: {names}",
+      "Relationship": {
+        "yours": "ה{label} שלך."
+      },
+      "Freshness": {
+        "created": "נוצר {date}",
+        "author": "מחבר: {name}",
+        "editors": "עורכים: {names}",
+        "gedcomSnapshot": "תמונת GEDCOM מתאריך {date}",
+        "sourcesCited": "{count, plural, one {מקור אחד} two {שני מקורות} many {# מקורות} other {# מקורות}} צוטטו",
+        "talkNotesOnly": "שיחה: {n, plural, one {הערה אחת} two {שתי הערות} many {# הערות} other {# הערות}} ↓",
+        "talkGapsOnly": "שיחה: {n, plural, one {פער פתוח אחד} two {שני פערים פתוחים} many {# פערים פתוחים} other {# פערים פתוחים}} ↓",
+        "talkBoth": "שיחה: {notes, plural, one {הערה אחת} two {שתי הערות} many {# הערות} other {# הערות}} · {gaps, plural, one {פער פתוח אחד} two {שני פערים פתוחים} many {# פערים פתוחים} other {# פערים פתוחים}} ↓"
+      },
+      "ResearchNotes": {
+        "heading": "הערות מחקר",
+        "help": "נרשמו על אדם זה; יוטמעו במאמר בהפעלה הבאה של העורך.",
+        "empty": "אין הערות עדיין. הראשונה שתשמור תיצור את הסעיף ב-{slug}."
       }
     },
     "Family": {

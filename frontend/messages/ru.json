@@ -73,6 +73,26 @@
         "openCount": "{n, plural, one {# открытый вопрос} few {# открытых вопроса} many {# открытых вопросов} other {# открытых вопроса}}",
         "resolvedCount": "{n, plural, one {# решён} few {# решено} many {# решено} other {# решено}}",
         "supersededCount": "{n, plural, one {# заменён} few {# заменено} many {# заменено} other {# заменено}}"
+      },
+      "navBack": "← Указатель",
+      "categoriesLabel": "категории: {names}",
+      "Relationship": {
+        "yours": "Ваш(а) {label}."
+      },
+      "Freshness": {
+        "created": "создано {date}",
+        "author": "автор: {name}",
+        "editors": "редакторы: {names}",
+        "gedcomSnapshot": "снимок GEDCOM от {date}",
+        "sourcesCited": "{count, plural, one {# источник} few {# источника} many {# источников} other {# источников}} процитировано",
+        "talkNotesOnly": "обсуждение: {n, plural, one {# заметка} few {# заметки} many {# заметок} other {# заметок}} ↓",
+        "talkGapsOnly": "обсуждение: {n, plural, one {# открытый пробел} few {# открытых пробела} many {# открытых пробелов} other {# открытых пробелов}} ↓",
+        "talkBoth": "обсуждение: {notes, plural, one {# заметка} few {# заметки} many {# заметок} other {# заметок}} · {gaps, plural, one {# открытый пробел} few {# открытых пробела} many {# открытых пробелов} other {# открытых пробелов}} ↓"
+      },
+      "ResearchNotes": {
+        "heading": "Исследовательские заметки",
+        "help": "Записаны об этой персоне; будут включены в статью при следующем запуске редактора.",
+        "empty": "Пока нет заметок. Первая создаст раздел в {slug}."
       }
     },
     "Family": {

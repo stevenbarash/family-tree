@@ -73,6 +73,26 @@
         "openCount": "{n, plural, one {# open question} other {# open questions}}",
         "resolvedCount": "{n, plural, one {# resolved} other {# resolved}}",
         "supersededCount": "{n, plural, one {# superseded} other {# superseded}}"
+      },
+      "navBack": "← Index",
+      "categoriesLabel": "categories: {names}",
+      "Relationship": {
+        "yours": "Your {label}."
+      },
+      "Freshness": {
+        "created": "created {date}",
+        "author": "author: {name}",
+        "editors": "editors: {names}",
+        "gedcomSnapshot": "GEDCOM snapshot {date}",
+        "sourcesCited": "{count, plural, one {# source} other {# sources}} cited",
+        "talkNotesOnly": "talk: {n, plural, one {# note} other {# notes}} ↓",
+        "talkGapsOnly": "talk: {n, plural, one {# open gap} other {# open gaps}} ↓",
+        "talkBoth": "talk: {notes, plural, one {# note} other {# notes}} · {gaps, plural, one {# open gap} other {# open gaps}} ↓"
+      },
+      "ResearchNotes": {
+        "heading": "Research notes",
+        "help": "Captured on this person; folded into the article when the editor next runs.",
+        "empty": "No notes yet. The first one you save creates the section in {slug}."
       }
     },
     "Family": {

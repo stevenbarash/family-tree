@@ -73,6 +73,26 @@
         "openCount": "{n, plural, one {# відкрите питання} few {# відкритих питання} many {# відкритих питань} other {# відкритих питання}}",
         "resolvedCount": "{n, plural, one {# вирішене} few {# вирішених} many {# вирішених} other {# вирішених}}",
         "supersededCount": "{n, plural, one {# замінене} few {# замінених} many {# замінених} other {# замінених}}"
+      },
+      "navBack": "← Покажчик",
+      "categoriesLabel": "категорії: {names}",
+      "Relationship": {
+        "yours": "Ваш(а) {label}."
+      },
+      "Freshness": {
+        "created": "створено {date}",
+        "author": "автор: {name}",
+        "editors": "редактори: {names}",
+        "gedcomSnapshot": "знімок GEDCOM від {date}",
+        "sourcesCited": "{count, plural, one {# джерело} few {# джерела} many {# джерел} other {# джерел}} процитовано",
+        "talkNotesOnly": "обговорення: {n, plural, one {# нотатка} few {# нотатки} many {# нотаток} other {# нотаток}} ↓",
+        "talkGapsOnly": "обговорення: {n, plural, one {# відкрита прогалина} few {# відкритих прогалини} many {# відкритих прогалин} other {# відкритих прогалин}} ↓",
+        "talkBoth": "обговорення: {notes, plural, one {# нотатка} few {# нотатки} many {# нотаток} other {# нотаток}} · {gaps, plural, one {# відкрита прогалина} few {# відкритих прогалини} many {# відкритих прогалин} other {# відкритих прогалин}} ↓"
+      },
+      "ResearchNotes": {
+        "heading": "Дослідницькі нотатки",
+        "help": "Записані про цю особу; будуть додані до статті під час наступного запуску редактора.",
+        "empty": "Ще немає нотаток. Перша створить розділ у {slug}."
       }
     },
     "Family": {

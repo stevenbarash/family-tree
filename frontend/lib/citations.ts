@@ -10,15 +10,6 @@ export function countOpenGaps(talkBody: string): number {
   return countOpenThreads(talkBody);
 }
 
-/** "talk: 3 notes · 2 open gaps" — singular/plural agreement; empty when
- *  both counts are zero so the caller can drop the link entirely. */
-export function formatTalkLabel(noteCount: number, openGapCount: number): string {
-  const parts: string[] = [];
-  if (noteCount > 0) parts.push(`${noteCount} ${noteCount === 1 ? 'note' : 'notes'}`);
-  if (openGapCount > 0) parts.push(`${openGapCount} open gap${openGapCount === 1 ? '' : 's'}`);
-  return parts.join(' · ');
-}
-
 /**
  * Count citations in an article body. Conservatively combines two patterns:
  *

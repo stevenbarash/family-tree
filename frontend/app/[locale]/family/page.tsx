@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/routing';

@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { toTalkSlug } from '@core/pages/slug.ts';
 import { AddNoteForm } from './add-note-form';
 import { NoteItem, type NoteItemView } from './note-item';
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function ResearchNotesPanel({ slug, notes }: Props) {
+  const t = useTranslations('Page.Article.ResearchNotes');
   const talkSlug = toTalkSlug(slug);
   // Group by date heading, preserving the parser's newest-first order.
   const byDate: { date: string; items: NoteItemView[] }[] = [];
@@ -27,10 +29,10 @@ export function ResearchNotesPanel({ slug, notes }: Props) {
           id="research-notes-heading"
           className="font-heading text-2xl tracking-normal text-foreground"
         >
-          Research notes
+          {t('heading')}
         </h2>
         <p className="text-xs text-muted-foreground">
-          Captured on this person; folded into the article when the editor next runs.
+          {t('help')}
         </p>
       </div>
 
@@ -40,7 +42,7 @@ export function ResearchNotesPanel({ slug, notes }: Props) {
 
       {byDate.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No notes yet. The first one you save creates the section in <code className="text-xs">{talkSlug}</code>.
+          {t('empty', { slug: talkSlug })}
         </p>
       ) : (
         <div className="space-y-6">

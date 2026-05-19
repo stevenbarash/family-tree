@@ -1,15 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { countCitations, countOpenGaps, formatTalkLabel } from './citations.ts';
-
-test('formatTalkLabel: singular/plural and empty', () => {
-  assert.equal(formatTalkLabel(0, 0), '');
-  assert.equal(formatTalkLabel(1, 0), '1 note');
-  assert.equal(formatTalkLabel(2, 0), '2 notes');
-  assert.equal(formatTalkLabel(0, 1), '1 open gap');
-  assert.equal(formatTalkLabel(0, 3), '3 open gaps');
-  assert.equal(formatTalkLabel(2, 3), '2 notes · 3 open gaps');
-});
+import { countCitations, countOpenGaps } from './citations.ts';
 
 test('countOpenGaps: counts ::open and ::gap threads, ignores ::closed and ::superseded', () => {
   const body = `## Open question A

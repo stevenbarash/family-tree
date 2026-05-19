@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import {
   getPageStore,
   getCachedList,
@@ -23,7 +23,7 @@ import type { TranslationStatus } from '@core/i18n/index.ts';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 import { TalkThreadsPanel } from '@/components/talk-threads/threads-panel';
 import { RestrictedNotice } from '@/components/restricted-notice';
-import { countCitations, countOpenGaps, formatTalkLabel } from '@/lib/citations';
+import { countCitations, countOpenGaps } from '@/lib/citations';
 import { getCachedDerivedRecords } from '@/lib/family';
 import { computeRelationshipFromSelf } from '@/lib/relationship-from-self';
 import { RelationshipStrip } from '@/components/relationship-strip';
@@ -37,6 +37,7 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
 
+  const t = await getTranslations({ locale, namespace: 'Page.Article' });
   const indexPromise = getCachedList();
 
   let page: Page;
@@ -141,7 +142,7 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   return (
     <main className="mx-auto min-w-0 max-w-3xl px-4 py-6 sm:px-6 lg:py-10">
       <Link href="/" className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-        ← Index
+        {t('navBack')}
       </Link>
       <TranslationBanner
         status={translationStatus}
@@ -158,28 +159,32 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
         ) : null}
         {!isRestricted && page.meta.categories.length > 0 ? (
           <p className="mt-4 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">
-            categories: {page.meta.categories.join(' · ')}
+            {t('categoriesLabel', { names: page.meta.categories.join(' · ') })}
           </p>
         ) : null}
         {showStrip ? (
           <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-[0.08em] text-muted-foreground/85">
-            {page.meta.created ? <span>created {page.meta.created}</span> : null}
-            {page.meta.author ? <span>author: {page.meta.author}</span> : null}
+            {page.meta.created ? <span>{t('Freshness.created', { date: page.meta.created })}</span> : null}
+            {page.meta.author ? <span>{t('Freshness.author', { name: page.meta.author })}</span> : null}
             {editors.length > 0 ? (
-              <span>editors: {editors.join(', ')}</span>
+              <span>{t('Freshness.editors', { names: editors.join(', ') })}</span>
             ) : null}
             {gedcomSnapshotDate ? (
-              <span>GEDCOM snapshot {gedcomSnapshotDate}</span>
+              <span>{t('Freshness.gedcomSnapshot', { date: gedcomSnapshotDate })}</span>
             ) : null}
             {sourceCount > 0 ? (
-              <span>{sourceCount} {sourceCount === 1 ? 'source' : 'sources'} cited</span>
+              <span>{t('Freshness.sourcesCited', { count: sourceCount })}</span>
             ) : null}
             {liveNoteCount > 0 || openGapCount > 0 ? (
               <a
                 href={openGapCount > 0 ? '#talk-threads-heading' : '#research-notes-heading'}
                 className="underline-offset-4 hover:text-foreground hover:underline"
               >
-                talk: {formatTalkLabel(liveNoteCount, openGapCount)} ↓
+                {liveNoteCount > 0 && openGapCount > 0
+                  ? t('Freshness.talkBoth', { notes: liveNoteCount, gaps: openGapCount })
+                  : openGapCount > 0
+                    ? t('Freshness.talkGapsOnly', { n: openGapCount })
+                    : t('Freshness.talkNotesOnly', { n: liveNoteCount })}
               </a>
             ) : null}
           </div>
