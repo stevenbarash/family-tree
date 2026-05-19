@@ -15,6 +15,7 @@ interface Props {
 
 export function EditNoteForm({ slug, id, initialText, onCancel, onSaved }: Props) {
   const t = useTranslations('Page.Article.ResearchNotes.Edit');
+  const tErr = useTranslations('Errors');
   const [text, setText] = useState(initialText);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -37,7 +38,7 @@ export function EditNoteForm({ slug, id, initialText, onCancel, onSaved }: Props
       });
       if (!res.ok) {
         const respBody = await res.json().catch(() => null);
-        setError(typeof respBody?.error === 'string' ? respBody.error : `request failed (${res.status})`);
+        setError(typeof respBody?.error === 'string' ? respBody.error : tErr('requestFailedWithStatus', { status: String(res.status) }));
         return;
       }
       onSaved();

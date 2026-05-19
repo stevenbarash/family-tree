@@ -14,6 +14,7 @@ interface Props {
 
 export function AddNoteForm({ slug }: Props) {
   const t = useTranslations('Page.Article.ResearchNotes.Add');
+  const tErr = useTranslations('Errors');
   const [text, setText] = useState('');
   // The input is server-rendered as empty (no `window` on the server) and
   // hydrated from localStorage post-mount. Hydrating in `useState` directly
@@ -60,7 +61,7 @@ export function AddNoteForm({ slug }: Props) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const errorMessage = typeof body?.error === 'string' ? body.error : `request failed (${res.status})`;
+        const errorMessage = typeof body?.error === 'string' ? body.error : tErr('requestFailedWithStatus', { status: String(res.status) });
         setError(errorMessage);
         return;
       }

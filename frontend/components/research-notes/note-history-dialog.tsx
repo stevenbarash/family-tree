@@ -34,6 +34,7 @@ type Fetched =
 
 export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
   const t = useTranslations('Page.Article.ResearchNotes.History');
+  const tErr = useTranslations('Errors');
   const locale = useLocale();
   const [fetched, setFetched] = useState<Fetched>({ state: 'loading' });
   // Bumped by Retry to force a refetch without conflating with `fetched`.
@@ -50,7 +51,7 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
           const body = await res.json().catch(() => null);
           setFetched({
             state: 'error',
-            message: typeof body?.error === 'string' ? body.error : `request failed (${res.status})`,
+            message: typeof body?.error === 'string' ? body.error : tErr('requestFailedWithStatus', { status: String(res.status) }),
           });
           return;
         }
@@ -59,7 +60,7 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
       })
       .catch((err) => {
         if (cancelled) return;
-        setFetched({ state: 'error', message: err?.message ?? 'request failed' });
+        setFetched({ state: 'error', message: err?.message ?? tErr('requestFailed') });
       });
     return () => { cancelled = true; };
   }, [open, slug, noteId, nonce]);

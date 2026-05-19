@@ -44,6 +44,7 @@ export function NoteItem({ slug, note }: Props) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const t = useTranslations('Page.Article.ResearchNotes.Item');
+  const tErr = useTranslations('Errors');
   const locale = useLocale();
 
   const isDeleted = !!note.deletedAt;
@@ -60,7 +61,7 @@ export function NoteItem({ slug, note }: Props) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(typeof body?.error === 'string' ? body.error : `request failed (${res.status})`);
+        setError(typeof body?.error === 'string' ? body.error : tErr('requestFailedWithStatus', { status: String(res.status) }));
         return;
       }
       router.refresh();
@@ -77,7 +78,7 @@ export function NoteItem({ slug, note }: Props) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setError(typeof body?.error === 'string' ? body.error : `request failed (${res.status})`);
+        setError(typeof body?.error === 'string' ? body.error : tErr('requestFailedWithStatus', { status: String(res.status) }));
         return;
       }
       router.refresh();

@@ -66,7 +66,12 @@ export default function CommandPaletteDialog({ open, onOpenChange }: Props) {
   }
 
   return (
-    <CommandDialog open={open} onOpenChange={handleOpenChange}>
+    <CommandDialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={t('dialogTitle')}
+      description={t('dialogDescription')}
+    >
       <Command shouldFilter={false}>
         <CommandInput
           placeholder={t('placeholder')}

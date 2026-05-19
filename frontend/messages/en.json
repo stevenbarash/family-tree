@@ -14,7 +14,9 @@
       "placeholder": "Search people, companies, places…",
       "emptyStart": "Start typing to search.",
       "emptyNoMatches": "No matches.",
-      "resultsHeading": "Results"
+      "resultsHeading": "Results",
+      "dialogTitle": "Search",
+      "dialogDescription": "Search people, companies, and places in the wiki."
     }
   },
   "Page": {
@@ -389,7 +391,9 @@
     "notFoundHelp": "It may have been renamed, archived, or never existed. If you were looking for a person, search by their name — the wiki indexes aliases and GEDCOM-derived fields, so it often finds people whose canonical page slug isn’t obvious.",
     "searchPlaceholder": "Search for a name…",
     "linkHome": "← Home",
-    "linkFamilyTree": "Family tree →"
+    "linkFamilyTree": "Family tree →",
+    "requestFailed": "Request failed",
+    "requestFailedWithStatus": "Request failed ({status})"
   },
   "Loading": {
     "article": "Loading article",

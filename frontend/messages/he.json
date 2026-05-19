@@ -14,7 +14,9 @@
       "placeholder": "חפש אנשים, חברות, מקומות…",
       "emptyStart": "התחל להקליד כדי לחפש.",
       "emptyNoMatches": "אין תוצאות.",
-      "resultsHeading": "תוצאות"
+      "resultsHeading": "תוצאות",
+      "dialogTitle": "חיפוש",
+      "dialogDescription": "חפש אנשים, חברות ומקומות בוויקי."
     }
   },
   "Page": {
@@ -389,7 +391,9 @@
     "notFoundHelp": "ייתכן ששמו שונה, שהוא הועבר לארכיון, או שמעולם לא היה קיים. אם חיפשתם אדם, נסו לחפש לפי השם — הוויקי מאנדקס כינויים ושדות הנגזרים מ-GEDCOM, ולכן לעיתים קרובות מוצא אנשים שה-slug הקנוני של הדף שלהם אינו ברור מאליו.",
     "searchPlaceholder": "חפש לפי שם…",
     "linkHome": "← בית",
-    "linkFamilyTree": "אילן המשפחה →"
+    "linkFamilyTree": "אילן המשפחה →",
+    "requestFailed": "הבקשה נכשלה",
+    "requestFailedWithStatus": "הבקשה נכשלה ({status})"
   },
   "Loading": {
     "article": "טוען מאמר",
