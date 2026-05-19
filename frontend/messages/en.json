@@ -112,6 +112,8 @@
         "statChildren": "Children",
         "statAncestors": "Ancestors",
         "statGenerations": "{n, plural, one {# gen} other {# gens}}",
+        "statSourced": "Sourced",
+        "statSourcedFraction": "{cited} / {total} cited",
         "buttonArticle": "Article"
       },
       "family": {

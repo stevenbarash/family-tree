@@ -17,6 +17,10 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
   const dates = formatDates(person);
   const { parents, spouses, children } = view.selectedRelations;
   const { siblings } = view.cohort;
+  const { sourceCoverage } = view.coverage;
+  const sourcedPercent = sourceCoverage.total > 0
+    ? Math.round((sourceCoverage.cited / sourceCoverage.total) * 100)
+    : null;
 
   return (
     <section
@@ -50,12 +54,19 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
           </p>
         ) : null}
 
-        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 border-t rule-hair pt-4 sm:max-w-lg sm:grid-cols-5">
+        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 border-t rule-hair pt-4 sm:max-w-xl sm:grid-cols-6">
           <Stat label={t('statParents')} value={parents.length} />
           <Stat label={t('statSiblings')} value={siblings.length} />
           <Stat label={t('statSpouses')} value={spouses.length} />
           <Stat label={t('statChildren')} value={children.length} />
           <Stat label={t('statAncestors')} value={ancestorCount} sub={t('statGenerations', { n: generationCount })} />
+          {sourcedPercent !== null ? (
+            <Stat
+              label={t('statSourced')}
+              value={`${sourcedPercent}%`}
+              sub={t('statSourcedFraction', { cited: String(sourceCoverage.cited), total: String(sourceCoverage.total) })}
+            />
+          ) : null}
         </dl>
       </div>
 

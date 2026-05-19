@@ -112,6 +112,8 @@
         "statChildren": "ילדים",
         "statAncestors": "אבות קדמונים",
         "statGenerations": "{n, plural, one {דור אחד} two {שני דורות} many {# דורות} other {# דורות}}",
+        "statSourced": "מקורות",
+        "statSourcedFraction": "{cited} מתוך {total}",
         "buttonArticle": "מאמר"
       },
       "family": {

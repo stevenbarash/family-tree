@@ -31,7 +31,7 @@ export function joinMeta(parts: Array<string | null | undefined | false>): strin
   return parts.filter((p): p is string => Boolean(p)).join(' · ');
 }
 
-export function Stat({ label, value, sub }: { label: string; value: number; sub?: string }) {
+export function Stat({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
   return (
     <div>
       <dt className="font-display text-[0.62rem] uppercase tracking-[0.18em] text-muted-foreground">

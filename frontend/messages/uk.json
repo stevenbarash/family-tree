@@ -112,6 +112,8 @@
         "statChildren": "Діти",
         "statAncestors": "Предки",
         "statGenerations": "{n, plural, one {# пок.} few {# пок.} many {# пок.} other {# пок.}}",
+        "statSourced": "Джерела",
+        "statSourcedFraction": "{cited} з {total}",
         "buttonArticle": "Стаття"
       },
       "family": {
