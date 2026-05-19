@@ -21,18 +21,6 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
-### Changed
-
-- **Dependency refresh: everything pinnable to latest, one upstream block.** Same-session follow-up to the TS 6 bump. Per-package outcomes:
-  - **`frontend`** — `next` 16.2.4 → 16.2.6 (patch, exact-pinned in package.json), `react` / `react-dom` 19.2.5 → 19.2.6 (exact-pinned), `eslint-config-next` 16.2.4 → 16.2.6 (exact-pinned), `@base-ui/react` 1.4.1 → 1.5.0, `tailwindcss` + `@tailwindcss/postcss` 4.2.4 → 4.3.0, `tailwind-merge` 3.5.0 → 3.6.0, `lucide-react` 1.14.0 → 1.16.0, `zod` 4.4.2 → 4.4.3, `@types/node` 24.12.2 → 25.9.0 (major), `tsx` 4.21.0 → 4.22.3.
-  - **`core` / `cli` / `evals`** — `@types/node` 24 → 25 (major), `tsx` 4.21 → 4.22.3.
-  - **`tools/wiki-preview`** — `express` 4.22.1 → 5.2.1 (major), `@types/express` 4 → 5 (major), `remark-directive` 3 → 4 (major), `@types/node` 24 → 25 (major), `tsx` 4.21 → 4.22.3. `src/server.ts` needed zero edits — the existing Express surface (`app.get(':slug', async handler)`, `req.params`, `res.type/send/status`) is unchanged in Express 5; path-to-regexp v6's syntax changes (catchalls, optional groups) don't apply because the server only uses `:param` placeholders. Typecheck clean against the new `@types/express` 5 ambient types.
-  - **`tools/wikitext-to-md`** — `better-sqlite3` 11.10.0 → 12.10.0 (major), `@types/node` 24 → 25, `tsx` 4.21 → 4.22.3. Native bindings rebuild during install; the surface used (`new Database(path, { readonly: true })` + `db.prepare(sql)`) is stable across the v11→v12 jump.
-  - **`eslint` 9 → 10 in `frontend` — blocked upstream, held at ^9.** Attempted the bump; npm `ERESOLVE` warnings (peer-dep override) predicted breakage; lint crashed with `TypeError: contextOrFilename.getFilename is not a function` from `eslint-config-next/node_modules/eslint-plugin-react/lib/util/version.js:31`. ESLint 10 removed the deprecated `context.getFilename()` API, and the `eslint-plugin-react` version bundled inside `eslint-config-next` 16.2.6 hasn't migrated to `context.filename` yet. `eslint-config-next`'s peer dep advertises `eslint: ">=9.0.0"` but the bundled plugin can't deliver. Re-attempt when `eslint-config-next` ships a release that bumps its bundled `eslint-plugin-react`. No code change needed today.
-  - Verification: typecheck + tests green across all packages post-bump (core 613/613, frontend 89/95 + 6 pre-existing skips, cli 315/318 + 3 pre-existing skips, evals 76/76, wikitext-to-md 98/101 + 3 pre-existing skips; wiki-preview has no test suite).
-
-- **TypeScript 5.9 → 6.0.3 across all six packages (`core`, `frontend`, `cli`, `evals`, `tools/wiki-preview`, `tools/wikitext-to-md`).** The bump itself is one-line per `package.json` (`typescript: ^5.5.0` / `^5` → `^6.0.0`) but TS 6 ships several default-shifts and deprecations that touched the configs. Two real edits: (a) `types: ["node"]` added to `core/tsconfig.json`, `cli/tsconfig.json`, `evals/tsconfig.json` — TS 6 changed the default `types` field from "every `@types/*` in `node_modules`" to `[]`, and these three packages directly import from `node:test`/`node:fs`/`node:assert/strict` etc.; without the explicit list TS6 emitted ~210 `TS2591: Cannot find name 'node:test'` errors against test files. The other three packages compiled clean without it (Next's `next-env.d.ts` pulls node types via reference; `tools/wiki-preview` and `tools/wikitext-to-md` happen to satisfy whatever heuristic survives). (b) `baseUrl: "."` removed from `cli/tsconfig.json` and `tools/wiki-preview/tsconfig.json` — TS 6 deprecates `baseUrl`; `paths` resolves relative to the tsconfig directory by default. Scanned for the other patterns TS 6 rejects (legacy `module Foo {}` namespaces, `assert {}` import attributes, `outFile`, `downlevelIteration`, `moduleResolution: classic|node`, `esModuleInterop: false`, `target: es5`, `no-default-lib` reference directives) — zero hits in the codebase. Full typecheck + test suite green on TS 6.0.3: core 613/613, frontend 89/95 (6 pre-existing skips), cli 315/318 (3 pre-existing skips), evals 76/76, wikitext-to-md 98/101 (3 pre-existing skips), wiki-preview no tests. AGENTS.md gains a "TypeScript 6 conventions" subsection covering the `types: ["node"]` trap, the `baseUrl` deprecation, `with`-not-`assert` for import attributes, `namespace`-not-`module`, and the new stdlib (`Map.getOrInsert` / `RegExp.escape`) worth reaching for. The bump is positioned as the bridge to TS 7 (the native Go port targeting ~10× compile speed); the deprecations TS 6 calls out are the patterns to avoid so the TS 7 jump stays mechanical.
-
 ### Added
 
 - **`/[locale]/roadmap` site page** — renders `docs/ROADMAP.md` on the wiki itself, mirroring the existing `/[locale]/changelog` pattern. New `frontend/lib/roadmap.ts` parses the doc into typed sections (`snapshot` / `track` / `parking` / `cut` / `shipped` / `narrative`), counts table-row items per section, and aggregates totals (tracks, ready, in-flight, shipped, parked, cut) by scanning the ⏳/🚧/✅/🅿️/× glyphs in the source. The route at `frontend/app/[locale]/roadmap/page.tsx` lays out a side-rail index and per-section blocks colored by kind (primary border for the snapshot, amber for parking, emerald for shipped, etc.). Chrome localized to all 4 locales under a new `Page.Roadmap` namespace (19 keys × 4); body stays English since the doc is English-only project planning. New `.roadmap-prose` block in `globals.css` — table-first typography (compact rows, monospace first column, muted header background) since each track section is a status table. 9 unit tests in `lib/roadmap.test.ts` cover classify-by-title, item-row counting, totals aggregation, intro extraction, and empty-doc handling. Full frontend suite 89/89 green; typecheck clean. Closes the Reading-track "site roadmap page" row added in the same session's roadmap restructure. View source link points to `github.com/stevenbarash/family-tree` (the actual code repo).
@@ -910,6 +898,55 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
   command. (`cli/src/api-client.ts`.)
 - **Note edit-history:** byline spacing and dead empty-events branch
   in note history reconstruction (`1e1ac7b`).
+
+---
+
+## [cli-v2.0.0-pre.1] — 2026-05-19 (package-bump release)
+
+A no-feature release. `cli/` semver bumps `2.0.0-pre.0` → `2.0.0-pre.1`
+to capture an end-to-end dependency refresh: TypeScript 5.9 → 6.0.3
+across all six packages plus every other dep to its latest. No CLI
+source change; no user-facing wiki change. The non-tagged packages
+(`core`, `frontend`, `plugins/whoami`, `tools/*`) roll with the repo
+as usual — the CLI tag is just the project's release marker per
+[AGENTS.md versioning](./AGENTS.md#versioning). One bump held back
+upstream (ESLint 9 → 10) with a documented unblock condition.
+
+### Changed
+
+- **TypeScript 5.9 → 6.0.3 across all six packages (`core`, `frontend`, `cli`, `evals`, `tools/wiki-preview`, `tools/wikitext-to-md`).** The bump itself is one-line per `package.json` (`typescript: ^5.5.0` / `^5` → `^6.0.0`) but TS 6 ships several default-shifts and deprecations that touched the configs. Two real edits: (a) `types: ["node"]` added to `core/tsconfig.json`, `cli/tsconfig.json`, `evals/tsconfig.json` — TS 6 changed the default `types` field from "every `@types/*` in `node_modules`" to `[]`, and these three packages directly import from `node:test`/`node:fs`/`node:assert/strict` etc.; without the explicit list TS6 emitted ~210 `TS2591: Cannot find name 'node:test'` errors against test files. The other three packages compiled clean without it (Next's `next-env.d.ts` pulls node types via reference; `tools/wiki-preview` and `tools/wikitext-to-md` happen to satisfy whatever heuristic survives). (b) `baseUrl: "."` removed from `cli/tsconfig.json` and `tools/wiki-preview/tsconfig.json` — TS 6 deprecates `baseUrl`; `paths` resolves relative to the tsconfig directory by default. Scanned for the other patterns TS 6 rejects (legacy `module Foo {}` namespaces, `assert {}` import attributes, `outFile`, `downlevelIteration`, `moduleResolution: classic|node`, `esModuleInterop: false`, `target: es5`, `no-default-lib` reference directives) — zero hits in the codebase. AGENTS.md gains a "TypeScript 6 conventions" subsection covering the `types: ["node"]` trap, the `baseUrl` deprecation, `with`-not-`assert` for import attributes, `namespace`-not-`module`, and the new stdlib (`Map.getOrInsert` / `RegExp.escape`) worth reaching for.
+
+- **Dependency refresh: everything pinnable to latest, one upstream block.** Same-session follow-up to the TS 6 bump. Per-package outcomes:
+  - **`frontend`** — `next` 16.2.4 → 16.2.6 (patch, exact-pinned in package.json), `react` / `react-dom` 19.2.5 → 19.2.6 (exact-pinned), `eslint-config-next` 16.2.4 → 16.2.6 (exact-pinned), `@base-ui/react` 1.4.1 → 1.5.0, `tailwindcss` + `@tailwindcss/postcss` 4.2.4 → 4.3.0, `tailwind-merge` 3.5.0 → 3.6.0, `lucide-react` 1.14.0 → 1.16.0, `zod` 4.4.2 → 4.4.3, `@types/node` 24.12.2 → 25.9.0 (major), `tsx` 4.21.0 → 4.22.3.
+  - **`core` / `cli` / `evals`** — `@types/node` 24 → 25 (major), `tsx` 4.21 → 4.22.3.
+  - **`tools/wiki-preview`** — `express` 4.22.1 → 5.2.1 (major), `@types/express` 4 → 5 (major), `remark-directive` 3 → 4 (major), `@types/node` 24 → 25 (major), `tsx` 4.21 → 4.22.3. `src/server.ts` needed zero edits — the existing Express surface (`app.get(':slug', async handler)`, `req.params`, `res.type/send/status`) is unchanged in Express 5; path-to-regexp v6's syntax changes (catchalls, optional groups) don't apply because the server only uses `:param` placeholders. Typecheck clean against the new `@types/express` 5 ambient types.
+  - **`tools/wikitext-to-md`** — `better-sqlite3` 11.10.0 → 12.10.0 (major), `@types/node` 24 → 25, `tsx` 4.21 → 4.22.3. Native bindings rebuild during install; the surface used (`new Database(path, { readonly: true })` + `db.prepare(sql)`) is stable across the v11→v12 jump.
+  - **`eslint` 9 → 10 in `frontend` — blocked upstream, held at ^9.** Attempted the bump; npm `ERESOLVE` warnings (peer-dep override) predicted breakage; lint crashed with `TypeError: contextOrFilename.getFilename is not a function` from `eslint-config-next/node_modules/eslint-plugin-react/lib/util/version.js:31`. ESLint 10 removed the deprecated `context.getFilename()` API, and the `eslint-plugin-react` version bundled inside `eslint-config-next` 16.2.6 hasn't migrated to `context.filename` yet. `eslint-config-next`'s peer dep advertises `eslint: ">=9.0.0"` but the bundled plugin can't deliver. Re-attempt when `eslint-config-next` ships a release that bumps its bundled `eslint-plugin-react`. No code change needed today.
+
+### Why this matters
+
+- **TS 7 readiness with zero migration cost.** TS 7 is the [native (Go) port](https://devblogs.microsoft.com/typescript/typescript-native-port/) targeting ~10× compile speed. The deprecations TS 6 surfaces are precisely the patterns TS 7 will refuse — legacy `module Foo {}` namespaces, `assert` import attributes, `outFile`, `baseUrl`, `moduleResolution: classic|node`. This codebase had zero hits on any of them; the future `^6.0.0 → ^7.0.0` bump becomes a one-line change in six `package.json` files instead of a project-wide audit.
+- **New TS-6 stdlib that shortens existing code.** Two concrete sites available when those files are next touched: `core/src/gedcom/inject-name-tran.ts:46-47` (current `if (!byRecord.has(e.record)) byRecord.set(e.record, []); byRecord.get(e.record)!.push(e);` collapses to `byRecord.getOrInsert(e.record, []).push(e);` under `Map.prototype.getOrInsert` — one line, no `!`, no double lookup); `cli/src/commands/revert.ts:258` (same shape). Not refactored here; documented for the next visit.
+- **Express 5 small robustness win in `tools/wiki-preview`.** Express 5 [auto-forwards rejected promises](https://expressjs.com/en/guide/migrating-5.html) from async route handlers to error middleware. The server has one async handler (`app.get('/wiki/:slug', async (req, res) => …)`); on Express 4 a rejected promise from `readFileSync` or `pipeline.process` would have been silently swallowed.
+- **Documented unblock condition for ESLint 10.** The attempted bump pinpointed the holdup specifically: `eslint-config-next` 16.2.6 bundles an older `eslint-plugin-react` calling the removed `context.getFilename()`. When `eslint-config-next` ships its next bundled-plugin refresh, the ESLint 10 retry is a one-line bump — and the failure mode to grep for is on file.
+- **AGENTS.md gains a TypeScript 6 conventions section.** Durably tells future agents about the `types: ["node"]` trap, the `baseUrl` deprecation, `with`-not-`assert` for import attributes, `namespace`-not-`module`, and the new stdlib worth reaching for. Next agent adding a new tsconfig won't re-discover the `TS2591: Cannot find name 'node:test'` failure mode from TS 6's new `types: []` default.
+- **Hygiene: stay on currently-maintained majors.** Security patches and ecosystem fixes land on the latest line; falling further behind makes them progressively harder to absorb. Captures `@base-ui/react` 1.5.0, `tailwindcss` 4.3.0, `tailwind-merge` 3.6.0, `lucide-react` 1.16, `remark-directive` 4, `better-sqlite3` 12, `tsx` 4.22.3, plus patch-level fixes on `next` 16.2.6, `react` 19.2.6, `zod` 4.4.3.
+
+### Not changed
+
+- **No user-facing wiki change.** Interactive tree, articles, search behave identically. `next build` ships 766/766 static pages across all 24 routes.
+- **No runtime perf change.** TS 6 is the bridge to TS 7's compile-speed win; on its own, TS 6 is roughly parity with 5.9. None of the other bumps are perf-targeted.
+- **No new features.** Pure deps work. The two `### Added` entries above this section (`/[locale]/roadmap`, home-page nav link) are pre-bump work that landed earlier in the session and remain under `[Unreleased]` until a later release captures them.
+- **No CLI source change.** The `wai` binary behaves identically; the version bump is purely the release marker for the dep refresh.
+
+### Verification
+
+- `tsc --noEmit` clean in all six packages.
+- Test suites green: core 613/613, frontend 89/95 (6 pre-existing skips), cli 315/318 (3 pre-existing skips), evals 76/76, wikitext-to-md 98/101 (3 pre-existing skips); wiki-preview has no test suite.
+- `next build` succeeds, 766/766 static pages across all 24 routes (Next 16.2.6 + React 19.2.6).
+- `cli` esbuild bundle produces `dist/wai.cjs` cleanly.
+- `wiki-preview` Express 5 runtime: indexes 283 pages, listens on configured port.
+- `frontend npm run lint` has 9 pre-existing problems (`eslint-plugin-react-hooks` lockfile-confirmed identical at 7.1.1 pre and post bump; no new lint regressions).
 
 ---
 
