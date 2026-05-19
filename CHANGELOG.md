@@ -10,7 +10,7 @@ This is a project-level changelog. The wiki is a multi-package repo;
 when a change affects only one package (e.g., a CLI release), the
 section is marked with the package name. The project as a whole is
 in **v2 development** following the May 2026 markdown migration; the
-last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/whoami/releases/tag/cli-v1.2.1)
+last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbarash/family-tree/releases/tag/cli-v1.2.1)
 (2026-03-26), which predates the v2 architecture.
 
 > **Going forward:** every PR adds a line under `## [Unreleased]`.
@@ -20,6 +20,22 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/anthropics/
 ---
 
 ## [Unreleased] — v2 development
+
+### Added
+
+- **`/[locale]/roadmap` site page** — renders `docs/ROADMAP.md` on the wiki itself, mirroring the existing `/[locale]/changelog` pattern. New `frontend/lib/roadmap.ts` parses the doc into typed sections (`snapshot` / `track` / `parking` / `cut` / `shipped` / `narrative`), counts table-row items per section, and aggregates totals (tracks, ready, in-flight, shipped, parked, cut) by scanning the ⏳/🚧/✅/🅿️/× glyphs in the source. The route at `frontend/app/[locale]/roadmap/page.tsx` lays out a side-rail index and per-section blocks colored by kind (primary border for the snapshot, amber for parking, emerald for shipped, etc.). Chrome localized to all 4 locales under a new `Page.Roadmap` namespace (19 keys × 4); body stays English since the doc is English-only project planning. New `.roadmap-prose` block in `globals.css` — table-first typography (compact rows, monospace first column, muted header background) since each track section is a status table. 9 unit tests in `lib/roadmap.test.ts` cover classify-by-title, item-row counting, totals aggregation, intro extraction, and empty-doc handling. Full frontend suite 89/89 green; typecheck clean. Closes the Reading-track "site roadmap page" row added in the same session's roadmap restructure. View source link points to `github.com/stevenbarash/family-tree` (the actual code repo).
+
+- **Home-page nav link to `/roadmap`** — added next to the existing changelog link in the home-page header (`app/[locale]/page.tsx:94`). New `navRoadmap` key under `Page.Home` in all four locales (en `"Roadmap →"`, ru `"Дорожная карта →"`, uk `"Дорожня карта →"`, he `"מפת דרכים →"`).
+
+### Fixed
+
+- **CHANGELOG URL typo** — the v1.2.1 release-tag link in the document header pointed to `github.com/anthropics/whoami` (a template URL from the migration). Corrected to `github.com/stevenbarash/family-tree`. This was the only occurrence of the wrong URL in the repo.
+
+### Changed
+
+- **ROADMAP restructured around three tracks** — wave-based sequencing (Wave 1–5) from the 2026-05-07 platform review was overrun by what actually shipped over the following 12 days. New top-level structure: **Reading**, **Authoring**, **Contribution** (the new track defined 2026-05-19 — see [`docs/superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md`](docs/superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md)), and **Infrastructure & hygiene**. Each item carries its existing P#.# review-ID where one exists; the wave grouping is dropped. Status snapshot near the top of the doc gives the at-a-glance "next item per track" answer. Items absorbed: P1.7 (media as first-class) → contribution-track E.2; P2.8 (schema-migration registry exercise) → E.2's MediaRef extension; P3.1 (frontier as central UI metaphor) → operationalized by the contribution surface itself. Items cut: P3.5 cross-tree linking (anti-goal per SCOPE.md), P2.16 talk-i18n backfill (operational task, lives in memory). Items parked with explicit triggers: P1.6 (needs `PEDI`/`ADOP` annotation in source GEDCOM — verified 0 in corpus), P1.8 breadcrumbs (chart now does wayfinding), P3.3/P3.6/P3.7/P3.8 (each gets a concrete reopen signal). The `roadmap-drift` test still passes (every ✅ row maps to a CHANGELOG mention bidirectionally).
+
+- **SCOPE.md: browser writes to research notes and talk pages are in-scope; lightweight identity is in-scope; both as of 2026-05-19.** The "no user accounts inside the app" anti-goal sharpened to "no authentication (passwords, anti-impersonation, real access control)" — Tailscale ACLs remain the access boundary. A self-asserted person picker that holds `viewer`+`subject` session state (hybrid persistence: cookie viewer, session subject) is *not* auth and is now explicitly permitted. The "tree editing in the browser" anti-goal tightened to clarify it covers `.ged` and `genealogy/derived/*.yml` only; browser writes to research notes and talk pages are now in scope, with attribution as content fields rather than logged-in identity. Together these unlock the family-contribution-mode track (E.0–E.9) where family informants in en/ru/uk/he can contribute raw evidence — text, audio recordings, audio links, structured Q&A — via the browser without dropping to the CLI.
 
 ### Fixed
 

@@ -1,271 +1,274 @@
 # Roadmap
 
 > Strategic sequencing for whoami.wiki. Sourced from the
-> [May 2026 platform review](./reviews/2026-05-07-platform-review.md)
-> and the in-flight work in the current working tree.
+> [May 2026 platform review](./reviews/2026-05-07-platform-review.md),
+> the work shipped since, and the contribution-track design conversation
+> of 2026-05-19.
 
-**Last updated:** 2026-05-18 (P2.1 citation-directive contrast, closes Wave 1)
-**Cadence:** revisit at the end of each completed band, or when a new
-review document lands. Status lines are the source of truth — keep
+**Last updated:** 2026-05-19 (restructured around three tracks + infrastructure;
+contribution track defined; parked items consolidated)
+**Cadence:** revisit at the end of each completed track milestone, or when
+a new review document lands. Status lines are the source of truth — keep
 them honest.
 
-This roadmap is organized in four bands:
+This roadmap is organized as **three parallel tracks plus a cross-cutting
+infrastructure lane**. The wave-based structure from the 2026-05-07
+review was overrun by reality — most of what shipped between 2026-05-07
+and 2026-05-19 was unplanned (multilingual, GEDCOM 7, article pipeline,
+drift detectors). Track-based organization reflects how the work
+actually clusters and lets the user pick which track to work on each
+session, rather than forcing one linear sequence.
 
-- **Now** — actively in motion in the working tree this week.
-- **Next** — committed for the post-review sprint (≈ 6 weeks).
-- **Later** — accepted but unscheduled. P2 polish and P3 strategic bets.
-- **Parking lot** — explicitly bookmarked, not on the path. Reopen
-  with a triggering signal.
-
-Each row links to a plan or review section. The `lift` column matches
-the platform review's `S / M / L` shorthand (sittings, days, weeks).
-
----
-
-## Now (working tree clean as of 2026-05-18)
-
-The working tree is empty. Every theme that was open on 2026-05-07
-has either landed (conflicts, redlinks, sex-aware translation,
-family-section refactor) or been superseded by a larger piece of
-work (GEDCOM normalize → full 5.5.1 → 7.0.18 upgrade). See
-[Shipped outside the plan-of-record](#shipped-outside-the-plan-of-record-since-2026-05-07)
-below for the full list.
-
-Wave 1 is now closed (P0.1 ✅, P0.3 ✅, P2.1 ✅, P2.2 ✅, P2.5 🔧
-partial — `lang=` follow-on deferred). Next pull should be from
-**Wave 2 (remaining: P0.4)** or, if a low-effort visible win is
-preferred, the Wave 3 reading-surface item **P1.10** (empty/error/loading states, S-lift). **P1.3** (home page research dashboard) shipped 2026-05-18. The 2026-05-07 PM call to reduce WIP from four themes to one
-was satisfied by 2026-05-15.
+**Status icons:** ⏳ ready · 🚧 in flight · 🔧 closing · ✅ shipped · ❌ cancelled · 🅿️ parked.
 
 ---
 
-## Shipped outside the plan-of-record (since 2026-05-07)
+## The three tracks
 
-These landed in the 11 days after the platform review but were not on
-the roadmap's wave plan. Listed for honest accounting (Rule 12) and
-because several materially change what's left to do in the planned
-waves — most notably, P3.4 (document evidence as first-class object)
-is now substantially groundwork-complete via the article pipeline,
-and Wave 3's P1.3 / P1.9 reading-surface work has unplanned overlap
-with the home-page ribbon, hover-cards, and relationship strip.
+**Reading track** — the wiki as a thing to browse. Audience: Steven and
+read-only Tailscale guests. Goal: make the accreted reading surface
+(home dashboard, article page, family tree, search) coherent and dense
+without crossing into Apple-style sparseness.
 
-| Item | Plan | Notes |
+**Authoring track** — AI agents producing articles. Audience: the
+agent itself (Claude Opus 4.7 today). Goal: harden the pipeline that
+shipped fast over April–May 2026 (`wai author`, cohort, revert,
+history) into something production-grade.
+
+**Contribution track** — human family members feeding raw evidence
+into the wiki via the browser. Audience: living family informants
+(grandma, parents, aunts, uncles) in any of en/ru/uk/he. **Defined
+2026-05-19**, see the [plan-of-plans](./superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md).
+This is the current strategic priority.
+
+**Infrastructure & hygiene** — cross-cutting items that don't belong
+to a single track (privacy gate, CLI release, test strengthening).
+
+---
+
+## Status snapshot — 2026-05-19
+
+Working tree is clean. The naturally-next actionable item in each
+track:
+
+| Track | Next item | Lift |
 |---|---|---|
-| **GEDCOM 5.5.1 → 7.0.18 upgrade** | [plan](./superpowers/plans/2026-05-17-gedcom-7-upgrade.md) | Parser swap to vendored `js-gedcom`; v7 EXID + DATE.PHRASE conventions. Superseded the pre-emptive `GEDCOM normalize layer` row from the old Now band. Unblocks P3.4 features that need richer source/event metadata. |
-| **Multilingual support — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-17-multilingual-support-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-17-multilingual-support-plan-2-chrome-translations.md) · [3](./superpowers/plans/2026-05-17-multilingual-support-plan-3-translation-pipeline.md) | `next-intl` + `[locale]` routing + ru/uk/he chrome translations + per-locale article pipeline (`wai i18n status` / `wai i18n sync`, translation banner). Hebrew renders RTL. **Implication:** the deferred `lang=` work in P2.5 is now a natural follow-on with real surface to attach to. |
-| **Sex-aware translation pipeline** | (no standalone plan) | `sex` field on every `DerivedRecord` threaded through `wai i18n sync` so translations use gendered past-tense forms. Was the last item in the old Now band; merged as PR #10. |
-| **Author/attribution frontmatter** | (no standalone plan; PR #11) | New `author:` PageMeta field for LLM model name. Made `editors[]` optional. Closes the data-model half of P1.2. |
-| **Article pipeline — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-10-article-pipeline-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-10-article-pipeline-plan-2-author-core.md) · [3](./superpowers/plans/2026-05-10-article-pipeline-plan-3-cohort-review.md) | Evidence-drawer commands (`wai narrative`, `wai transcribe`, `wai interview`), `wai author <slug>` orchestrator, `wai author --cohort`, `wai revert`, `wai history`. Materially advances P3.4 (document evidence) and reframes how P3.1 (research frontier) would be operationalized. |
-| **Quality checks Pass 2** | [plan](./superpowers/plans/2026-05-18-quality-checks-pass-2.md) | 4 new `wai check` detectors (NameTranDrift, StaleCanonicalSha — surfaced 534 real stale translations on first run, InfoboxNameDrift, PipelineFrontmatterDrift). + DerivedRecord schema at write boundary + 5-layer frontmatter-drift defense. |
-| **Cross-page consistency detector** | [plan](./superpowers/plans/2026-05-16-cross-page-consistency-detector.md) | Talk-page-vs-live-page quoted-claim drift detector — catches the Boris/Kelman mix-up class of error. |
-| **Wikilink hover-cards** | [plan](./superpowers/plans/2026-05-16-wikilink-hover-cards.md) | 200ms-delayed page preview on hover; portrait + dates + lead, precomputed at SSR. Overlaps P1.3 / P1.9 reading-surface work. |
-| **"This day in family history" ribbon** | [plan](./superpowers/plans/2026-05-16-this-day-in-family-history-ribbon.md) | Home-page almanac — today's births / deaths / marriages from the tree. Partial overlap with P1.3. |
-| **Relationship strip on person pages** | [plan](./superpowers/plans/2026-05-16-relationship-strip-on-person-pages.md) | "Your <relation>" subtitle below every person-page H1, computed server-side from SELF_RECORD. |
-| **`wai doctor` + actionable connection errors** | [plan](./superpowers/plans/2026-05-09-wai-doctor.md) | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
-| **Conflict-resolution schema** | (no standalone plan) | Listed for completeness — fully tracked as P1.5 ✅ in Wave 2 below. |
-| **Red-links flow** | (no standalone plan) | Listed for completeness — fully tracked as P2.2 ✅ in Wave 1 above. |
-| **Commit-slicing pass** | [plan](./superpowers/plans/2026-05-16-commit-slicing.md) | One-off slicing of ~49 uncommitted files into 13 focused commits. Led directly to CLAUDE.md Rule 13 (commit at logical units). |
+| **Contribution** | **E.0** — Identity & session state | M |
+| **Reading** | Reading-surface audit | S |
+| **Authoring** | Cost telemetry on `wai author` | S |
+| **Infrastructure** | P0.2 privacy-gate re-enable decision | XS |
 
-> **PM read on the unplanned work:** the bulk of it is content/quality
-> infrastructure (article pipeline, multilingual, drift detectors,
-> GEDCOM 7) — not new reader-facing features. The reader-facing
-> exceptions (hover-cards, relationship strip, ribbon) are small
-> drive-bys, not strategy shifts. The plan-of-record's overall
-> sequencing (Waves 3–5 next) is still the right call; the unplanned
-> work strengthens the foundation those waves sit on rather than
-> redirecting them.
+Three of those four are S/XS — the contribution-track E.0 is the only
+M item near the top. A reasonable sequencing for the next ~2 weeks:
+
+1. P0.2 decision (XS, opens the door for E.3's audio gate)
+2. Reading-surface audit (S, independent, results may shape Reading-track sequence)
+3. Cost telemetry on `wai author` (S, info-gathering for Authoring track)
+4. Begin E.0 in earnest
 
 ---
 
-## Next (post-review sprint, ≈ 6 weeks)
+## Track: Contribution (current strategic priority)
 
-Endorses the platform review's [Suggested Sequencing](./reviews/2026-05-07-platform-review.md#suggested-sequencing).
-The order below is the plan-of-record; deviations should be argued in
-the talk page of the relevant plan, not silently re-ordered.
+> Browser-side contribution of raw evidence (text, audio, structured Q&A)
+> from family informants in en/ru/uk/he. Three modes from one session
+> model: interview-with-Zina, interview-with-Sam, self-edit-as-Bella.
+> Defined in the [contribution mode roadmap](./superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md).
 
-### Wave 1 — Hotfixes (week 1)
-
-| Status | Item | Lift | Source |
+| Status | Item | Lift | Notes |
 |---|---|---|---|
-| ✅ shipped | **P0.1** Strip removed CLI commands from `plugins/whoami/CLAUDE.md` and `agents/editor.md`; add eval smoke test for prompt/CLI drift | S | [Review §P0.1](./reviews/2026-05-07-platform-review.md#p01--agent-prompts-reference-removed-cli-commands) — *Shipped 2026-05-17. Prompts now document the full agent-facing surface (added `author`, `narrative`, `transcribe`, `interview`, `grep-claims`, `redlinks`, `delete`, `note --kind`); pre-existing stale `--include` flag references in editorial-guide also fixed; smoke test at `cli/test/prompt-drift.test.ts` extracts every `wai <cmd>` and `--flag` from the prompts and asserts each is a live CLI surface element.* |
-| ✅ shipped | **P0.3** Flag slash-date ambiguity in `core/src/family/dates.ts`; add `wai audit dates`; render `?` glyph in infobox | S | [Review §P0.3](./reviews/2026-05-07-platform-review.md#p03--slash-date-ambiguity-is-unresolved) — *Shipped 2026-05-17. Detection already existed in `core/src/format/dates.ts` (`normalizeDate` returns `{ ambiguous: true }` for m/d/y vs d/m/y when both ≤ 12) and the infobox `?` glyph at `frontend/components/directives/infobox-person.tsx:180-196` was already wired; this PR closed the remaining gap by adding the **`wai audit dates`** CLI command — a pure `core/src/checks/ambiguous-dates.ts` scanner over the GEDCOM source, derived YAMLs, and page prose, plus a thin CLI wrapper that groups hits by source and exits non-zero on any find. Current user data has zero hits, so the command lands as a forward-looking guardrail for the next batch of raw input.* |
-| ✅ shipped | **P2.1** Move citation directives to design tokens; verify dark-mode contrast | S | [Review §P2.1](./reviews/2026-05-07-platform-review.md#p21--citation-directives-are-visually-disconnected-and-dark-mode-broken) — *Shipped 2026-05-18. The strict "move citation directives off hardcoded `text-slate-600` / `bg-slate-50` / `border-blue-300`" half had already landed in commit `3f300e0` (`bg-muted` + `text-muted-foreground` + `border-s-border` / `border-s-primary` on `cite-vault.tsx` and `cite-message.tsx`); the roadmap row was never flipped. This PR closes the "verify dark-mode contrast" half (`text-muted-foreground` on `bg-muted` ≈ 6.5:1 against `--card` in dark mode — passes WCAG AA) and adds `dark:[&>svg]:text-{yellow,green,red,amber}-400` variants to `admonition.tsx` — the `-600` light-mode hues were borderline (3.9–4.7:1) on the dark card background. Adjacent violet quote-accent borders in `blockquote` / `dialogue` are mid-luminance and pass in both modes — left alone. Closes Wave 1.* |
-| 🔧 partial | **P2.5** Accessibility hotfix bundle: skip-to-content, alt text on portraits/avatars, `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps) — *Skip-to-content link landed 2026-05-15 (`frontend/app/layout.tsx`); alt text was already correct via `AvatarMonogram`'s `alt=""` + `aria-hidden`. `lang=` on multilingual name spans still deferred — natural follow-on now that the multilingual pipeline (Plans 1–3) is live and per-locale name renders exist.* |
-| ✅ shipped | **P2.2** Red-links flow (`wai redlinks` + `/api/redlinks` + `core/src/pages/redlinks.ts`) | S | [Review §P2.2](./reviews/2026-05-07-platform-review.md#p22--red-links-exist-but-offer-no-creation-flow) — *Shipped 2026-05-09 in commit `839a714`. Surfaces the want-list of unwritten articles for `wai author --cohort missing` and for human selection of the next page to write.* |
+| ⏳ ready | **E.0** Identity & session state | M | `people.yml` opt-in registry, `viewer`+`subject` session model (hybrid persistence: cookie viewer, session subject), identity picker, name-match heuristic |
+| ⏳ ready | **E.1** Browser write API with viewer+subject attribution | M | Extend `/api/notes`; multi-modal payloads; living-person opt-in check |
+| ⏳ ready | **E.2** Browser audio recording + asset storage | M | MediaRecorder; `~/whoami/assets/audio/`; extends `MediaRef[]` with `kind:'audio'`. **Absorbs P1.7** (media as first-class) and **P2.8** (first non-trivial schema migration) |
+| ⏳ ready | **E.3** Living-person audio gate (extends P0.2) | S | Ships paired with E.2. Restricted audio doesn't render or appear in search |
+| ⏳ ready | **E.4** Talk-page `## Interview questions` convention + parser | S | Reuses talk-thread infrastructure from P1.9 |
+| ⏳ ready | **E.5** Reverse-direction translation (other → EN) | M | **Conceptual hinge** — non-EN contributions feed the article pipeline. New `wai translate-note` or extension of `wai i18n sync` |
+| ⏳ ready | **E.6** `/[locale]/interview/` route — MVP completes | M | Cohort-driven relevance filter (reuses `core/src/family/cohort.ts`); text + audio answer; submits to E.1 |
+| ⏳ ready | **E.7** Accessibility-grade UI shell | M | Large fonts, icon-first, "Question N of M" wizard, optional TTS read-aloud. Tune from real-session friction |
+| ⏳ ready | **E.8** RTL audit for forms + audio player + interview shell | S | Hebrew-speaking contributors are first-class; audit after E.7 settles components |
+| ⏳ ready | **E.9** Audio transcription via local whisper.cpp | L | Deferred until corpus of recordings justifies setup. Local-first per privacy posture |
 
-> **Wave 1 status (2026-05-18):** closed. P0.1, P0.3, P2.1, P2.2 all
-> ✅; P2.5 🔧 partial (skip-to-content + alt text shipped; per-locale
-> `lang=` deferred as a natural follow-on now that the multilingual
-> pipeline is live). Pull from Wave 2 (**P0.4**) next.
+**MVP = E.0–E.6.** ~6 weeks if it's the only thing in motion.
+**Full track = E.0–E.9.** ~10 weeks.
 
-### Wave 2 — Privacy & schema groundwork (weeks 2–3)
-
-| Status | Item | Lift | Source |
-|---|---|---|---|
-| ✅ shipped | **P0.2** Living-person privacy gate (`RESN` parsing, age heuristic, `derived.privacy`, search default-filter, `wai export --redact-living`, frontmatter `restricted: bool`) | M | [Review §P0.2](./reviews/2026-05-07-platform-review.md#p02--no-living-person-privacy-gate) — *Shipped 2026-05-15 across four sub-items: (1) deriver `Privacy { restricted, reason }` from RESN + 110-year living heuristic; (2) `wai search` privacy filter with `--include-living` opt-in; (3) `wai export --redact-living` standalone; (4) frontend `RestrictedNotice` gating in the renderer. Pages-export and `lang=` opt-back-in deferred. Gate is currently disabled by default via `WHOAMI_PRIVACY_GATE` env flag for development; user will re-enable.* |
-| ✅ shipped | **P1.5** Conflict-resolution schema (focal-person view) | M | [Review §P1.5](./reviews/2026-05-07-platform-review.md#p15--no-conflict-resolution-schema-in-the-data-model) — *Shipped 2026-05-09 in commit `a8ff233`. `core/src/family/conflicts.ts` + `frontend/components/family/sections/conflicts-section.tsx` surface disagreeing sources on the focal person. Gates P3.2 (source-criticism mode); unblocks remaining P1 data-model items.* |
-| ✅ shipped | **P0.4** Resolve Ancestry `_APID` codes to source titles; surface `sources_unresolved`; add source-coverage metric to Coverage section | M | [Review §P0.4](./reviews/2026-05-07-platform-review.md#p04--source-coverage-in-derived-records-is-sparse) — *Partial close 2026-05-19. The v7 upgrade (May 2026) made recommendations #1 and #2 moot: `_APID` → standard `EXID` in v7, all 18 top-level SOUR records in the corpus already carry `TITL`, and an empirical audit found 0 individuals with nested-only sources (the deriver isn't missing any joinable citations). What ships now is recommendation #3 — the source-coverage metric: `frontend/lib/family.ts` gains a `sourceCoverage: { cited, total }` field on `CoverageView`, computed by counting ancestors whose `DerivedRecord.sources` is non-empty against `knownTotal` (no extra I/O — uses the already-loaded records map). `CoverageSection` renders a sibling line under `knownOfPossible`: e.g. "29 / 126 known" + "8 / 29 cited (28%)" — same visual density. i18n in all 4 locales. Surfaces the genuine 77% (158/203) uncited gap in the data so it becomes actionable instead of invisible.* |
-
-### Wave 3 — Reading & discovery surface (weeks 3–4)
-
-| Status | Item | Lift | Source |
-|---|---|---|---|
-| ✅ shipped | **P1.2** Article freshness/attribution metadata strip | S | [Review §P1.2](./reviews/2026-05-07-platform-review.md#p12--no-article-freshness-or-agent-attribution) — *Shipped iteratively across 2026-05-07 → 2026-05-17. `frontend/app/[locale]/[slug]/page.tsx:131-180` renders a uppercase mono strip below the title with `created`, `author:` (LLM model name from PR #11 `author-attribution`), `editors:`, `GEDCOM snapshot`, source count, live note count, and open-gap count — exactly the seven facts the review asked for. Closes the "core epistemic question" identified in the review.* |
-| ✅ shipped | **P1.3** Home page → research dashboard (frontier, recently revised, editorial gaps, unwritten pages, A–Z relegated to `/index`) | S | [Review §P1.3](./reviews/2026-05-07-platform-review.md#p13--home-page-is-a-bare-directory-listing) — *Shipped 2026-05-18. Home page is now a five-card dashboard: hero stats, on-this-day ribbon (added 2026-05-16), continue-research frontier, editorial gaps (top 5 articles by unresolved `::open` + `::gap` thread count), recently revised, unwritten pages (top 5 redlink targets). A–Z articles + talk-pages grids moved to `/index`; full redlinks listing at `/redlinks`. Pure aggregator in [`core/src/pages/talk-threads.ts`](../core/src/pages/talk-threads.ts) (`aggregateOpenGaps`); cached fan-out readers in [`frontend/lib/server-services.ts`](../frontend/lib/server-services.ts). Spec: [`2026-05-18-home-research-dashboard-design.md`](./superpowers/specs/2026-05-18-home-research-dashboard-design.md). Plan: [`2026-05-18-home-research-dashboard.md`](./superpowers/plans/2026-05-18-home-research-dashboard.md).* |
-| ✅ shipped | **P1.9** Talk-page surfacing in article header | S | [Review §P1.9](./reviews/2026-05-07-platform-review.md#p19--talk-pages-are-invisible-to-readers) — *Shipped 2026-05-18. Editorial `::open`/`::closed`/`::superseded`/`::gap` threads from the talk page now render inline as collapsible cards in a new "Editorial discussion" section beneath the article body (open default-expanded, resolved default-collapsed). Pure parser in `core/src/pages/talk-threads.ts`; `frontend/components/talk-threads/threads-panel.tsx` renders as a server component with i18n in all 4 locales. The freshness-strip `countOpenGaps` now delegates to the shared parser, fixing a level-3-heading undercount the legacy regex had (`wartime-catastrophe` now reports 43 open gaps instead of 0). Talk page itself, restricted pages, and pages with no threads correctly skip the panel.* |
-| ✅ shipped | **P1.10** Empty / error / loading states (skeletons, custom 404, GEDCOM-stale banner) | S | [Review §P1.10](./reviews/2026-05-07-platform-review.md#p110--empty--error--loading-states-are-bare) — *Shipped 2026-05-19 across three sub-items, the first two iteratively and the third in this commit. (1) Custom 404 with "search for the name instead" in `app/[locale]/not-found.tsx` (shipped earlier with i18n in all 4 locales). (2) GEDCOM-stale banner on the home page in `app/[locale]/page.tsx` (`STALE_SNAPSHOT_DAYS = 30`, ICU-pluralized `snapshotStale` message with inline `wai sync-gedcom` example). (3) Suspense skeletons: shadcn `Skeleton` primitive (`components/ui/skeleton.tsx`); `app/[locale]/[slug]/loading.tsx` mirrors the article layout (back-link, type label, title, freshness strip, 9 prose rows); `app/[locale]/family/tree/loading.tsx` mirrors the sticky-header chrome + 520px pedigree placeholder + section skeletons; `BirthplacesMap` placeholder also swapped to `Skeleton` for consistency. A locale-level `error.tsx` was originally included as a bonus but rolled back because it triggered a dev-mode `performance.measure` console error on 404 navigations (Next 16's intermediate error-boundary catch+rethrow of NEXT_NOT_FOUND disrupts RSC perf timing); the inline schema-mismatch error in `[slug]/page.tsx` continues to be the runtime-error model. Optional follow-on candidates (out-of-scope for P1.10, surface as P2): (a) extend the stale-snapshot banner to `/family/tree` since it's the most data-dependent page; (b) revisit a runtime error boundary if a placement is found that doesn't sit between `notFound()` callers and `not-found.tsx`.* |
-
-### Wave 4 — The tree itself (weeks 4–5)
-
-| Status | Item | Lift | Source |
-|---|---|---|---|
-| ✅ shipped | **P1.1** Pedigree chart on `/family/tree` | M | [Review §P1.1](./reviews/2026-05-07-platform-review.md#p11--familytree-is-a-list-not-a-tree) — *Shipped 2026-05-18. Interactive ancestor chart at the top of `/family/tree`, replacing the list-only layout. Pure layout function in `core/src/family/pedigree-layout.ts` (~95 lines, no `d3-hierarchy` dep) feeds React Flow (`@xyflow/react` v12.10.2); mobile falls back to a stacked generations list. The "tree, with directories below it" reframing the review asked for. Plan deviates from review's "use SVG, not a heavy lib" recommendation; the trade-off is React Flow's built-in pan/zoom/keyboard/touch in exchange for ~80 KB gzipped on a route-level chunk.* |
-| ⏳ ready | **P1.8** Breadcrumbs from relationship-calc path | S | [Review §P1.8](./reviews/2026-05-07-platform-review.md#p18--no-breadcrumbs-or-wayfinding-inside-the-tree) |
-| ⏳ ready | **P1.4** Search facets (place + decade); promote [`search-facets` plan](./superpowers/plans/2026-05-03-search-facets.md) follow-on | M | [Review §P1.4](./reviews/2026-05-07-platform-review.md#p14--search-lacks-faceting-and-reads-as-flat) |
-
-### Wave 5 — Schema reach (week 6)
-
-| Status | Item | Lift | Source |
-|---|---|---|---|
-| ⏳ ready | **P1.6** Half/step/adoptive distinctions (`PEDI`/`ADOP` parsing; `relation` field on parent/child entries; relationship-label generator updates) | M | [Review §P1.6](./reviews/2026-05-07-platform-review.md#p16--no-halfstepadoptive-distinction) |
-| ⏳ ready | **P1.7** Media as first-class object (`media[]` schema, evidence infobox section, restore `@O24@`-style import) | M | [Review §P1.7](./reviews/2026-05-07-platform-review.md#p17--photo--document-evidence-are-decoupled-from-records) |
+This track gives **P3.1** (research frontier as central UI metaphor)
+its first concrete instantiation — the interview surface *is* the
+frontier.
 
 ---
 
-## Later (accepted, unscheduled)
+## Track: Reading
 
-### P2 polish (six P2 items remain after Wave 1)
-
-| Item | Lift | Source |
-|---|---|---|
-| **P2.3** Merge overlapping residence/occupation intervals in derive | S | [Review §P2.3](./reviews/2026-05-07-platform-review.md#p23--place-residence-overlaps-not-deduplicated) |
-| **P2.4** Decide CLI `--help` policy on the 13 removed v1 commands (revive on a date or move to `/docs/cli-v1-to-v2.md`) | S | [Review §P2.4](./reviews/2026-05-07-platform-review.md#p24--cli-help-carries-13-removed-commands-forever) |
-| **P2.6** `wai recite --strict` warning mode for source typos and trailing-comma noise | S | [Review §P2.6](./reviews/2026-05-07-platform-review.md#p26--gedcom-source-typos--trailing-commas) |
-| **P2.7** Mobile density on `/family/tree` (collapse Lifespans/Descendants by default `< sm`) | S | [Review §P2.7](./reviews/2026-05-07-platform-review.md#p27--mobile-density-on-the-tree-page) |
-| **P2.8** Exercise the schema-migration registry with the first non-trivial migration (likely the `media[]` field from P1.7) | S | [Review §P2.8](./reviews/2026-05-07-platform-review.md#p28--schema-migrations-infrastructure-is-shipped-but-empty) |
-| **P2.9** Sweep `frontend/` to swap `import Link from 'next/link'` → `import { Link } from '@/i18n/navigation'` per `frontend/AGENTS.md` hard rule. 17 of 19 components currently use plain `next/link`; the i18n wrapper preserves the active locale prefix and is the documented convention. Flagged during P1.3 cross-cutting review. | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md (P1.3 close-out notes) |
-| **P2.10** Wrap dynamic Latin-script content (person names, slugs, GEDCOM IDs) in `<bdi>` across home-page sections and family-tree components. Per `frontend/AGENTS.md` RTL conventions, mixed-script inline text needs `<bdi>` isolation; in Hebrew (`/he`) the frontier card, recently-revised list, and several family-tree components render unisolated. P1.3's new gaps + redlinks cards were fixed; pre-existing sections remain. | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md (P1.3 close-out notes) |
-| **P2.11** Hide the home-page browse-all footer's "Browse all N articles →" link when `live.length === 0` (mirror the existing pattern on the talk-pages link). Cosmetic; only triggers in an empty wiki. | XS | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md (P1.3 close-out notes) |
-| **P2.12** Add `/[locale]/gaps` listing route (parallel to `/redlinks`) — full per-article unresolved-thread list sorted by count, with each `::open`/`::gap` thread heading rendered inline. Close the home-page asymmetry: the redlinks card's aggregate footer links to `/redlinks` but the gaps card's aggregate is informational-only because no listing exists yet. | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md (P1.3 close-out notes) |
-| **P2.13** Strengthen `frontend/test/messages-parity.test.ts` to catch leftover English in non-English locale strings. The test currently checks only key shape; the P1.3 work shipped English placeholders in `Page.Index.ancestorsAcrossGenerations` + `articlesCount` to ru/uk/he that were caught only by manual cross-cutting review. Heuristics worth trying: flag plural blocks where every category arm is byte-identical; flag strings in a non-Latin-script locale that match `^[A-Za-z0-9 {}#,.]*$`. | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md (P1.3 close-out notes) |
-| **P2.16** Bulk-backfill translated talk pages: 101 EN talk pages × 3 locales (ru, uk, he) = 303 `wai i18n sync` calls. Each call burns one `translate` + one `translate-talk` model invocation. Cost-estimate first against a 5-page sample; if affordable, run as a batch script. Re-syncs are idempotent (the `existingTalkTranslation` field on the request lets the agent preserve human edits), so re-running is safe. Depends on **P2.15** (now shipped, see below). | M | CHANGELOG B.2 entry — deployment step for the B.1/B.2 pipeline |
-
-### Talk-page i18n track (Phase B — shipped outside the wave plan)
+> The wiki as a thing to browse. Article page, family tree, search,
+> home dashboard. After P1.10 (loading/error/empty states) shipped on
+> 2026-05-19, the article page has accreted 10+ visible components.
+> An audit gates further reader-side work.
 
 | Status | Item | Lift | Source |
 |---|---|---|---|
-| ✅ shipped | **P2.15** Make `frontend/lib/server-services.ts:readTalkBody` locale-aware (B.3 of the talk-page i18n pipeline) | S | CHANGELOG B.3 entry — *Shipped 2026-05-19. `readTalkBody(talkSlug, locale)` now reads `pages/{locale}/<slug>.talk.md` first and falls back to `pages/en/<slug>.talk.md` when missing. Call sites at `frontend/app/[locale]/[slug]/page.tsx` and `frontend/app/[locale]/family/tree/page.tsx` pass route locale; the inline Editorial-discussion panel on `/<locale>/<slug>` now reads the localized talk page. The `getCachedOpenGaps` home-page fan-out intentionally stays at EN since `::open` counts are structural and locale-invariant. New `readTalkBodyWithStore` DI export; 4 unit tests (locale=en, locale-hit, locale-miss→EN-fallback, neither-exists→empty). Closes P2.15.* |
-
-### Pedigree-chart follow-ons (extends P1.1)
-
-The pedigree chart shipped 2026-05-18 ([P1.1](#wave-4--the-tree-itself-weeks-45)).
-Manual testing surfaced three follow-on sub-projects that together
-deliver the "gap-as-frontier with talk-page candidate matching" idea —
-foundational groundwork for [P3.1](#p3-strategic-bets-12-month-horizon)
-(research frontier as central UI metaphor). Each ships independently;
-F → T → D is the recommended order.
-
-| Status | Item | Lift | Spec | Notes |
-|---|---|---|---|---|
-| ✅ shipped | **F** Chart frontier slots | S | [`pedigree-frontier-slots-design`](./superpowers/specs/2026-05-18-pedigree-frontier-slots-design.md) | *Shipped 2026-05-18 — recursive-midpoint layout now treats frontier slots as full leaves so asymmetric branches with detectable gaps spread spatially. Kinship labels in all 4 locales. Click navigates to descendant's tree; the research drawer (sub-project D) will later intercept the same click.* |
-| ⏳ ready | **T** Talk-page candidates format + parser | M | (spec TBD when picked up) | `## Candidates` section convention in talk files; parser in `core/`; CLI surface (`wai candidates list <slug>`). Standalone data utility — no chart change required. **Ship second.** |
-| ⏳ ready | **D** Research drawer | M | (spec TBD when picked up) | Side-panel Sheet opened on click of any chart node (present or frontier). Shows kinship, parsed candidates from T if shipped, action buttons (search wiki, note this as a question, open talk page). **Ship third — depends on F + benefits from T.** |
-
-> **PM call:** F alone is a contained visual win that addresses the
-> gap-as-frontier UX hole directly. T standalone provides a useful
-> CLI surface for agents working on research backlog. D is where the
-> three become more than the sum — the chart node becomes the entry
-> point for active research, not just a view of state.
-
-### P3 strategic bets (12-month horizon)
-
-These are *reframings*, not improvements. **PM call: do not start any
-P3 work before P0/P1 are largely closed.** Each one expands surface
-area; surface area amplifies the gaps below it.
-
-| Item | Lift | Source |
-|---|---|---|
-| **P3.1** Make the "research frontier" the central UI metaphor; agents evaluated on frontier reduction | L | [Review §P3.1](./reviews/2026-05-07-platform-review.md#p31--make-the-research-frontier-the-central-ui-metaphor) |
-| **P3.2** Source-criticism mode (strength + confidence per fact); requires P1.5 + P1.7 | L | [Review §P3.2](./reviews/2026-05-07-platform-review.md#p32--source-criticism-mode) |
-| **P3.3** Global navigable timeline (1850–2026 scrubber driving map + births/deaths/marriages) | L | [Review §P3.3](./reviews/2026-05-07-platform-review.md#p33--timeline-as-a-navigable-axis) |
-| **P3.4** Document evidence as first-class object (`/evidence` route, OCR/transcription seam) | L | [Review §P3.4](./reviews/2026-05-07-platform-review.md#p34--document-evidence-as-a-first-class-object) |
-| **P3.5** Cross-tree linking (signed-link reference between trees) | L | [Review §P3.5](./reviews/2026-05-07-platform-review.md#p35--cross-tree-linking) |
-| **P3.6** Story spine per person (chronological event timeline alongside prose) | M | [Review §P3.6](./reviews/2026-05-07-platform-review.md#p36--story-spine-per-person) |
-| **P3.7** DNA reconciliation slot (cM totals, common-ancestor projections) | M | [Review §P3.7](./reviews/2026-05-07-platform-review.md#p37--dna-reconciliation-slot) |
-| **P3.8** Federation / encrypted off-site backup + selective sharing | L | [Review §P3.8](./reviews/2026-05-07-platform-review.md#p38--federation--remote-vault) |
+| ⏳ ready | **Reading-surface audit** | S | New, 2026-05-19. Honest sit-down audit of the article page, home page, and family-tree page after the May 2026 build-out. Identifies what's redundant, what's mis-prioritized, what should be cut vs. demoted. Gates everything below. |
+| ✅ shipped | **`/[locale]/roadmap` site page** | S | Shipped 2026-05-19. `frontend/lib/roadmap.ts` parses `docs/ROADMAP.md` into typed sections (snapshot, track, parking, cut, shipped, narrative) with per-section item counts and aggregate totals; mirrors the `lib/changelog.ts` cache + render pattern. Route at `frontend/app/[locale]/roadmap/page.tsx` with side-rail index and section blocks coloured by kind. Chrome translated to all 4 locales under `Page.Roadmap` (24 keys × 4); body stays English. `.roadmap-prose` table-first typography added to `globals.css`. 9 parser tests; full frontend suite 89/89 green. |
+| ⏳ ready | **Pedigree follow-on T** Talk-page candidates format + parser | M | [Pedigree follow-on T](#pedigree-chart-follow-ons-extends-p11) — `## Candidates` section in talk files; parser in `core/`; `wai candidates list <slug>` CLI surface |
+| ⏳ ready | **Pedigree follow-on D** Research drawer | M | [Pedigree follow-on D](#pedigree-chart-follow-ons-extends-p11) — side-panel `Sheet` opened on chart node click. Depends on F (shipped) + benefits from T. **This is the chart's transition from "view of state" → "entry point for research."** |
+| ⏳ ready | **P1.4** Search facets (place + decade), re-spec'd with locale awareness | M | [Review §P1.4](./reviews/2026-05-07-platform-review.md#p14--search-lacks-faceting-and-reads-as-flat). Re-spec post-multilingual: locale facet, place facet via `places-coords.yml`, decade facet via existing date parser |
+| 🔧 partial | **P2.5** Per-locale `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps). Skip-to-content + alt text shipped; `lang=` deferred. Natural follow-on now that per-locale name renders exist |
+| ⏳ ready | **P2.3** Merge overlapping residence/occupation intervals in derive | S | [Review §P2.3](./reviews/2026-05-07-platform-review.md#p23--place-residence-overlaps-not-deduplicated) |
+| ⏳ ready | **P2.7** Mobile density on `/family/tree` (collapse Lifespans/Descendants by default `< sm`) | S | [Review §P2.7](./reviews/2026-05-07-platform-review.md#p27--mobile-density-on-the-tree-page) |
+| ⏳ ready | **P2.9** `next-intl` Link sweep across `frontend/` (17 of 19 components use plain `next/link`) | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
+| ⏳ ready | **P2.10** `<bdi>` sweep on family-tree components for RTL | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
+| ⏳ ready | **P2.11** Hide home-page browse-all footer when `live.length === 0` | XS | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
+| ⏳ ready | **P2.12** `/[locale]/gaps` listing route | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
 
 ---
 
-## Parking lot
+## Track: Authoring
 
-Bookmarked, not on the path. Each has an explicit triggering signal —
-when that signal fires, the item moves to **Next**, not before.
+> AI agents writing articles. The pipeline shipped fast (`wai author`,
+> `--cohort`, `revert`, `history`) over April–May 2026. Track focus:
+> hardening, schema reach, source criticism.
+
+| Status | Item | Lift | Source |
+|---|---|---|---|
+| ⏳ ready | **Cost telemetry on `wai author`** | S | New, 2026-05-19. Per-run + cumulative model-spend reporting. Cheapest hardening; surfaces info we don't currently have |
+| ⏳ ready | **Cohort resumability for `wai author --cohort`** | M | New, 2026-05-19. Pattern transferable from `tools/backfill-talk-i18n.sh` which already does this for translations |
+| ⏳ ready | **Verify-phase grader-disagreement policy** | M | New, 2026-05-19. **Needs design before code.** What does `verify` do when graders disagree with the draft today? It logs; does it block? Retry? Defer to human? Brainstorm first |
+| ⏳ ready | **P2.6** `wai recite --strict` warning mode for source typos and trailing-comma noise | S | [Review §P2.6](./reviews/2026-05-07-platform-review.md#p26--gedcom-source-typos--trailing-commas) |
+| ⏳ ready | **P3.2** Source-criticism mode (strength + confidence per fact) | L | [Review §P3.2](./reviews/2026-05-07-platform-review.md#p32--source-criticism-mode). Depends on P1.5 (✅) + E.2 (MediaRef extension lands first) |
+| ⏳ ready | **P3.4** Document evidence as first-class object | L | [Review §P3.4](./reviews/2026-05-07-platform-review.md#p34--document-evidence-as-a-first-class-object). **Substantially overlaps with Contribution-track E.2 + E.6 + E.9.** Revisit scope when Contribution MVP ships; may collapse to a thin extension rather than a separate workstream |
+
+---
+
+## Track: Infrastructure & hygiene
+
+| Status | Item | Lift | Notes |
+|---|---|---|---|
+| ⏳ ready | **P0.2 privacy gate re-enable decision** | XS | The gate is currently `WHOAMI_PRIVACY_GATE` off in dev per `frontend/lib/env.ts:39`. Decision: flip it on, or document why it stays off. Gates E.3 (audio gate inherits the same machinery) |
+| ⏳ ready | **`cli-v2.0.0` release** | S | Last tag (`cli-v1.2.1`, 2026-03-26) predates v2 entirely. Hygiene; do when working tree is opportunely clean. See AGENTS.md §Versioning for the steps |
+| ⏳ ready | **P2.13** Strengthen `frontend/test/messages-parity.test.ts` to catch leftover English in non-English locale strings | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
+| ⏳ ready | **CHANGELOG hygiene** | S | Process improvement, not a track item. Trim entry headers to one line + collapsible details; the file is 1,198 lines of unreleased. Couple cleanly with the `cli-v2.0.0` release |
+
+---
+
+## Parking lot — bookmarked with explicit triggers
+
+Each item has an explicit triggering signal. When that signal fires,
+the item moves to its track, not before.
 
 | Item | Trigger | Source |
 |---|---|---|
-| Narrative ↔ GEDCOM round-trip (paste-to-vault flow) | User says "I want to paste raw research text and have it weave into the wiki" | [`narrative-to-gedcom`](./superpowers/plans/2026-05-03-narrative-to-gedcom.md) |
+| **P1.6** Half/step/adoptive distinctions | User annotates `PEDI` / `ADOP` tags in the source GEDCOM | [Review §P1.6](./reviews/2026-05-07-platform-review.md#p16--no-halfstepadoptive-distinction) — verification 2026-05-19 found 0 such tags in the corpus |
+| **P1.8** Breadcrumbs from relationship-calc path | Pedigree chart wayfinding proves insufficient in real usage | [Review §P1.8](./reviews/2026-05-07-platform-review.md#p18--no-breadcrumbs-or-wayfinding-inside-the-tree) — chart shipped 2026-05-18 supersedes most of this |
+| **P2.4** CLI v1→v2 migration docs | An external user complains about a removed v1 command | [Review §P2.4](./reviews/2026-05-07-platform-review.md#p24--cli-help-carries-13-removed-commands-forever) |
+| **P3.3** Global navigable timeline | Contribution-track work doesn't already give timeline-as-axis a natural surface | [Review §P3.3](./reviews/2026-05-07-platform-review.md#p33--timeline-as-a-navigable-axis) |
+| **P3.6** Story spine per person | User finds the existing event coverage on person pages insufficient | [Review §P3.6](./reviews/2026-05-07-platform-review.md#p36--story-spine-per-person) |
+| **P3.7** DNA reconciliation slot | User obtains DNA test results | [Review §P3.7](./reviews/2026-05-07-platform-review.md#p37--dna-reconciliation-slot) |
+| **P3.8** Federation / encrypted off-site backup | User wants to share read access outside Tailscale | [Review §P3.8](./reviews/2026-05-07-platform-review.md#p38--federation--remote-vault) — *backup itself is already de-facto via `~/whoami` GitHub remote at `stevenbarash/family-tree-data.git`; the remaining concern is E2E encryption / federation, not loss prevention* |
+| Narrative ↔ GEDCOM round-trip (paste-to-vault) | User wants to paste raw research text and have it weave into the wiki | [`narrative-to-gedcom`](./superpowers/plans/2026-05-03-narrative-to-gedcom.md) |
 | Typed CLI/server contract module (Zod) | First contract-drift bug that costs > 30 min of debugging | [`cli-server-contract`](./superpowers/plans/2026-05-03-cli-server-contract.md) |
-| Off-site backup ("Plan A") | After P0.2 ships — privacy gate is the prerequisite | (no plan file yet) |
-| Re-add app-layer auth | Decision to share read-only access outside Tailscale | (no plan file yet; would change scope) |
-| Wikitext → Markdown converter polish (Plan B) | If old MediaWiki content needs migrating again | [`wikitext-to-md-converter`](./superpowers/plans/2026-05-01-wikitext-to-md-converter.md) |
+| Re-add real app-layer auth (passwords / sessions / anti-impersonation) | Decision to share *write* access outside the single-user-device model | *(no plan file yet)* — note that lightweight identity (self-asserted picker) became in-scope 2026-05-19 and is **not** auth |
+| Wikitext → Markdown converter polish (Plan B) | Old MediaWiki content needs migrating again | [`wikitext-to-md-converter`](./superpowers/plans/2026-05-01-wikitext-to-md-converter.md) |
 
 ---
 
-## Opinionated cuts (PM call, 2026-05-07)
+## Cut from roadmap
 
-These are deferrals or reductions I'd recommend on top of the platform
-review's sequencing.
+| Item | Reason | Disposition |
+|---|---|---|
+| **P3.5** Cross-tree linking (signed-link reference between trees) | Conflicts with `SCOPE.md` anti-goals (no public hosting, no multi-user). Was miscategorized as a P3 strategic bet; it's actually an anti-goal | Removed entirely. Note added to SCOPE.md confirmed-anti-goals list if needed |
+| **P1.7** Media as first-class object | Absorbed into Contribution-track **E.2**. Audio is the leading media kind for the user story; static media is a sub-case of the same `MediaRef[]` extension | Removed; referenced from E.2 |
+| **P2.8** Schema-migration registry exercise | Absorbed into Contribution-track **E.2**. E.2's MediaRef extension is the first real migration that exercises the registry | Removed; referenced from E.2 |
+| **P2.16** Bulk-backfill translated talk pages | Operational task that the user runs themselves (`tmux new -s backfill 'tools/backfill-talk-i18n.sh'`, ~12h, $150–$600). Engineering infrastructure shipped 2026-05-19; the *run* belongs in user-operational memory, not the engineering roadmap | Removed; lives in [user's operational notes](./superpowers/plans/2026-05-19-quality-checks-pass-2.md) and auto-memory |
 
-1. ~~**Reduce in-flight WIP from 4 themes to 1 by end of week.**~~
-   **✅ Done 2026-05-15.** Conflicts and redlinks landed as separate
-   commits (`a8ff233`, `839a714`); the GEDCOM normalize layer was
-   absorbed into the full GEDCOM 7 upgrade; sex-aware translation
-   shipped as PR #10; family-section refactor landed. P0.1 was then
-   tackled on a clean tree and shipped 2026-05-17. The discipline
-   of "land themes as separable commits" became CLAUDE.md Rule 13
-   (commit at logical units).
+---
 
-2. **Reconcile the schema-migrations plan duplicate.** There are two
-   files: `2026-05-03-schema-migrations.md` (sketch, "deferred") and
-   `2026-05-04-schema-migrations.md` (the implementation that
-   shipped). Delete the sketch or rename it to `*-design-notes.md`
-   so there's no ambiguity about which is authoritative.
+## Pedigree chart follow-ons (extends P1.1)
 
-3. **Defer P3 entirely until at least Wave 4 ships.** Each P3 bet
-   amplifies the surface area; doing them before P1.1 (a real tree)
-   and P1.5 (conflict schema) means building on a base that will
-   change underneath them.
+The pedigree chart shipped 2026-05-18 ([P1.1](#track-reading)).
+Manual testing surfaced three follow-on sub-projects that together
+deliver the "gap-as-frontier with talk-page candidate matching" idea —
+foundational groundwork for [P3.1](#contribution-track-instantiates-p31).
+Each ships independently; F → T → D is the recommended order.
 
-4. **Promote `search-facets` follow-on to the same plan-of-record.**
-   The current plan shipped *type* facets only; surname/decade/place
-   are deferred. Wave 4 P1.4 absorbs that follow-on rather than
-   spawning a new plan; update the existing plan in place.
+| Status | Item | Lift | Spec | Notes |
+|---|---|---|---|---|
+| ✅ shipped | **F** Chart frontier slots | S | [`pedigree-frontier-slots-design`](./superpowers/specs/2026-05-18-pedigree-frontier-slots-design.md) | Shipped 2026-05-18 |
+| ⏳ ready | **T** Talk-page candidates format + parser | M | (spec TBD) | Standalone data utility; **ship second** |
+| ⏳ ready | **D** Research drawer | M | (spec TBD) | Side-panel Sheet on chart node click; **ship third — depends on F + benefits from T** |
 
-5. **Don't write CLI v1 → v2 migration docs (P2.4) until something
-   actually breaks for an external user.** This is solo-project; the
-   13 removed-command stubs are technical debt with zero current
-   readers. Move to Parking lot, not Later.
+---
+
+## Contribution track instantiates P3.1
+
+[Review §P3.1](./reviews/2026-05-07-platform-review.md#p31--make-the-research-frontier-the-central-ui-metaphor)
+proposed making the "research frontier" the central UI metaphor. The
+contribution track is its concrete operationalization — the interview
+surface *is* the frontier. Each open question, gap, redlink target,
+or frontier slot becomes a thing a contributor can address today.
+P3.1 as a standalone item is therefore subsumed by the Contribution
+track and removed from the strategic-bets list.
+
+---
+
+## Recently shipped (since 2026-05-07 platform review)
+
+The 12 days after the May 7 review (2026-05-08 through 2026-05-19)
+shipped substantially more than any single wave called for, and most of
+it was not on the original plan. Listed for honest accounting (Rule 12).
+
+| Item | Plan | Notes |
+|---|---|---|
+| **P0.1** Strip removed CLI commands from agent prompts + smoke test | (no plan) | Shipped 2026-05-17 |
+| **P0.2** Living-person privacy gate (parsing + search filter + export + RestrictedNotice) | (no plan) | Shipped 2026-05-15. Gate disabled via env flag pending user re-enable |
+| **P0.3** Slash-date ambiguity detection + `wai audit dates` + `?` glyph | (no plan) | Shipped 2026-05-17. Current data has 0 hits |
+| **P0.4** Source-coverage metric on `/family/tree` Coverage section | (no plan) | Partial close 2026-05-19. Recs #1/#2 made moot by GEDCOM 7; rec #3 shipped |
+| **P1.1** Pedigree chart on `/family/tree` | [plan](./superpowers/plans/2026-05-18-pedigree-chart.md) | Shipped 2026-05-18 |
+| **P1.2** Article freshness/attribution metadata strip | (no plan) | Shipped iteratively 2026-05-07 → 2026-05-17 |
+| **P1.3** Home page → research dashboard | [plan](./superpowers/plans/2026-05-18-home-research-dashboard.md) | Shipped 2026-05-18 |
+| **P1.5** Conflict-resolution schema (focal-person view) | (no plan) | Shipped 2026-05-09 in `a8ff233` |
+| **P1.9** Talk-page editorial threads on article pages | (no plan) | Shipped 2026-05-18 |
+| **P1.10** Empty / error / loading states | (no plan) | Shipped 2026-05-19. `error.tsx` bonus rolled back due to dev-mode `performance.measure` interaction |
+| **P2.1** Citation directives on design tokens + dark-mode contrast | (no plan) | Shipped 2026-05-18 |
+| **P2.2** Red-links flow (`wai redlinks`) | (no plan) | Shipped 2026-05-09 in `839a714` |
+| **P2.5** Skip-to-content + alt text on portraits/avatars | (no plan) | Shipped 2026-05-15 |
+| **P2.15** Locale-aware `readTalkBody` (talk-page i18n B.3) | (no plan) | Shipped 2026-05-19 |
+| **Pedigree F** Chart frontier slots | [plan](./superpowers/plans/2026-05-18-pedigree-frontier-slots.md) | Shipped 2026-05-18 |
+| **GEDCOM 5.5.1 → 7.0.18 upgrade** | [plan](./superpowers/plans/2026-05-17-gedcom-7-upgrade.md) | Foundational for all multilingual and source-criticism work |
+| **Multilingual support — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-17-multilingual-support-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-17-multilingual-support-plan-2-chrome-translations.md) · [3](./superpowers/plans/2026-05-17-multilingual-support-plan-3-translation-pipeline.md) | en/ru/uk/he with RTL Hebrew |
+| **Talk-page i18n pipeline (B.1, B.2, B.3)** | (across several commits) | Real agent talk translator + locale-aware reader; closes P2.15 |
+| **Sex-aware translation pipeline** | (PR #10) | Gendered past-tense across all locales |
+| **Author/attribution frontmatter** | (PR #11) | LLM model name (e.g. `Claude Opus 4.7`); closes data-model half of P1.2 |
+| **Article pipeline — Plans 1, 2, 3** | [1](./superpowers/plans/2026-05-10-article-pipeline-plan-1-foundation.md) · [2](./superpowers/plans/2026-05-10-article-pipeline-plan-2-author-core.md) · [3](./superpowers/plans/2026-05-10-article-pipeline-plan-3-cohort-review.md) | `wai author / --cohort / revert / history` |
+| **Quality checks Pass 2** | [plan](./superpowers/plans/2026-05-18-quality-checks-pass-2.md) | 4 new drift detectors; surfaced 534 real stale translations |
+| **Cross-page consistency detector** | [plan](./superpowers/plans/2026-05-16-cross-page-consistency-detector.md) | Catches Boris/Kelman-class talk↔live drift |
+| **Wikilink hover-cards** | [plan](./superpowers/plans/2026-05-16-wikilink-hover-cards.md) | 200ms-delayed page preview |
+| **"This day in family history" ribbon** | [plan](./superpowers/plans/2026-05-16-this-day-in-family-history-ribbon.md) | Home-page almanac |
+| **Relationship strip on person pages** | [plan](./superpowers/plans/2026-05-16-relationship-strip-on-person-pages.md) | "Your `<relation>`" subtitle |
+| **`wai doctor` + actionable connection errors** | [plan](./superpowers/plans/2026-05-09-wai-doctor.md) | Dev-env diagnostics |
+| **Roadmap & plan-index drift guards + CLAUDE.md Rules 14/15** | (no plan) | `roadmap-drift` + `plan-index-drift` tests |
 
 ---
 
 ## Cadence and updates
 
-- **Wave boundaries trigger an update.** When a wave completes,
-  promote the next wave's items into closer-term review and update
-  status icons across the doc.
-- **Status icons:** ⏳ ready · 🚧 in flight · 🔧 closing · ✅ shipped · ❌ cancelled · 🅿️ parked.
+- **Track-milestone boundaries trigger an update.** When the next item
+  in a track ships, update that track's section and the snapshot at
+  the top.
 - **Authority:** if this doc and an individual plan's status disagree,
-  this doc is the planning source of truth and the plan is the
+  this doc is the planning source of truth and the plan body is the
   implementation source of truth — fix whichever is stale.
+- **Drift tests:** `cli/test/roadmap-drift.test.ts` and
+  `cli/test/plan-index-drift.test.ts` enforce ROADMAP ↔ CHANGELOG ↔
+  plan-index agreement bidirectionally. Keep them passing.
 - **Reviews:** treat `docs/reviews/YYYY-MM-DD-platform-review.md` as
-  scheduled punctuation. The next one is due when Wave 4 closes or
-  when the user senses drift.
+  scheduled punctuation. The next one is due when Contribution MVP
+  closes (E.0 → E.6), or when the user senses drift.
 
 ---
 
 ## See also
 
-- [`SCOPE.md`](./SCOPE.md) — what whoami.wiki is and isn't
-- [`reviews/2026-05-07-platform-review.md`](./reviews/2026-05-07-platform-review.md) — the assessment this roadmap consumes
+- [`SCOPE.md`](./SCOPE.md) — what whoami.wiki is and isn't (browser-writes-to-notes in scope, lightweight-identity in scope, both as of 2026-05-19)
+- [`reviews/2026-05-07-platform-review.md`](./reviews/2026-05-07-platform-review.md) — the platform-review assessment this roadmap was originally derived from
 - [`superpowers/plans/README.md`](./superpowers/plans/README.md) — index of all plans, by status
+- [`superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md`](./superpowers/plans/2026-05-19-family-contribution-mode-roadmap.md) — contribution track plan-of-plans
 - [`/CHANGELOG.md`](../CHANGELOG.md) — what has shipped and when

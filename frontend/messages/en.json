@@ -19,6 +19,7 @@
       "navTree": "Tree →",
       "navSearch": "Search →",
       "navChangelog": "Changelog →",
+      "navRoadmap": "Roadmap →",
       "snapshotStale": "GEDCOM snapshot is {days, plural, one {# day} other {# days}} old (last sync {date}). Run <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code> when you have changes to import.",
       "dayLabel": "{month} {day}",
       "continueResearch": "Continue research",
@@ -226,6 +227,27 @@
       "statEntries": "{count} entries",
       "statUpdated": "updated {date}",
       "onThisPage": "On this page"
+    },
+    "Roadmap": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Strategic sequencing",
+      "subtitle": "What's planned, what's parked, what just shipped —",
+      "heading": "Roadmap",
+      "statTracks": "{count, plural, one {# track} other {# tracks}}",
+      "statShipped": "{count} shipped",
+      "statReady": "{count} ready",
+      "statInFlight": "{count} in flight",
+      "statParked": "{count} parked",
+      "statCut": "{count} cut",
+      "statUpdated": "updated {date}",
+      "snapshotLabel": "Snapshot",
+      "trackLabel": "Track",
+      "parkingLabel": "Parking lot",
+      "cutLabel": "Cut",
+      "shippedLabel": "Shipped",
+      "narrativeLabel": "Notes",
+      "onThisPage": "On this page",
+      "viewSource": "View source on GitHub"
     }
   },
   "Months": {

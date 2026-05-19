@@ -19,6 +19,7 @@
       "navTree": "Древо →",
       "navSearch": "Поиск →",
       "navChangelog": "История изменений →",
+      "navRoadmap": "Дорожная карта →",
       "snapshotStale": "Снимок GEDCOM устарел на {days, plural, one {# день} few {# дня} many {# дней} other {# дня}} (последняя синхронизация {date}). Выполните <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code>, когда у вас появятся изменения для импорта.",
       "dayLabel": "{day} {month}",
       "continueResearch": "Продолжить исследование",
@@ -226,6 +227,27 @@
       "statEntries": "{count} записей",
       "statUpdated": "обновлено {date}",
       "onThisPage": "На этой странице"
+    },
+    "Roadmap": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Стратегическая последовательность",
+      "subtitle": "Что запланировано, что отложено, что только что выпущено —",
+      "heading": "Дорожная карта",
+      "statTracks": "{count, plural, one {# направление} few {# направления} many {# направлений} other {# направления}}",
+      "statShipped": "{count} выпущено",
+      "statReady": "{count} готово",
+      "statInFlight": "{count} в работе",
+      "statParked": "{count} отложено",
+      "statCut": "{count} удалено",
+      "statUpdated": "обновлено {date}",
+      "snapshotLabel": "Сводка",
+      "trackLabel": "Направление",
+      "parkingLabel": "Отложено",
+      "cutLabel": "Удалено",
+      "shippedLabel": "Выпущено",
+      "narrativeLabel": "Заметки",
+      "onThisPage": "На этой странице",
+      "viewSource": "Открыть исходник на GitHub"
     }
   },
   "Months": {

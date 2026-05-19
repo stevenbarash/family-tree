@@ -63,6 +63,13 @@ Constraints that follow:
   `note`, `rebuild-search`, `migrate`, `healthz`, `config`)
 - Talk pages as the agent's working memory (active gaps, decisions,
   agent log, structured research notes with edit/soft-delete)
+- **Browser-side contribution to research notes and talk pages**
+  (text, audio file refs, structured Q&A) via the `/api/notes` route
+  family. Attribution is stored as a content field (`contributor:`,
+  `recorded_by:`), not as a logged-in user identity — the Tailscale +
+  single-user-device model holds. Decision: 2026-05-19. The contribution
+  surface exists to let family informants (grandparents, parents) add
+  context during in-person sessions without dropping to the CLI.
 - Search across articles and GEDCOM-derived metadata
 - Eval suite for benchmarking agent harness × model on article quality
 
@@ -75,14 +82,21 @@ with an explicit re-evaluation of the privacy posture or the
 single-user model.
 
 - **Public hosting.** No SaaS deployment, no cloud DB, no public URL.
-- **User accounts inside the app.** Tailscale ACLs only. (Re-adding
-  app-layer auth is bookmarked as a *future possibility*, not a
-  current item; it would change the product, not extend it.)
+- **Authentication (passwords, anti-impersonation, real access
+  control).** Tailscale ACLs only. (Re-adding app-layer auth is
+  bookmarked as a *future possibility*, not a current item; it would
+  change the product, not extend it.) **Note:** lightweight identity
+  state — a self-asserted picker that drives attribution and a
+  relevance filter for the contribution surface — is *not* auth and
+  is in scope as of 2026-05-19. Anyone on the device can pick any
+  identity; Tailscale remains the access boundary.
 - **Multi-user concurrent editing.** No real-time collaboration,
   no merge-conflict UI. Per-user editor names are attribution only.
-- **Tree editing in the browser.** GEDCOM is authored externally
-  (RootsMagic, Gramps, Ancestry); whoami.wiki is read-side and
-  derive-side. The browser does not write to `.ged`.
+- **Tree editing in the browser.** GEDCOM and derived YAMLs are
+  authored externally (RootsMagic, Gramps, Ancestry) or via the `wai`
+  CLI. The browser does not write to `.ged` or `genealogy/derived/*.yml`.
+  *Note: browser writes to research notes and talk pages are explicitly
+  in scope — see the In scope section.*
 - **Generic CMS features.** No themes, no plugin system, no media
   library beyond what genealogy needs (portraits, scans, documents).
 - **Apple-style sparseness.** Information density wins. The audience

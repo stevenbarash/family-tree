@@ -19,6 +19,7 @@
       "navTree": "אילן →",
       "navSearch": "חיפוש →",
       "navChangelog": "יומן שינויים →",
+      "navRoadmap": "מפת דרכים →",
       "snapshotStale": "תצלום ה-GEDCOM בן {days, plural, one {יום אחד} two {יומיים} many {# ימים} other {# ימים}} (סנכרון אחרון {date}). הריצו <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code> כאשר יש לכם שינויים לייבוא.",
       "dayLabel": "{day} {month}",
       "continueResearch": "המשך מחקר",
@@ -226,6 +227,27 @@
       "statEntries": "{count} רשומות",
       "statUpdated": "עודכן {date}",
       "onThisPage": "בדף זה"
+    },
+    "Roadmap": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "רצף אסטרטגי",
+      "subtitle": "מה מתוכנן, מה מוקפא, ומה זה עתה שוחרר —",
+      "heading": "מפת דרכים",
+      "statTracks": "{count, plural, one {מסלול אחד} two {שני מסלולים} many {# מסלולים} other {# מסלולים}}",
+      "statShipped": "{count} שוחררו",
+      "statReady": "{count} מוכנים",
+      "statInFlight": "{count} בתהליך",
+      "statParked": "{count} מוקפאים",
+      "statCut": "{count} הוסרו",
+      "statUpdated": "עודכן {date}",
+      "snapshotLabel": "תמונת מצב",
+      "trackLabel": "מסלול",
+      "parkingLabel": "הקפאה",
+      "cutLabel": "הוסר",
+      "shippedLabel": "שוחרר",
+      "narrativeLabel": "הערות",
+      "onThisPage": "בעמוד זה",
+      "viewSource": "צפו במקור ב-GitHub"
     }
   },
   "Months": {

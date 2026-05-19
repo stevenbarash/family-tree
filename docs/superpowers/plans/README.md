@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| 🗂 | [`2026-05-19-family-contribution-mode-roadmap.md`](./2026-05-19-family-contribution-mode-roadmap.md) | Family Contribution Mode Roadmap | Sequences 10 features (E.0–E.9) for the contribution track — browser-side evidence capture from family informants in en/ru/uk/he, with identity + session state (viewer + subject), audio recording, structured Q&A on talk pages, reverse-direction translation, and an accessibility-grade UI shell. Defines the contribution track as parallel to the reading and authoring tracks. |
 | ✅ | [`2026-05-18-home-research-dashboard.md`](./2026-05-18-home-research-dashboard.md) | Home page → research dashboard (P1.3) | Editorial-gaps card (top 5 articles by unresolved `::open`/`::gap` threads), unwritten-pages card (top 5 redlink targets), A–Z + talk grids moved to `/[locale]/index`, full redlinks listing at `/[locale]/redlinks`. Pure `aggregateOpenGaps` in `core/src/pages/talk-threads.ts`; cached fan-out readers in `frontend/lib/server-services.ts`. Closes P1.3. |
 | ✅ | [`2026-05-18-pedigree-chart.md`](./2026-05-18-pedigree-chart.md) | Pedigree chart on `/family/tree` | React Flow + pure layout function in `core/src/family/pedigree-layout.ts`. Ancestor chart (focal at bottom, ancestors above, 5 generations) renders above the existing sections; mobile (`< md`) falls back to a vertical list. Closes platform-review P1.1. |
 | ✅ | [`2026-05-18-pedigree-frontier-slots.md`](./2026-05-18-pedigree-frontier-slots.md) | Pedigree frontier slots | Dashed-border placeholder nodes in `/family/tree` for missing parents of present ancestors up to MAX_GENERATION. Sub-project F (of 3) in the gap-as-frontier feature — see [spec](../specs/2026-05-18-pedigree-frontier-slots-design.md). |
@@ -80,7 +81,7 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
 | ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 47 plans** — 42 shipped (✅), 0 in-progress (🚧), 4 sketches (📝), 1 index (🗂), 0 abandoned (📦).
+**Total: 48 plans** — 42 shipped (✅), 0 in-progress (🚧), 4 sketches (📝), 2 indexes (🗂), 0 abandoned (📦).
 
 ---
 

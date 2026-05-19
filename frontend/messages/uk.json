@@ -19,6 +19,7 @@
       "navTree": "Древо →",
       "navSearch": "Пошук →",
       "navChangelog": "Історія змін →",
+      "navRoadmap": "Дорожня карта →",
       "snapshotStale": "Знімок GEDCOM застарів на {days, plural, one {# день} few {# дні} many {# днів} other {# дня}} (остання синхронізація {date}). Виконайте <code>wai sync-gedcom --ged-file ... --notes \"refresh\"</code>, коли у вас з'являться зміни для імпорту.",
       "dayLabel": "{day} {month}",
       "continueResearch": "Продовжити дослідження",
@@ -226,6 +227,27 @@
       "statEntries": "{count} записів",
       "statUpdated": "оновлено {date}",
       "onThisPage": "На цій сторінці"
+    },
+    "Roadmap": {
+      "navBack": "← whoami.wiki",
+      "navLabel": "Стратегічна послідовність",
+      "subtitle": "Що заплановано, що відкладено, що щойно випущено —",
+      "heading": "Дорожня карта",
+      "statTracks": "{count, plural, one {# напрямок} few {# напрямки} many {# напрямків} other {# напрямки}}",
+      "statShipped": "{count} випущено",
+      "statReady": "{count} готово",
+      "statInFlight": "{count} у роботі",
+      "statParked": "{count} відкладено",
+      "statCut": "{count} видалено",
+      "statUpdated": "оновлено {date}",
+      "snapshotLabel": "Огляд",
+      "trackLabel": "Напрямок",
+      "parkingLabel": "Відкладено",
+      "cutLabel": "Видалено",
+      "shippedLabel": "Випущено",
+      "narrativeLabel": "Нотатки",
+      "onThisPage": "На цій сторінці",
+      "viewSource": "Відкрити джерело на GitHub"
     }
   },
   "Months": {
