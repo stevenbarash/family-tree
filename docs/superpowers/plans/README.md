@@ -32,6 +32,7 @@ source of truth — fix whichever is stale.
 
 | Status | Filename | Title | Summary |
 |---|---|---|---|
+| 🚧 | [`2026-05-20-git-sync-core.md`](./2026-05-20-git-sync-core.md) | Git sync core plumbing | `push()` + `pullRebase()` + `RebaseConflictError` in `core/src/pages/git.ts`, with a two-clone test fixture. Plan 1 of 3 for the Render deployment ([spec](../specs/2026-05-20-render-deployment-design.md) phase 1). |
 | 🗂 | [`2026-05-19-family-contribution-mode-roadmap.md`](./2026-05-19-family-contribution-mode-roadmap.md) | Family Contribution Mode Roadmap | Sequences 10 features (E.0–E.9) for the contribution track — browser-side evidence capture from family informants in en/ru/uk/he, with identity + session state (viewer + subject), audio recording, structured Q&A on talk pages, reverse-direction translation, and an accessibility-grade UI shell. Defines the contribution track as parallel to the reading and authoring tracks. |
 | 📝 | [`2026-05-19-pwa-offline-support.md`](./2026-05-19-pwa-offline-support.md) | PWA Tier 2 — offline support (P2.19) | Service worker via Serwist (or hand-rolled `public/sw.js`) caching the app shell + read-only article HTML so the wiki is browsable on a plane / no-signal Tailscale. Strategy decisions enumerated (framework choice, precache vs runtime cache, what to never cache, update lifecycle, dev/prod parity, offline-fallback page, locale routing inside the SW). Write queueing on `/api/notes/*` deferred to a second pass. **Trigger:** user wants the installed PWA usable while offline. |
 | ✅ | [`2026-05-18-home-research-dashboard.md`](./2026-05-18-home-research-dashboard.md) | Home page → research dashboard (P1.3) | Editorial-gaps card (top 5 articles by unresolved `::open`/`::gap` threads), unwritten-pages card (top 5 redlink targets), A–Z + talk grids moved to `/[locale]/index`, full redlinks listing at `/[locale]/redlinks`. Pure `aggregateOpenGaps` in `core/src/pages/talk-threads.ts`; cached fan-out readers in `frontend/lib/server-services.ts`. Closes P1.3. |
@@ -82,7 +83,7 @@ source of truth — fix whichever is stale.
 | 📝 | [`2026-05-03-schema-migrations.md`](./2026-05-03-schema-migrations.md) | Schema migrations (sketch) | Original deferral note. **Superseded** by [`2026-05-04-schema-migrations.md`](./2026-05-04-schema-migrations.md); recommend renaming this to `*-design-notes.md` or deleting (see ROADMAP cut #2). |
 | ✅ | [`2026-05-09-wai-doctor.md`](./2026-05-09-wai-doctor.md) | `wai doctor` + actionable connection errors | Single command for dev-env diagnostics; `ConnectionError` with port-probe hint replaces `fetch failed`. Surfaced from P0.2 verification papercuts. |
 
-**Total: 49 plans** — 42 shipped (✅), 0 in-progress (🚧), 5 sketches (📝), 2 indexes (🗂), 0 abandoned (📦).
+**Total: 50 plans** — 42 shipped (✅), 1 in-progress (🚧), 5 sketches (📝), 2 indexes (🗂), 0 abandoned (📦).
 
 ---
 
