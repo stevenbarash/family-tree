@@ -118,8 +118,9 @@ export async function restoreFromIndex(repoRoot: string, path: string): Promise<
 export class RebaseConflictError extends Error {
   constructor(public readonly conflictedFiles: string[]) {
     super(
-      `rebase conflict — aborted; ${conflictedFiles.length} file(s) conflicted: ` +
-        (conflictedFiles.join(', ') || '(unknown)'),
+      conflictedFiles.length > 0
+        ? `rebase conflict — aborted; ${conflictedFiles.length} file(s) conflicted: ${conflictedFiles.join(', ')}`
+        : 'rebase conflict — aborted; conflicted files unknown (git status failed mid-rebase)',
     );
     this.name = 'RebaseConflictError';
   }
