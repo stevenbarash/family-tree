@@ -56,8 +56,11 @@ npx tsc --noEmit                      # typecheck gate
   `components/family/sections/`. When adding a new section, follow the
   pattern: `MySection({ view })` returns null when its slice of the
   view is empty.
-- **No auth** — Tailscale ACLs are the access layer. Don't add login
-  screens, sessions, or auth headers.
+- **Auth is `WHOAMI_AUTH`-gated** — off by default (local dev, browsed
+  over Tailscale, has no login wall); set `WHOAMI_AUTH=on` for the
+  Descope login flow (the Render replica does). When touching code,
+  keep the auth-off path unchanged — it is the default experience.
+  Tailscale remains the network access layer.
 - **Information density** is preferred over Apple-style sparseness.
   The audience is people scanning and comparing genealogy data; show
   more per screen. Avoid page-bg tints, drop caps, parchment textures.
