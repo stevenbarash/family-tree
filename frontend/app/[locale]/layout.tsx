@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { AuthProvider } from "@descope/nextjs-sdk";
 import { routing, LOCALE_DIR } from "@/i18n/routing";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { AUTH_ENABLED, DESCOPE_PROJECT_ID } from "@/lib/env";
 import "../globals.css";
 
 const geistSans = Geist({
@@ -56,6 +58,30 @@ export const viewport: Viewport = {
   ],
 };
 
+function bodyContent(
+  t: Awaited<ReturnType<typeof getTranslations>>,
+  children: React.ReactNode,
+) {
+  return (
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded focus:bg-foreground focus:px-3 focus:py-2 focus:text-background focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-foreground"
+      >
+        {t("skipToContent")}
+      </a>
+      <NextIntlClientProvider>
+        <div className="border-b border-foreground/10 px-4 py-2 flex justify-end">
+          <LanguageSwitcher />
+        </div>
+        <div id="main-content" tabIndex={-1} className="contents">
+          {children}
+        </div>
+      </NextIntlClientProvider>
+    </>
+  );
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -76,20 +102,13 @@ export default async function LocaleLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded focus:bg-foreground focus:px-3 focus:py-2 focus:text-background focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-foreground"
-        >
-          {t("skipToContent")}
-        </a>
-        <NextIntlClientProvider>
-          <div className="border-b border-foreground/10 px-4 py-2 flex justify-end">
-            <LanguageSwitcher />
-          </div>
-          <div id="main-content" tabIndex={-1} className="contents">
-            {children}
-          </div>
-        </NextIntlClientProvider>
+        {AUTH_ENABLED ? (
+          <AuthProvider projectId={DESCOPE_PROJECT_ID}>
+            {bodyContent(t, children)}
+          </AuthProvider>
+        ) : (
+          bodyContent(t, children)
+        )}
       </body>
     </html>
   );
