@@ -256,7 +256,16 @@ async function readBodiesForSlugs(
 
 export async function generateStaticParams() {
   const store = getPageStore();
-  const list = await store.list();
+  let list: PageMetaSummary[];
+  try {
+    list = await store.list();
+  } catch {
+    // On a fresh Render deploy the data repo is not yet on disk during
+    // the build — instrumentation.ts clones it at server startup, which
+    // runs after the build. Build with zero static params; the route is
+    // `force-dynamic`, so every slug renders on demand once data lands.
+    return [];
+  }
   const slugs = list.filter(p => !p.isTalk && !p.isArchived).map(p => p.slug);
   return routing.locales.flatMap(locale =>
     slugs.map(slug => ({ locale, slug })),
