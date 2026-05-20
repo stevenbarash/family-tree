@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
+### Fixed
+
+- **`<bdi>` isolation swept across the family-tree components for RTL (closes P2.10)** — the reading-surface audit flagged that `OnThisDayRibbon` / `OpenGapsCard` / `RedlinksCard` wrap user-generated names in `<bdi>` but the family-tree surface did not. Without bidi isolation, a Hebrew person or place name rendered inline next to LTR text (dates, separators, layout) can reorder visibly. Wrapped every user-generated name, place name, and date string across 10 components: the `AncestorTile` / `PersonRow` / `LifespanBar` leaf components (which covers every section composing them), plus `PersonHeaderSection` (H1 + dates + birthplace), `PlacesSection` (region + person + place), `CoverageSection` (frontier names), `ConflictsSection` (conflicting field values), `FamilySection` (marriage meta), `BirthplacesMap` (popup place + person names), and `PedigreeNode` (year string — its name was already wrapped). `PedigreeFrontierNode` was already correct. The one string left un-isolated is the folio GEDCOM-ID in `PersonHeaderSection` — isolating an ICU-interpolated value needs `t.rich`, deferred as a follow-up.
+
 ### Changed
 
 - **Home-page browse-all footer hides the articles link on an empty wiki (closes P2.11)** — the footer's `Browse all N articles →` link rendered unconditionally, so a wiki with zero live articles advertised `Browse all 0 articles →` pointing at an empty `/index`. Now gated on `live.length > 0`, mirroring the existing `talk.length > 0` gate on the talk-pages link. The `Changelog` / `Roadmap` meta links stay unconditional — they're project pages, relevant regardless of article count.

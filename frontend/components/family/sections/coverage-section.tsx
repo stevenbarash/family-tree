@@ -75,7 +75,7 @@ export function CoverageSection({ view }: Props) {
                       {roman(f.generation)}
                     </span>
                     <span className="flex-1 truncate font-display tracking-tight text-foreground">
-                      {f.name}
+                      <bdi>{f.name}</bdi>
                     </span>
                     <span className="font-display text-[0.62rem] uppercase tracking-[0.18em] text-muted-foreground">
                       {t('missing', { what: f.missing })}

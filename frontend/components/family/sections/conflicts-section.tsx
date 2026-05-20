@@ -60,7 +60,7 @@ export function ConflictsSection({ view }: Props) {
               <ul className="flex flex-col gap-1.5 text-sm">
                 {c.values.map((v, j) => (
                   <li key={`v-${j}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    <span className="font-medium text-foreground tabular-nums">{v.value}</span>
+                    <span className="font-medium text-foreground tabular-nums"><bdi>{v.value}</bdi></span>
                     {v.source ? (
                       <span className="text-xs text-muted-foreground">{v.source}</span>
                     ) : null}

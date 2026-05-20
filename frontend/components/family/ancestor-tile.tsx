@@ -22,11 +22,11 @@ export function AncestorTile({ href, name, meta, ordinal, side, portrait }: Prop
       <AvatarMonogram name={name} side={side} portrait={portrait} size="sm" />
       <div className="min-w-0">
         <div className="truncate font-display text-[0.95rem] leading-snug tracking-tight text-foreground">
-          {name}
+          <bdi>{name}</bdi>
         </div>
         {meta ? (
           <div className="truncate font-mono text-[0.65rem] tracking-tight text-muted-foreground/85">
-            {meta}
+            <bdi>{meta}</bdi>
           </div>
         ) : null}
       </div>

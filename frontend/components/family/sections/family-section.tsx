@@ -25,7 +25,7 @@ function MarriageMeta({
   if (!text) return null;
   return (
     <span className="font-mono text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground/80">
-      {text}
+      <bdi>{text}</bdi>
     </span>
   );
 }

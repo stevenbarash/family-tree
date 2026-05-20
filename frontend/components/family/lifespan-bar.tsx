@@ -41,7 +41,7 @@ export function LifespanBar({
       className="grid grid-cols-[1.5rem_10rem_1fr_5rem] items-center gap-3 px-3 py-1.5 text-sm hover:bg-accent/45 transition-colors"
     >
       <AvatarMonogram name={name} side={side} portrait={portrait} size="sm" />
-      <span className="truncate font-display tracking-tight text-foreground">{name}</span>
+      <span className="truncate font-display tracking-tight text-foreground"><bdi>{name}</bdi></span>
       <span className="relative h-2.5 rounded-sm bg-muted/40">
         <span
           className="absolute top-0 h-2.5 rounded-sm"
@@ -50,7 +50,7 @@ export function LifespanBar({
         />
       </span>
       <span className="text-end font-mono text-[0.7rem] tabular-nums text-muted-foreground/85">
-        {dates}
+        <bdi>{dates}</bdi>
       </span>
     </Link>
   );

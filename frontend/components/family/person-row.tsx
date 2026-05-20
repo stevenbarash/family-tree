@@ -31,11 +31,11 @@ export function PersonRow({ href, name, meta, ordinal, trailing, side, portrait 
       <AvatarMonogram name={name} side={side} portrait={portrait} size="md" />
       <div className="min-w-0 flex-1">
         <div className="truncate font-display text-[1.05rem] leading-tight tracking-tight text-foreground">
-          {name}
+          <bdi>{name}</bdi>
         </div>
         {meta ? (
           <div className="mt-0.5 truncate font-mono text-[0.7rem] tracking-tight text-muted-foreground/90">
-            {meta}
+            <bdi>{meta}</bdi>
           </div>
         ) : null}
       </div>

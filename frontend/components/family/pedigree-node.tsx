@@ -45,7 +45,7 @@ export function PedigreeNode({ data }: NodeProps<PedigreeNodeType>) {
         </div>
         {data.years ? (
           <div className="font-mono text-[0.65rem] leading-tight text-muted-foreground">
-            {data.years}
+            <bdi>{data.years}</bdi>
           </div>
         ) : null}
       </div>

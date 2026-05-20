@@ -37,13 +37,13 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
           {t('folio', { record: person.record })}
         </p>
         <h1 className="mt-2 font-display text-[2.4rem] font-medium leading-[1.05] tracking-[-0.01em] text-balance text-foreground sm:text-[3rem]">
-          {person.name}
+          <bdi>{person.name}</bdi>
         </h1>
         {(dates || person.birth?.place) ? (
           <p className="mt-2 font-mono text-sm tracking-tight text-muted-foreground">
-            {dates ?? ''}
+            {dates ? <bdi>{dates}</bdi> : ''}
             {dates && person.birth?.place ? '  ·  ' : ''}
-            {person.birth?.place ?? ''}
+            {person.birth?.place ? <bdi>{person.birth.place}</bdi> : ''}
           </p>
         ) : null}
 

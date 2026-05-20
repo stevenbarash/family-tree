@@ -74,7 +74,7 @@ export function BirthplacesMap({ places }: Props) {
             >
               <Popup>
                 <div className="font-display text-[0.95rem] leading-snug tracking-tight">
-                  {place.name}
+                  <bdi>{place.name}</bdi>
                 </div>
                 {place.note ? (
                   <div className="mt-1 text-[0.7rem] italic text-muted-foreground">
@@ -89,7 +89,7 @@ export function BirthplacesMap({ places }: Props) {
                   {place.people.map(p => (
                     <li key={p.record}>
                       <a href={p.href} className="text-blue-600 hover:underline">
-                        {p.name}
+                        <bdi>{p.name}</bdi>
                       </a>
                     </li>
                   ))}

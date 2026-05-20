@@ -55,7 +55,7 @@ export function PlacesSection({ view }: Props) {
           <RegistryCard key={`region-${region.region}`}>
             <header className="flex items-baseline justify-between gap-3 border-b rule-hair bg-muted/40 px-3 py-2">
               <h3 className="truncate font-display text-[0.95rem] tracking-tight text-foreground">
-                {region.region}
+                <bdi>{region.region}</bdi>
               </h3>
               <span className="font-mono text-[0.65rem] tabular-nums text-muted-foreground/80">
                 {String(region.people.length).padStart(2, '0')}
@@ -69,10 +69,10 @@ export function PlacesSection({ view }: Props) {
                     className="flex flex-col gap-0.5 px-3 py-1.5 transition-colors hover:bg-accent/45"
                   >
                     <span className="truncate font-display text-[0.85rem] tracking-tight text-foreground">
-                      {p.name}
+                      <bdi>{p.name}</bdi>
                     </span>
                     <span className="truncate font-mono text-[0.62rem] tracking-tight text-muted-foreground/80">
-                      {p.place}
+                      <bdi>{p.place}</bdi>
                     </span>
                   </Link>
                 </li>
@@ -101,7 +101,7 @@ export function PlacesSection({ view }: Props) {
                 key={`unmapped-${u.place}`}
                 className="flex items-baseline justify-between gap-3 rounded border border-dashed rule-hair px-3 py-1.5 text-[0.78rem]"
               >
-                <span className="truncate font-mono text-muted-foreground">{u.place}</span>
+                <span className="truncate font-mono text-muted-foreground"><bdi>{u.place}</bdi></span>
                 <span className="font-mono text-[0.65rem] tabular-nums text-muted-foreground/70">
                   {u.people.length}
                 </span>
