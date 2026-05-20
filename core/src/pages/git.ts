@@ -109,3 +109,31 @@ export async function restoreFromIndex(repoRoot: string, path: string): Promise<
     if (existsSync(path)) unlinkSync(path);
   }
 }
+
+/**
+ * Thrown by `pullRebase` when a rebase hits a merge conflict. The rebase
+ * is aborted before this is thrown, so the repo is left clean at its
+ * pre-rebase HEAD — never in a half-rebased state.
+ */
+export class RebaseConflictError extends Error {
+  constructor(public readonly conflictedFiles: string[]) {
+    super(
+      `rebase conflict — aborted; ${conflictedFiles.length} file(s) conflicted: ` +
+        (conflictedFiles.join(', ') || '(unknown)'),
+    );
+    this.name = 'RebaseConflictError';
+  }
+}
+
+/**
+ * Push committed work on `branch` to `remote`. Throws if the push is
+ * rejected (e.g. a non-fast-forward when the remote has commits the
+ * local branch lacks) so the caller can pull-rebase and retry.
+ */
+export async function push(
+  repoRoot: string,
+  remote: string,
+  branch: string,
+): Promise<void> {
+  await client(repoRoot).push(remote, branch);
+}
