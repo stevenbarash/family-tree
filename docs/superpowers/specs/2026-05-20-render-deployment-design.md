@@ -100,9 +100,10 @@ This work *adapts* that service; it does not create one.
 
 - **Persistent disk** already attached — `dsk-d86sjumgvqtc73e1mrt0`,
   mounted at **`/whoami`**, 1 GB. So `WHOAMI_ROOT=/whoami`. The disk
-  survives deploys, so the data clones **once**. ⚠️ 1 GB may be tight
-  once `assets/portraits/` JPGs are cloned — confirm the data repo's
-  on-disk size and resize the disk if needed.
+  survives deploys, so the data clones **once**. The data repo is
+  **65 MB** today (28 MB `.git` + 37 MB working tree, the bulk being
+  `assets/sources/` scanned documents) — 1 GB is ~15× headroom, so no
+  resize is needed for the foreseeable future.
 - **Build:** the service runs Render's native Node runtime with
   `rootDir` empty and `buildCommand` / `startCommand` both `npm run …`
   at the monorepo root. The build must install the npm workspaces and
