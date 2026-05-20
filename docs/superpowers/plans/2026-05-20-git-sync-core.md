@@ -352,21 +352,21 @@ test('pullRebase: path-disjoint local + upstream edits rebase cleanly', async ()
   // the Mac Studio writes articles. Disjoint paths must rebase without conflict.
   const repos = await makeSyncedRepos();
   try {
-    // B (replica) edits an article and pushes.
-    const article = join(repos.b, 'article.md');
-    writeFileSync(article, 'article by b\n');
-    await addAndCommit(repos.b, [article], { name: 'B', email: 'b@x.test' }, 'b: article');
-    await push(repos.b, 'origin', 'main');
+    // A (Mac Studio) edits an article and pushes.
+    const article = join(repos.a, 'article.md');
+    writeFileSync(article, 'article by a\n');
+    await addAndCommit(repos.a, [article], { name: 'A', email: 'a@x.test' }, 'a: article');
+    await push(repos.a, 'origin', 'main');
 
-    // A (Mac Studio) commits a *different* file locally, not yet pushed.
-    const talk = join(repos.a, 'page.talk.md');
-    writeFileSync(talk, 'talk by a\n');
-    await addAndCommit(repos.a, [talk], { name: 'A', email: 'a@x.test' }, 'a: talk');
+    // B (replica) commits a *different* file locally, not yet pushed.
+    const talk = join(repos.b, 'page.talk.md');
+    writeFileSync(talk, 'talk by b\n');
+    await addAndCommit(repos.b, [talk], { name: 'B', email: 'b@x.test' }, 'b: talk');
 
-    const advanced = await pullRebase(repos.a, 'origin', 'main');
+    const advanced = await pullRebase(repos.b, 'origin', 'main');
     assert.equal(advanced, true);
-    assert.equal(readFileSync(join(repos.a, 'article.md'), 'utf-8'), 'article by b\n');
-    assert.equal(readFileSync(join(repos.a, 'page.talk.md'), 'utf-8'), 'talk by a\n');
+    assert.equal(readFileSync(join(repos.b, 'article.md'), 'utf-8'), 'article by a\n');
+    assert.equal(readFileSync(join(repos.b, 'page.talk.md'), 'utf-8'), 'talk by b\n');
   } finally {
     repos.cleanup();
   }
