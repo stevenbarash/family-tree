@@ -91,6 +91,13 @@ export async function bootstrapAndStartSync(): Promise<void> {
 
   if (!SYNC_PUSH) return; // the scheduler runs on the Render replica only
 
+  // The data repo sits on a mounted disk whose directory git sees as owned
+  // by a different uid than the server process; git's dubious-ownership
+  // guard (CVE-2022-24765) then refuses every pull/push. `safe.directory`
+  // is only honoured from global/system config, so write it there once
+  // before the scheduler starts.
+  await simpleGit().raw(['config', '--global', '--add', 'safe.directory', WHOAMI_ROOT]);
+
   const tick = () => withLock(REPO_LOCK, syncTick);
   await tick(); // initial catch-up pull
   setInterval(() => { void tick(); }, SYNC_INTERVAL_MS);
