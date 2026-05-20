@@ -5,8 +5,9 @@
 > the work shipped since, and the contribution-track design conversation
 > of 2026-05-19.
 
-**Last updated:** 2026-05-20 (P0.2 privacy-gate re-enable decision parked to the
-parking lot per user — gate stays off; no automatic re-enable trigger)
+**Last updated:** 2026-05-20 (reading-track cleanup closed out — P2.11 and P2.10
+shipped, P2.7 + the audit's header/composition fixes verified already-shipped,
+status snapshot de-drifted)
 **Cadence:** revisit at the end of each completed track milestone, or when
 a new review document lands. Status lines are the source of truth — keep
 them honest.
@@ -54,14 +55,14 @@ track:
 | Track | Next item | Lift |
 |---|---|---|
 | **Contribution** | **E.0** — Identity & session state | M |
-| **Reading** | Header/composition fixes per audit (M2 swap, C2 cut, R2 link, D1 demote) | XS–S each |
+| **Reading** | **P2.3** — merge overlapping residence/occupation intervals in derive | S |
 | **Authoring** | Cost telemetry on `wai author` | S |
 | **Infrastructure** | `cli-v2.0.0` release | S |
 
 Three of those four are S/XS — the contribution-track E.0 is the only
 M item near the top. A reasonable sequencing for the next ~2 weeks:
 
-1. ~~Reading-surface audit~~ ✅ shipped 2026-05-19; header/composition fixes (XS–S each) ready to land
+1. ~~Reading-surface audit + all header/composition fixes~~ ✅ shipped 2026-05-19–20; the reading-track cleanup is closed out (audit composition fixes, P2.11, P2.10, P2.7)
 2. Cost telemetry on `wai author` (S, info-gathering for Authoring track)
 3. Begin E.0 in earnest
 
@@ -112,7 +113,7 @@ frontier.
 | ⏳ ready | **P1.4** Search facets (place + decade), re-spec'd with locale awareness | M | [Review §P1.4](./reviews/2026-05-07-platform-review.md#p14--search-lacks-faceting-and-reads-as-flat). Re-spec post-multilingual: locale facet, place facet via `places-coords.yml`, decade facet via existing date parser |
 | 🔧 partial | **P2.5** Per-locale `lang=` on multilingual name spans | S | [Review §P2.5](./reviews/2026-05-07-platform-review.md#p25--accessibility-gaps). Skip-to-content + alt text shipped; `lang=` deferred. Natural follow-on now that per-locale name renders exist |
 | ⏳ ready | **P2.3** Merge overlapping residence/occupation intervals in derive | S | [Review §P2.3](./reviews/2026-05-07-platform-review.md#p23--place-residence-overlaps-not-deduplicated) |
-| ⏳ ready | **P2.7** Mobile density on `/family/tree` (collapse Lifespans/Descendants by default `< sm`) | S | [Review §P2.7](./reviews/2026-05-07-platform-review.md#p27--mobile-density-on-the-tree-page) |
+| ✅ shipped | **P2.7** Mobile density on `/family/tree` (collapse Lifespans/Descendants by default `< sm`) | S | Verified-shipped 2026-05-20. The `MobileDisclosure` client island (`components/family/sections/mobile-disclosure.tsx`) already renders `DescendantsSection` + `LifespansSection` collapsed by default below `sm` with a localized show/hide toggle — the disclosure win [Review §P2.7](./reviews/2026-05-07-platform-review.md#p27--mobile-density-on-the-tree-page) called for. It landed in earlier frontend work without being recorded against this row. The review's secondary "shorten the header back-button area" sub-part is moot — the tree page's sticky header is already a single compact `py-2.5` row. |
 | ✅ shipped | **P2.9** `next-intl` Link sweep across `frontend/` | S | Shipped 2026-05-19 alongside the article-chrome localization pass (audit item 9). All 21 `import Link from 'next/link'` callsites across `app/` and `components/` swapped to `import { Link } from '@/i18n/navigation'` — the locale-preserving wrapper from `frontend/i18n/navigation.ts`. Mechanical change; the Link API is drop-in. Suite 89/89 → 88/88 green (one test deleted as part of the formatTalkLabel removal). |
 | ✅ shipped | **P2.10** `<bdi>` sweep on family-tree components for RTL | S | Shipped 2026-05-20. Wrapped every user-generated name, place, and date string in `<bdi>` across 10 `components/family/` files — the `AncestorTile`/`PersonRow`/`LifespanBar` leaf components plus `PersonHeaderSection`, `PlacesSection`, `CoverageSection`, `ConflictsSection`, `FamilySection`, `BirthplacesMap`, `PedigreeNode`. Closes the bidi-isolation gap the [reading-surface audit](./reviews/2026-05-19-reading-surface-audit.md) flagged. Folio GEDCOM-ID interpolation left as a follow-up (needs `t.rich`). |
 | ✅ shipped | **P2.11** Hide home-page browse-all footer when `live.length === 0` | XS | Shipped 2026-05-20. The home footer's `Browse all N articles →` link is now gated on `live.length > 0` (`frontend/app/[locale]/page.tsx`), mirroring the existing `talk.length > 0` gate; an empty wiki no longer advertises a dead `Browse all 0 articles →`. `Changelog`/`Roadmap` meta links stay unconditional. |
