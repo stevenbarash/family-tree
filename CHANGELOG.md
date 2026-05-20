@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
+### Changed
+
+- **Home-page browse-all footer hides the articles link on an empty wiki (closes P2.11)** — the footer's `Browse all N articles →` link rendered unconditionally, so a wiki with zero live articles advertised `Browse all 0 articles →` pointing at an empty `/index`. Now gated on `live.length > 0`, mirroring the existing `talk.length > 0` gate on the talk-pages link. The `Changelog` / `Roadmap` meta links stay unconditional — they're project pages, relevant regardless of article count.
+
 ### Removed
 
 - **`/family` page deprecated and removed** — the paternal/maternal line summary view is redundant now that `/family/tree` renders the full interactive browser (lineage, cohort, descendants, places, timeline). Deleted `frontend/app/[locale]/family/page.tsx`, dropped `getFamily()` + `FamilyView` + `AncestorView` from `frontend/lib/family.ts`, and removed the `Page.Family` translation namespace from all four locales (~21 keys × 4). Dangling-link fixes: the homepage `Family →` nav (was the second link in the chrome nav) is gone, and the `/family/tree` sticky-header back-link retargets from `/family` → `/` with the renamed `Page.FamilyTree.navIndex` key (translations reused from the deleted `Page.Family.navIndex`).

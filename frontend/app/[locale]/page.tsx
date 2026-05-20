@@ -168,9 +168,11 @@ export default async function HomePage({
       <RedlinksCard entries={redlinks} rowLimit={REDLINKS_LIMIT} />
 
       <footer className="mt-12 flex flex-col gap-1 border-t pt-6 font-mono text-[0.75rem] uppercase tracking-[0.08em] text-muted-foreground">
-        <Link href="/index" className="hover:text-foreground hover:underline">
-          {t('browseAllArticles', { count: live.length })}
-        </Link>
+        {live.length > 0 ? (
+          <Link href="/index" className="hover:text-foreground hover:underline">
+            {t('browseAllArticles', { count: live.length })}
+          </Link>
+        ) : null}
         {talk.length > 0 ? (
           <Link href="/index#talk" className="hover:text-foreground hover:underline">
             {t('browseAllTalkPages', { count: talk.length })}
