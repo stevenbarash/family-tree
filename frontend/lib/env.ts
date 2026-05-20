@@ -64,7 +64,9 @@ assertAuthConfig({
  * sets these; the Mac Studio leaves them unset (no auto-sync there).
  */
 export const SYNC_PUSH = process.env.WHOAMI_SYNC_PUSH === 'on';
+/** Sync cadence in ms. Floored at 60s so an empty/garbage env value
+ *  (`Number('')` → 0, `Number('x')` → NaN) can't make `setInterval` spin. */
 export const SYNC_INTERVAL_MS =
-  Number(process.env.WHOAMI_SYNC_INTERVAL ?? '600') * 1000;
+  Math.max(Number(process.env.WHOAMI_SYNC_INTERVAL) || 600, 60) * 1000;
 export const DATA_REPO_URL = process.env.WHOAMI_DATA_REPO_URL ?? '';
 export const DATA_REPO_TOKEN = process.env.WHOAMI_DATA_REPO_TOKEN ?? '';
