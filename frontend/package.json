@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
+    "@descope/nextjs-sdk": "^0.15.30",
     "@tailwindcss/typography": "^0.5.19",
     "@xyflow/react": "^12.10.2",
     "class-variance-authority": "^0.7.1",
