@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
+import { withLock } from '@core/pages/locks.ts';
 import { appendNoteOnDisk } from '@/lib/server-services';
 import { errorResponse, routeError } from '@/lib/api-errors';
 import { DEFAULT_AUTHOR } from '@/lib/env';
+import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
 
 const NoteBody = z.object({
   note: z.string().min(1).max(5000),
@@ -34,10 +36,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
   if (!parsed.success) return errorResponse('bad-request', 400);
 
   try {
-    const { date, id } = await appendNoteOnDisk(slug, {
-      text: parsed.data.note,
-      by: parsed.data.by ?? DEFAULT_AUTHOR.name,
-      kind: parsed.data.kind ?? 'human',
+    const { date, id } = await withLock(REPO_LOCK, async () => {
+      const result = await appendNoteOnDisk(slug, {
+        text: parsed.data.note,
+        by: parsed.data.by ?? DEFAULT_AUTHOR.name,
+        kind: parsed.data.kind ?? 'human',
+      });
+      await pushAfterWrite();
+      return result;
     });
     return NextResponse.json({ slug: toTalkSlug(slug), date, id });
   } catch (err) {
