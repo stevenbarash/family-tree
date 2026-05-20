@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getPageStore, invalidateListCache, getSearchIndex, persistSearchIndex, defaultPageMeta } from '@/lib/server-services';
-import { DEFAULT_AUTHOR, WHOAMI_ROOT } from '@/lib/env';
+import { WHOAMI_ROOT } from '@/lib/env';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
 import { isValidSlug, titleCaseFromSlug } from '@core/pages/index.ts';
-import type { Page } from '@core/pages/index.ts';
+import type { AuthorIdentity, Page } from '@core/pages/index.ts';
 import { PageNotFoundError } from '@core/pages/store.ts';
 import { buildSearchDoc } from '@core/search/module.ts';
 import { loadDerivedRecord } from '@/lib/derived';
@@ -37,6 +38,14 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   const { slug } = await ctx.params;
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
 
+  let author: AuthorIdentity;
+  try {
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = PutBody.safeParse(json);
   if (!parsed.success) return errorResponse('bad-request', 400);
@@ -53,7 +62,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   }
 
   try {
-    await pages.write(slug, page, DEFAULT_AUTHOR, parsed.data.summary);
+    await pages.write(slug, page, author, parsed.data.summary);
   } catch (err) {
     return routeError(err, slug, 'write-failed');
   }
@@ -71,8 +80,16 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ slug: s
   const { slug } = await ctx.params;
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
 
+  let author: AuthorIdentity;
   try {
-    await getPageStore().softDelete(slug, DEFAULT_AUTHOR);
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
+  try {
+    await getPageStore().softDelete(slug, author);
   } catch (err) {
     return routeError(err, slug, 'delete-failed');
   }
