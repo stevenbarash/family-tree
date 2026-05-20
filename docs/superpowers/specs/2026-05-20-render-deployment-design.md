@@ -186,19 +186,26 @@ merge step a two-machine, path-partitioned setup does not need.
   renders `<html>` there; there is **no** `app/layout.tsx`). `baseUrl`
   is **omitted** (no Descope custom domain) — the SDK uses Descope
   cloud defaults, which work from any origin including `*.onrender.com`.
-- **Gate everything.** `authMiddleware()` is private-by-default; the
-  only public routes are the sign-in page (locale-prefixed — see below)
-  and `/api/healthz`. Its matcher is extended to cover `/api` — today
-  `proxy.ts`'s matcher excludes it.
-- **Middleware composition — highest-risk task.** `proxy.ts` must run
-  both Descope `authMiddleware` and next-intl's `createMiddleware`.
-  `authMiddleware(opts)` returns a plain `(request) => Response` handler,
-  so it composes. Order: run Descope first; if it returns a redirect
-  (unauthenticated) → return that; otherwise run next-intl and carry
-  Descope's `X-Descope-Session` request header onto next-intl's
-  response. The Descope docs give **no worked example** of merging two
-  header-rewriting middlewares — this gets a dedicated test (see
-  [Tests](#tests)) and is the riskiest part of the build.
+- **Gate everything — two layers, no fragile merge.** Page routes are
+  gated in `proxy.ts`; API route handlers gate themselves. This
+  deliberately avoids composing two header-rewriting middlewares.
+- **`proxy.ts` — page gating, redirect-or-fall-through.** `proxy.ts`
+  calls Descope `authMiddleware(opts)` (a plain `(request) => Response`
+  handler) and next-intl's `createMiddleware`. The composition: run
+  Descope; if it returns a **redirect** (unauthenticated) → return it;
+  otherwise **discard** Descope's response and run next-intl fresh.
+  Descope's `X-Descope-Session` perf header is intentionally **not**
+  carried forward — `session()` re-validates from the `DS` cookie
+  wherever it is called, so the header is an optimization, not a
+  requirement. Dropping it removes the two-middleware header-merge the
+  Descope docs have no recipe for. `proxy.ts`'s matcher is **unchanged**
+  (still excludes `/api`).
+- **API gating.** Protected route handlers call a `requireSession()`
+  helper (in `lib/descope.ts`) at the top — it returns the
+  authenticated identity or throws a 401. Write handlers need the
+  identity for attribution anyway, so the gate is not extra work.
+  `/api/healthz` skips it. The middleware matcher is **not** extended
+  to `/api`.
 - **Sign-in page** `app/[locale]/sign-in/page.tsx` — lives inside the
   locale tree (there is no root layout to host a locale-exempt page),
   renders `<Descope flowId="sign-up-or-in" />`. Marked public in
@@ -248,7 +255,7 @@ contexts (e.g. the GEDCOM sync route).
 | `frontend/lib/sync.ts` | new — pull/rebuild/push loop; write-path push helper; lock coordination |
 | `frontend/lib/descope.ts` | new — `createSdk` wiring + userId→`AuthorIdentity` resolver with TTL cache |
 | `frontend/lib/env.ts` | + `WHOAMI_SYNC_PUSH`, `WHOAMI_SYNC_INTERVAL`, `WHOAMI_DATA_REPO_URL`, Descope env surface |
-| `frontend/proxy.ts` | compose Descope `authMiddleware` with next-intl `createMiddleware`; matcher covers `/api` |
+| `frontend/proxy.ts` | compose Descope `authMiddleware` with next-intl (redirect-or-fall-through); matcher unchanged |
 | `frontend/app/[locale]/layout.tsx` | wrap in `<AuthProvider>` |
 | `frontend/app/[locale]/sign-in/page.tsx` | new — embedded `<Descope>` flow (public route) |
 | `frontend/app/api/healthz/route.ts` | new — public health-check route |
@@ -320,10 +327,10 @@ Sync scheduler tick (every WHOAMI_SYNC_INTERVAL)
     other) rebase cleanly.
   - same-file divergent edits → `pullRebase()` throws
     `RebaseConflictError` and leaves no half-rebased state.
-- **Middleware composition test** — an unauthenticated request to a
-  locale route redirects to `/sign-in`; an authenticated request still
-  gets correct next-intl locale routing and the `X-Descope-Session`
-  header survives.
+- **Middleware composition test** — the redirect-or-fall-through logic:
+  a Descope redirect response is honored (returned as-is); a Descope
+  pass response is discarded and next-intl runs (locale routing still
+  applies). Tested with fake Descope responses, no live project.
 - **Attribution test** — `PUT /api/pages/[slug]` with a mocked session
   produces a commit authored by the resolved family member, not
   `DEFAULT_AUTHOR`.
