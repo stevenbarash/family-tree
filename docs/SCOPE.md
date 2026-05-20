@@ -43,13 +43,18 @@ designed to be public.
 
 Constraints that follow:
 
-- **No auth.** Tailscale ACLs are the access layer.
+- **Auth is env-gated.** Locally there is no login wall — Tailscale
+  ACLs are the access layer, as before. The Render replica sets
+  `WHOAMI_AUTH=on`, enabling the invite-only Descope gate (see the
+  render deployment spec).
 - **Local-first.** The data repo (`$WHOAMI_ROOT`, default `~/whoami`)
   is the source of truth. The code repo holds tooling.
-- **Privacy by infrastructure.** Living-person data flows through the
-  system without redaction *only because* the system never leaves the
-  user's network. (See ROADMAP P0.2 for the gate that lets that
-  invariant be relaxed.)
+- **Privacy by trusted access.** Living-person data flows through the
+  system without redaction because every viewer is trusted — locally
+  via Tailscale ACLs, and on the Render replica via the invite-only
+  Descope gate. The replica leaves the user's network but not the
+  circle of invited family. (ROADMAP P0.2's content-level redaction
+  gate stays parked unless a less-trusted "guest" tier is introduced.)
 
 ---
 
@@ -72,6 +77,12 @@ Constraints that follow:
   context during in-person sessions without dropping to the CLI.
 - Search across articles and GEDCOM-derived metadata
 - Eval suite for benchmarking agent harness × model on article quality
+- **Public deployment (added 2026-05-20).** The wiki may be deployed
+  to a public host (Render) as a read-write replica, gated by the
+  invite-only Descope auth flow. This reverses the former "no public
+  hosting" and "no app-layer auth" anti-goals. The Mac Studio remains
+  the canonical copy and the local-first model is preserved — see the
+  render deployment spec (`docs/superpowers/specs/2026-05-20-render-deployment-design.md`).
 
 ---
 
@@ -81,15 +92,6 @@ These are *durable* exclusions, not "not yet" items. Reopen them only
 with an explicit re-evaluation of the privacy posture or the
 single-user model.
 
-- **Public hosting.** No SaaS deployment, no cloud DB, no public URL.
-- **Authentication (passwords, anti-impersonation, real access
-  control).** Tailscale ACLs only. (Re-adding app-layer auth is
-  bookmarked as a *future possibility*, not a current item; it would
-  change the product, not extend it.) **Note:** lightweight identity
-  state — a self-asserted picker that drives attribution and a
-  relevance filter for the contribution surface — is *not* auth and
-  is in scope as of 2026-05-19. Anyone on the device can pick any
-  identity; Tailscale remains the access boundary.
 - **Multi-user concurrent editing.** No real-time collaboration,
   no merge-conflict UI. Per-user editor names are attribution only.
 - **Tree editing in the browser.** GEDCOM and derived YAMLs are
@@ -116,8 +118,9 @@ These are gates on *how* features ship, regardless of what they do.
 - **`core/` is platform-agnostic.** Pure TypeScript, no React, no I/O
   above the function boundary. Tests pass `Map<string, DerivedRecord>`
   rather than reading files.
-- **`frontend/` is Next 16 App Router.** RSC by default. No auth.
-  Read `frontend/AGENTS.md` and `node_modules/next/dist/docs/` before
+- **`frontend/` is Next 16 App Router.** RSC by default. Auth is
+  `WHOAMI_AUTH`-gated (off locally, on for the Render replica). Read
+  `frontend/AGENTS.md` and `node_modules/next/dist/docs/` before
   writing Next code from training-data instinct.
 - **Tests run via `tsx --test`.** Not Jest, Vitest, or Bun. Tests use
   `node:test` and `node:assert/strict`, live next to the module.
