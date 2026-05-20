@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { simpleGit } from 'simple-git';
-import { addAndCommit, push, pullRebase } from '../../src/pages/git.ts';
+import { addAndCommit, push, pullRebase, RebaseConflictError } from '../../src/pages/git.ts';
 import { makeSyncedRepos } from './helpers.ts';
 
 test('push: uploads a local commit to the remote', async () => {
@@ -63,6 +63,67 @@ test('pullRebase: returns false when already up to date', async () => {
   try {
     const advanced = await pullRebase(repos.a, 'origin', 'main');
     assert.equal(advanced, false);
+  } finally {
+    repos.cleanup();
+  }
+});
+
+test('pullRebase: path-disjoint local + upstream edits rebase cleanly', async () => {
+  // The sync design partitions writes — the replica only writes talk/notes,
+  // the Mac Studio writes articles. Disjoint paths must rebase without conflict.
+  const repos = await makeSyncedRepos();
+  try {
+    // A (Mac Studio) edits an article and pushes.
+    const article = join(repos.a, 'article.md');
+    writeFileSync(article, 'article by a\n');
+    await addAndCommit(repos.a, [article], { name: 'A', email: 'a@x.test' }, 'a: article');
+    await push(repos.a, 'origin', 'main');
+
+    // B (replica) commits a *different* file locally, not yet pushed.
+    const talk = join(repos.b, 'page.talk.md');
+    writeFileSync(talk, 'talk by b\n');
+    await addAndCommit(repos.b, [talk], { name: 'B', email: 'b@x.test' }, 'b: talk');
+
+    const advanced = await pullRebase(repos.b, 'origin', 'main');
+    assert.equal(advanced, true);
+    assert.equal(readFileSync(join(repos.b, 'article.md'), 'utf-8'), 'article by a\n');
+    assert.equal(readFileSync(join(repos.b, 'page.talk.md'), 'utf-8'), 'talk by b\n');
+  } finally {
+    repos.cleanup();
+  }
+});
+
+test('pullRebase: same-file divergent edits throw RebaseConflictError and leave the repo clean', async () => {
+  // A conflicting rebase must abort, not leave a half-rebased repo — a wrong
+  // genealogy merge is worse than a stalled sync (fail loud, Rule 12).
+  const repos = await makeSyncedRepos();
+  try {
+    // B edits seed.md and pushes.
+    const bSeed = join(repos.b, 'seed.md');
+    writeFileSync(bSeed, 'seed edited by b\n');
+    await addAndCommit(repos.b, [bSeed], { name: 'B', email: 'b@x.test' }, 'b: seed');
+    await push(repos.b, 'origin', 'main');
+
+    // A edits the SAME file differently, locally.
+    const aSeed = join(repos.a, 'seed.md');
+    writeFileSync(aSeed, 'seed edited by a\n');
+    await addAndCommit(repos.a, [aSeed], { name: 'A', email: 'a@x.test' }, 'a: seed');
+    const headBefore = await simpleGit(repos.a).revparse(['HEAD']);
+
+    await assert.rejects(
+      () => pullRebase(repos.a, 'origin', 'main'),
+      (err: unknown) => {
+        assert.ok(err instanceof RebaseConflictError, 'expected RebaseConflictError');
+        assert.deepEqual(err.conflictedFiles, ['seed.md']);
+        return true;
+      },
+    );
+
+    // Repo is clean (not mid-rebase) at the pre-rebase HEAD.
+    const status = await simpleGit(repos.a).status();
+    assert.equal(status.conflicted.length, 0);
+    assert.equal(status.isClean(), true);
+    assert.equal(await simpleGit(repos.a).revparse(['HEAD']), headBefore);
   } finally {
     repos.cleanup();
   }
