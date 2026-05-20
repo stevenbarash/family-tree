@@ -3,12 +3,19 @@ import createMiddleware from "next-intl/middleware";
 import { authMiddleware } from "@descope/nextjs-sdk/server";
 import { routing } from "./i18n/routing.ts";
 import { composeAuthAndLocale } from "./lib/proxy-compose.ts";
+import { assertAuthConfig } from "./lib/auth-config.ts";
 
 const intlMiddleware = createMiddleware(routing);
 
 // Auth is read directly from the env here (not via lib/env.ts) so this file
 // stays free of Node-only imports that the middleware runtime dislikes.
 const AUTH_ENABLED = process.env.WHOAMI_AUTH === "on";
+
+assertAuthConfig({
+  authEnabled: AUTH_ENABLED,
+  projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID ?? "",
+  managementKey: process.env.DESCOPE_MANAGEMENT_KEY ?? "",
+});
 
 // Public routes — reachable without a Descope session. The sign-in page lives
 // under the [locale] segment, so every locale-prefixed form is listed, plus

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import type { AuthorIdentity } from '@core/pages/index.ts';
 import { defaultWhoamiRoot, whoamiPaths } from '@core/paths.ts';
+import { assertAuthConfig } from '@/lib/auth-config';
 
 export const WHOAMI_ROOT = defaultWhoamiRoot();
 
@@ -51,3 +52,9 @@ export const DESCOPE_PROJECT_ID = process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID ?? 
 /** Descope management key — server-only secret. Used by createSdk() to load
  *  user records (name + email) for write attribution. */
 export const DESCOPE_MANAGEMENT_KEY = process.env.DESCOPE_MANAGEMENT_KEY ?? '';
+
+assertAuthConfig({
+  authEnabled: AUTH_ENABLED,
+  projectId: DESCOPE_PROJECT_ID,
+  managementKey: DESCOPE_MANAGEMENT_KEY,
+});
