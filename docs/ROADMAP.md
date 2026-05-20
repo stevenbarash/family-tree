@@ -5,8 +5,8 @@
 > the work shipped since, and the contribution-track design conversation
 > of 2026-05-19.
 
-**Last updated:** 2026-05-19 (added P2.17 mobile-friendliness baseline + P2.18
-PWA tier 1 as ✅ shipped; P2.19 PWA tier 2 offline support added as ⏳ ready)
+**Last updated:** 2026-05-20 (P0.2 privacy-gate re-enable decision parked to the
+parking lot per user — gate stays off; no automatic re-enable trigger)
 **Cadence:** revisit at the end of each completed track milestone, or when
 a new review document lands. Status lines are the source of truth — keep
 them honest.
@@ -46,7 +46,7 @@ to a single track (privacy gate, CLI release, test strengthening).
 
 ---
 
-## Status snapshot — 2026-05-19
+## Status snapshot — 2026-05-20
 
 Working tree is clean. The naturally-next actionable item in each
 track:
@@ -56,15 +56,14 @@ track:
 | **Contribution** | **E.0** — Identity & session state | M |
 | **Reading** | Header/composition fixes per audit (M2 swap, C2 cut, R2 link, D1 demote) | XS–S each |
 | **Authoring** | Cost telemetry on `wai author` | S |
-| **Infrastructure** | P0.2 privacy-gate re-enable decision | XS |
+| **Infrastructure** | `cli-v2.0.0` release | S |
 
 Three of those four are S/XS — the contribution-track E.0 is the only
 M item near the top. A reasonable sequencing for the next ~2 weeks:
 
-1. P0.2 decision (XS, opens the door for E.3's audio gate)
-2. ~~Reading-surface audit~~ ✅ shipped 2026-05-19; header/composition fixes (XS–S each) ready to land
-3. Cost telemetry on `wai author` (S, info-gathering for Authoring track)
-4. Begin E.0 in earnest
+1. ~~Reading-surface audit~~ ✅ shipped 2026-05-19; header/composition fixes (XS–S each) ready to land
+2. Cost telemetry on `wai author` (S, info-gathering for Authoring track)
+3. Begin E.0 in earnest
 
 ---
 
@@ -145,7 +144,6 @@ frontier.
 
 | Status | Item | Lift | Notes |
 |---|---|---|---|
-| ⏳ ready | **P0.2 privacy gate re-enable decision** | XS | The gate is currently `WHOAMI_PRIVACY_GATE` off in dev per `frontend/lib/env.ts:39`. Decision: flip it on, or document why it stays off. Gates E.3 (audio gate inherits the same machinery) |
 | ⏳ ready | **`cli-v2.0.0` release** | S | Last tag (`cli-v1.2.1`, 2026-03-26) predates v2 entirely. Hygiene; do when working tree is opportunely clean. See AGENTS.md §Versioning for the steps |
 | ⏳ ready | **P2.13** Strengthen `frontend/test/messages-parity.test.ts` to catch leftover English in non-English locale strings | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
 | ⏳ ready | **CHANGELOG hygiene** | S | Process improvement, not a track item. Trim entry headers to one line + collapsible details; the file is 1,198 lines of unreleased. Couple cleanly with the `cli-v2.0.0` release |
@@ -159,6 +157,7 @@ the item moves to its track, not before.
 
 | Item | Trigger | Source |
 |---|---|---|
+| **P0.2** Privacy-gate re-enable decision | User decides to revisit — parked open-ended 2026-05-20, no automatic trigger. Gate ships disabled (`WHOAMI_PRIVACY_GATE` off, `frontend/lib/env.ts:39`); E.3's audio gate inherits the same machinery and can re-raise the question | (no plan — gate shipped 2026-05-15) |
 | **P1.6** Half/step/adoptive distinctions | User annotates `PEDI` / `ADOP` tags in the source GEDCOM | [Review §P1.6](./reviews/2026-05-07-platform-review.md#p16--no-halfstepadoptive-distinction) — verification 2026-05-19 found 0 such tags in the corpus |
 | **P1.8** Breadcrumbs from relationship-calc path | Pedigree chart wayfinding proves insufficient in real usage | [Review §P1.8](./reviews/2026-05-07-platform-review.md#p18--no-breadcrumbs-or-wayfinding-inside-the-tree) — chart shipped 2026-05-18 supersedes most of this |
 | **P2.4** CLI v1→v2 migration docs | An external user complains about a removed v1 command | [Review §P2.4](./reviews/2026-05-07-platform-review.md#p24--cli-help-carries-13-removed-commands-forever) |
