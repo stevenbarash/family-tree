@@ -119,10 +119,13 @@ This work *adapts* that service; it does not create one.
   2. If the search index is absent → build it from disk
      (`rebuildSearchIndexFromDisk()`).
   3. Start the [sync scheduler](#sync-scheduler).
-- **Repo access:** a GitHub **deploy key** with read+write to
-  `family-tree-data`, added to Render as an SSH key / secret. The clone
-  uses the SSH remote (`git@github.com:…`), not the HTTPS remote the Mac
-  Studio uses.
+- **Repo access:** a GitHub **fine-grained personal access token**
+  scoped to only `family-tree-data` with Contents read+write, stored as
+  the Render secret `WHOAMI_DATA_REPO_TOKEN`. The clone/push use an
+  HTTPS remote with the token embedded (`https://x-access-token:…@…`) —
+  a headless container has no SSH agent, so a token-in-URL is simpler
+  than managing key files. Same posture as a deploy key (one repo,
+  read+write).
 - ⚠️ **Precondition:** `family-tree-data` **must be a private GitHub
   repo.** Verify before any deploy work. A public data repo means the
   whole tree is already exposed — a separate problem this spec does not
@@ -279,11 +282,11 @@ contexts (e.g. the GEDCOM sync route).
 | Var | Where | Public/secret |
 |---|---|---|
 | `WHOAMI_ROOT=/whoami` | Render | config |
-| `WHOAMI_DATA_REPO_URL` (SSH remote) | Render | config |
+| `WHOAMI_DATA_REPO_URL` (HTTPS remote) | Render | config |
 | `WHOAMI_SYNC_PUSH=on` | Render only | config |
 | `WHOAMI_SYNC_INTERVAL` (default ~600s) | Render | config |
 | `WHOAMI_AUTH=on` | Render only | config |
-| GitHub deploy key | Render SSH key | **secret** |
+| `WHOAMI_DATA_REPO_TOKEN` (GitHub PAT) | Render | **secret** |
 | `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Render + local | public |
 | `DESCOPE_MANAGEMENT_KEY` | Render | **secret** |
 
@@ -379,7 +382,7 @@ is never reachable without auth:
 3. **Sync wiring** — `lib/sync.ts`, `instrumentation.ts` bootstrap +
    scheduler, write-path push, lock coordination.
 4. **Render deploy** — adapt the existing `family-tree` service: add
-   the deploy key + all env vars, set `healthCheckPath`, fix the root
+   the data-repo token + all env vars, set `healthCheckPath`, fix the root
    build/start scripts. The service **auto-deploys on every commit to
    `main`**, so auth (phase 2) must be complete and correct before it
    merges — or autoDeploy/maintenance-mode holds the rollout.
