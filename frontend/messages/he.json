@@ -20,6 +20,11 @@
     },
     "PWA": {
       "description": "ויקי משפחתי הנכתב על־ידי סוכני AI."
+    },
+    "Account": {
+      "triggerLabel": "תפריט חשבון",
+      "signedIn": "התחברת {time}",
+      "signOut": "התנתקות"
     }
   },
   "Page": {

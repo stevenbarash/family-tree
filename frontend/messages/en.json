@@ -20,6 +20,11 @@
     },
     "PWA": {
       "description": "Family-tree wiki, written by AI agents."
+    },
+    "Account": {
+      "triggerLabel": "Account menu",
+      "signedIn": "Signed in {time}",
+      "signOut": "Sign out"
     }
   },
   "Page": {
