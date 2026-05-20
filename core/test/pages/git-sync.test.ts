@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { simpleGit } from 'simple-git';
-import { addAndCommit, push } from '../../src/pages/git.ts';
+import { addAndCommit, push, pullRebase } from '../../src/pages/git.ts';
 import { makeSyncedRepos } from './helpers.ts';
 
 test('push: uploads a local commit to the remote', async () => {
@@ -37,5 +37,33 @@ test('makeSyncedRepos: builds a bare remote and two seeded clones', async () => 
   } finally {
     repos.cleanup();
     assert.equal(existsSync(repos.a), false);
+  }
+});
+
+test('pullRebase: integrates upstream commits and returns true', async () => {
+  const repos = await makeSyncedRepos();
+  try {
+    // B commits a new file and pushes it.
+    const bPath = join(repos.b, 'from-b.md');
+    writeFileSync(bPath, 'b\n');
+    await addAndCommit(repos.b, [bPath], { name: 'B', email: 'b@x.test' }, 'b adds file');
+    await push(repos.b, 'origin', 'main');
+
+    // A pulls — must integrate B's commit and report HEAD advanced.
+    const advanced = await pullRebase(repos.a, 'origin', 'main');
+    assert.equal(advanced, true);
+    assert.equal(readFileSync(join(repos.a, 'from-b.md'), 'utf-8'), 'b\n');
+  } finally {
+    repos.cleanup();
+  }
+});
+
+test('pullRebase: returns false when already up to date', async () => {
+  const repos = await makeSyncedRepos();
+  try {
+    const advanced = await pullRebase(repos.a, 'origin', 'main');
+    assert.equal(advanced, false);
+  } finally {
+    repos.cleanup();
   }
 });
