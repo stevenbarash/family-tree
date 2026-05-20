@@ -9,6 +9,8 @@ import { PageNotFoundError } from '@core/pages/store.ts';
 import { buildSearchDoc } from '@core/search/module.ts';
 import { loadDerivedRecord } from '@/lib/derived';
 import { errorResponse, routeError } from '@/lib/api-errors';
+import { withLock } from '@core/pages/locks.ts';
+import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
 
 const PutBody = z.object({
   body: z.string(),
@@ -62,7 +64,10 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   }
 
   try {
-    await pages.write(slug, page, author, parsed.data.summary);
+    await withLock(REPO_LOCK, async () => {
+      await pages.write(slug, page, author, parsed.data.summary);
+      await pushAfterWrite();
+    });
   } catch (err) {
     return routeError(err, slug, 'write-failed');
   }
@@ -89,7 +94,10 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ slug: s
   }
 
   try {
-    await getPageStore().softDelete(slug, author);
+    await withLock(REPO_LOCK, async () => {
+      await getPageStore().softDelete(slug, author);
+      await pushAfterWrite();
+    });
   } catch (err) {
     return routeError(err, slug, 'delete-failed');
   }
