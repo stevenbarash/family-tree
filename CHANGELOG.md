@@ -21,6 +21,10 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
+### Added
+
+- **Account menu in the header bar** — with `WHOAMI_AUTH=on`, signed-in family members get an account menu beside the language switcher: an avatar + name trigger opens a popover showing their email, Descope role(s), a relative last-sign-in time, and a sign-out control. Adds a Base-UI `popover` UI primitive. No effect when auth is off (the menu is not mounted).
+
 ### Changed
 
 - **Roadmap drift swept; P2.7 recorded as shipped (closes P2.7)** — the ROADMAP status snapshot still advertised the reading-surface audit's header/composition fixes (M2 swap, C2 cut, R2 link, D1 demote) as "ready to land," but they had all shipped 2026-05-19 (commits `95c37f1`, `a8207d9`, `5199c1b`). The `roadmap-drift` test only checks P-IDs, not the free-text snapshot table or sequencing list, so the staleness slipped through. Corrected the snapshot table and the two-week sequencing list. Separately, **P2.7** (collapse Lifespans/Descendants by default below `sm`) was found already satisfied by the `MobileDisclosure` client island — it shipped in earlier frontend work without ever being recorded against its roadmap row; flipped to ✅. The review's secondary "shorten the tree-page header" sub-part is moot (the sticky header is already a single compact row). No code change — roadmap + changelog accuracy only.

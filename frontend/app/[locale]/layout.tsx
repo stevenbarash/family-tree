@@ -6,6 +6,7 @@ import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import { AuthProvider } from "@descope/nextjs-sdk";
 import { routing, LOCALE_DIR } from "@/i18n/routing";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { AuthAccountMenu } from "@/components/auth-account-menu";
 import { AUTH_ENABLED, DESCOPE_PROJECT_ID } from "@/lib/env";
 import "../globals.css";
 
@@ -71,7 +72,8 @@ function bodyContent(
         {t("skipToContent")}
       </a>
       <NextIntlClientProvider>
-        <div className="border-b border-foreground/10 px-4 py-2 flex justify-end">
+        <div className="border-b border-foreground/10 px-4 py-2 flex justify-end gap-3">
+          {AUTH_ENABLED && <AuthAccountMenu />}
           <LanguageSwitcher />
         </div>
         <div id="main-content" tabIndex={-1} className="contents">
