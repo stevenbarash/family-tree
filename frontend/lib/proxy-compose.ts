@@ -24,7 +24,7 @@ export async function composeAuthAndLocale(
 ): Promise<Response> {
   if (authEnabled) {
     const authResult = await authGate(request);
-    if (authResult && isRedirect(authResult)) return authResult;
+    if (isRedirect(authResult)) return authResult;
   }
   return localeMiddleware(request);
 }
