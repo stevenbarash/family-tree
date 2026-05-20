@@ -16,25 +16,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 /**
  * Header-bar account menu for the signed-in family member. Renders only
  * with auth on (the parent gates it on AUTH_ENABLED, so <AuthProvider> is
- * present). Shows a skeleton while the session resolves and nothing at all
- * when there is no session (e.g. on the public /sign-in page).
+ * present). Shows a skeleton while the session or user record resolves,
+ * and nothing at all when there is no session (e.g. the public /sign-in page).
  */
 export function AuthAccountMenu() {
   const t = useTranslations("Chrome.Account");
   const locale = useLocale();
   const router = useRouter();
   const sdk = useDescope();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const { isAuthenticated, isSessionLoading, sessionToken, claims } = useSession();
 
-  if (isSessionLoading) {
-    // Peripheral header widget — aria-hidden so screen readers aren't told
-    // "loading" on every navigation. The trigger below carries the real label.
-    return <Skeleton className="h-8 w-28" aria-hidden />;
-  }
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Peripheral header widget — aria-hidden so screen readers aren't told
+  // "loading" on every navigation. The trigger below carries the real label.
+  const loadingSkeleton = <Skeleton className="h-8 w-28" aria-hidden />;
+
+  if (isSessionLoading) return loadingSkeleton;
+  if (!isAuthenticated) return null;
+  // Authenticated, but the user record (name/email) is still loading —
+  // keep the skeleton so the trigger doesn't flash an empty name. This
+  // check comes after the !isAuthenticated guard so the public /sign-in
+  // page still renders nothing rather than a skeleton.
+  if (isUserLoading) return loadingSkeleton;
 
   const name = user?.name?.trim() || user?.email || "";
   const roles = sessionToken ? getJwtRoles(sessionToken) : [];
