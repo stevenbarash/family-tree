@@ -38,7 +38,8 @@ and a human can browse intuitively.
 
 The product is sized for **one person**: the user, browsing on their
 own machines (local plus Tailscale). Trusted family members may be
-invited as **read-only guests over Tailscale**. The wiki is not
+invited as guests — browsing over Tailscale, or through the
+invite-only Descope gate on the Render replica. The wiki is not
 designed to be public.
 
 Constraints that follow:
