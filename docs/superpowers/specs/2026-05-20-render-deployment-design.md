@@ -181,6 +181,12 @@ merge step a two-machine, path-partitioned setup does not need.
 
 ### Descope auth
 
+- **Auth is env-gated — `WHOAMI_AUTH`.** Off by default; the Render
+  service sets `WHOAMI_AUTH=on`. When off, `proxy.ts` skips Descope
+  entirely and `requireSession()` returns `DEFAULT_AUTHOR` — so the
+  Mac Studio's local frontend (browsed over Tailscale) has no login
+  wall, exactly as today. Same pattern as the existing
+  `WHOAMI_PRIVACY_GATE` flag (`frontend/lib/env.ts:39`).
 - `@descope/nextjs-sdk`. `<AuthProvider projectId={…}>` wraps the app in
   `app/[locale]/layout.tsx` — the de-facto root layout (next-intl
   renders `<html>` there; there is **no** `app/layout.tsx`). `baseUrl`
@@ -276,6 +282,7 @@ contexts (e.g. the GEDCOM sync route).
 | `WHOAMI_DATA_REPO_URL` (SSH remote) | Render | config |
 | `WHOAMI_SYNC_PUSH=on` | Render only | config |
 | `WHOAMI_SYNC_INTERVAL` (default ~600s) | Render | config |
+| `WHOAMI_AUTH=on` | Render only | config |
 | GitHub deploy key | Render SSH key | **secret** |
 | `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Render + local | public |
 | `DESCOPE_MANAGEMENT_KEY` | Render | **secret** |
