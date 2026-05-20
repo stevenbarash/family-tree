@@ -181,7 +181,7 @@
       "buttonMe": "אני",
       "emptyState": "אין עדיין רשומות קשורות.",
       "person": {
-        "folio": "דף · {record}",
+        "folio": "דף · <id>{record}</id>",
         "perspectiveSuffix": "· אל {isMe, select, true {אני} other {{name}}}",
         "statParents": "הורים",
         "statSiblings": "אחים ואחיות",

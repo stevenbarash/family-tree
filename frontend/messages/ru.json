@@ -181,7 +181,7 @@
       "buttonMe": "Я",
       "emptyState": "Связанных записей пока нет.",
       "person": {
-        "folio": "Лист · {record}",
+        "folio": "Лист · <id>{record}</id>",
         "perspectiveSuffix": "· к {isMe, select, true {мне} other {{name}}}",
         "statParents": "Родители",
         "statSiblings": "Братья и сёстры",

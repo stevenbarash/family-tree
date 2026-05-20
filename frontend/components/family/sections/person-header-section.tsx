@@ -34,7 +34,10 @@ export function PersonHeaderSection({ view, ancestorCount, generationCount }: Pr
     >
       <div className="min-w-0">
         <p className="font-display text-[0.66rem] uppercase tracking-[0.32em] text-muted-foreground">
-          {t('folio', { record: person.record })}
+          {t.rich('folio', {
+            record: person.record,
+            id: (chunks) => <bdi>{chunks}</bdi>,
+          })}
         </p>
         <h1 className="mt-2 font-display text-[2.4rem] font-medium leading-[1.05] tracking-[-0.01em] text-balance text-foreground sm:text-[3rem]">
           <bdi>{person.name}</bdi>

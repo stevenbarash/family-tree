@@ -181,7 +181,7 @@
       "buttonMe": "Me",
       "emptyState": "No related records yet.",
       "person": {
-        "folio": "Folio · {record}",
+        "folio": "Folio · <id>{record}</id>",
         "perspectiveSuffix": "· to {isMe, select, true {me} other {{name}}}",
         "statParents": "Parents",
         "statSiblings": "Siblings",
