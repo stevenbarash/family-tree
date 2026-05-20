@@ -91,12 +91,37 @@ export async function bootstrapAndStartSync(): Promise<void> {
 
   if (!SYNC_PUSH) return; // the scheduler runs on the Render replica only
 
-  // The data repo sits on a mounted disk whose directory git sees as owned
-  // by a different uid than the server process; git's dubious-ownership
-  // guard (CVE-2022-24765) then refuses every pull/push. `safe.directory`
-  // is only honoured from global/system config, so write it there once
-  // before the scheduler starts.
-  await simpleGit().raw(['config', '--global', '--add', 'safe.directory', WHOAMI_ROOT]);
+  // Replica-only git setup — writes the container's global git config,
+  // never the Mac Studio's (unreachable when SYNC_PUSH is off):
+  //  - safe.directory: the data repo is on a mounted disk git sees as
+  //    owned by another uid; without this the dubious-ownership guard
+  //    (CVE-2022-24765) refuses every pull/push. Only honoured from
+  //    global/system config, never `-c` or per-repo.
+  //  - user identity: a fresh container has no committer identity, so
+  //    git would fall back to an auto-derived `user@hostname`.
+  // Guarded: a config failure must not stop the scheduler from starting —
+  // a later pull will surface the cause loudly.
+  try {
+    const cfg = simpleGit();
+    await cfg.raw(['config', '--global', '--add', 'safe.directory', WHOAMI_ROOT]);
+    await cfg.raw(['config', '--global', 'user.name', 'whoami sync']);
+    await cfg.raw(['config', '--global', 'user.email', 'sync@whoami.local']);
+  } catch (err) {
+    console.error('[sync] git global config failed — sync may not work:', err);
+  }
+
+  // The first clone embeds the access token in origin's URL, and the data
+  // disk persists across deploys — so a rotated or renewed token would
+  // otherwise never take effect. Re-point origin at the current token.
+  if (DATA_REPO_URL && DATA_REPO_TOKEN) {
+    try {
+      await simpleGit(WHOAMI_ROOT).remote(
+        ['set-url', REMOTE, composeAuthedUrl(DATA_REPO_URL, DATA_REPO_TOKEN)],
+      );
+    } catch (err) {
+      console.error('[sync] could not refresh origin url:', err);
+    }
+  }
 
   const tick = () => withLock(REPO_LOCK, syncTick);
   await tick(); // initial catch-up pull
