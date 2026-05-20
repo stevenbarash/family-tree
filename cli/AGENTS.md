@@ -106,3 +106,11 @@ automated. Update `RELEASE_NOTES.md` ahead of the bump.
 - Don't let `wai` know about host-specific implementation details.
   The server's API surface should be the same shape across hosts;
   if it isn't, that's a server bug, not a CLI workaround.
+- **`src/api-client.ts` mirrors the frontend's API response shapes
+  by hand — there is no shared type.** Each `ApiClient` method types
+  its return to a `frontend/app/api/**/route.ts` JSON body, but
+  nothing links the two — `tsc` can't catch a drift, since the CLI
+  never imports the route. A changed route response silently breaks
+  the consuming command at runtime. When a route's JSON shape
+  changes, update the matching `api-client.ts` method in the same
+  change.

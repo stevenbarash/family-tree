@@ -56,6 +56,12 @@ npx tsc --noEmit                      # typecheck gate
   `components/family/sections/`. When adding a new section, follow the
   pattern: `MySection({ view })` returns null when its slice of the
   view is empty.
+- **`components/ui/` is shadcn `base-nova` style — Base UI, not
+  Radix.** The primitives wrap `@base-ui/react/*` (`hover-card.tsx`
+  → `@base-ui/react/preview-card`, `popover.tsx` →
+  `@base-ui/react/popover`). When adding a `ui/` primitive, model it
+  on an existing one — don't paste a stock shadcn (Radix) component
+  or import `@radix-ui/*`.
 - **Auth is `WHOAMI_AUTH`-gated** — off by default (local dev, browsed
   over Tailscale, has no login wall); set `WHOAMI_AUTH=on` for the
   Descope login flow (the Render replica does). When touching code,
