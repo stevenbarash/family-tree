@@ -37,3 +37,17 @@ export const SELF_RECORD = process.env.WHOAMI_SELF_RECORD ?? 'I28906360944';
  * stored; only the gating effect is suppressed.
  */
 export const PRIVACY_GATE_ENABLED = process.env.WHOAMI_PRIVACY_GATE === 'on';
+
+/**
+ * Master toggle for Descope auth. Off by default — the Mac Studio's local
+ * frontend (browsed over Tailscale) has no login wall, as today. The Render
+ * replica sets `WHOAMI_AUTH=on`. Same pattern as `PRIVACY_GATE_ENABLED`.
+ */
+export const AUTH_ENABLED = process.env.WHOAMI_AUTH === 'on';
+
+/** Descope project ID. Public — inlined into the client bundle for AuthProvider. */
+export const DESCOPE_PROJECT_ID = process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID ?? '';
+
+/** Descope management key — server-only secret. Used by createSdk() to load
+ *  user records (name + email) for write attribution. */
+export const DESCOPE_MANAGEMENT_KEY = process.env.DESCOPE_MANAGEMENT_KEY ?? '';
