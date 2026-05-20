@@ -125,10 +125,19 @@ Tests use `node:test` and `node:assert/strict` — not Jest, Vitest, or Bun.
   "TypeScript 6 conventions" below for the ones that bite new code.
 - **Pure logic in `core/`**: no React, no I/O above the function boundary.
   Tests pass in `Map<string, DerivedRecord>` rather than reading files.
+- **Split pure logic from SDK/runtime shells.** `core/` is pure by
+  mandate; in `frontend/`, when a module must import something hard to
+  load under `tsx --test` — an SDK, Next middleware, React hooks — pull
+  the pure logic into a separate dependency-free module and unit-test
+  that, leaving a thin shell that wires in the SDK (verified by
+  running). E.g. `proxy-compose.ts` ÷ `proxy.ts`,
+  `account-menu-format.ts` ÷ `auth-account-menu.tsx`.
 - **Frontend is Next 16** with breaking changes from earlier versions —
   read `frontend/AGENTS.md` and `node_modules/next/dist/docs/` before
   writing Next code from training-data instinct.
-- **No auth in `frontend/`** — Tailscale ACLs are the access layer.
+- **Auth in `frontend/` is `WHOAMI_AUTH`-gated** — off by default
+  (Tailscale ACLs are the access layer); `WHOAMI_AUTH=on` enables the
+  Descope login flow. Details in `frontend/AGENTS.md`.
 - **Information density preferred** in UI — the audience is people
   scanning and comparing genealogy data; Apple-style sparseness is wrong
   here. No page-bg tints (parchment/sepia/gradients), drop caps, or

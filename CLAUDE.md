@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# CLAUDE.md — 12-rule template
+# CLAUDE.md — 17-rule template
 
 These rules apply to every task in this project unless explicitly overridden.
 Bias: caution over speed on non-trivial work. Use judgment on trivial tasks.
@@ -76,6 +76,13 @@ user-facing impact, retitle as `chore:` / `refactor:` / `docs:` /
 `test:` (those prefixes are exempt). The user reads the CHANGELOG to
 understand what shipped; missing entries mean missing visibility.
 
+**A capability earns its CHANGELOG entry when it becomes user-reachable,
+even if every commit is `chore:`.** A feature delivered as a run of
+`chore:` plumbing commits — no standalone user-facing effect yet — still
+needs an `[Unreleased]` entry the moment it is actually reachable. Don't
+defer the entry to a downstream plan; that leaves the CHANGELOG
+describing later work built on an undescribed base.
+
 **Push after each batch.** A meaningful commit (or a small cluster of
 related commits) goes to `origin` before the next batch starts. Local
 commits are not backups. If a session ends with N local-only commits,
@@ -110,3 +117,16 @@ a row, (B) every row references an existing file, (C) no `🚧`
 in-progress plan has all its `Create: \`<path>\`` files already on
 disk (file-existence is the strongest evidence of shipping), and
 (D) the `**Total: N plans**` footer matches the actual counts.
+
+## Rule 16 — Verify plans against the codebase, not memory
+Before a plan says "create" a file, route, or symbol, grep for it —
+"create" silently becomes "overwrite" if it already exists.
+Before a plan names a library or SDK API, check it against the installed
+types in `node_modules`, not training-data recall.
+Rule 8, applied at plan-writing time.
+
+## Rule 17 — Docs that assert stay true
+When a change makes a statement in a `CLAUDE.md`, `AGENTS.md`, or other
+tracked doc false, fix the doc in the same change — not in a later pass.
+A doc that says "we don't do X" is a landmine the moment X ships; the
+next agent reads it as current.
