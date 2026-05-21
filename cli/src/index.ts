@@ -60,10 +60,13 @@ import { detectTalkPageFormat } from '@core/checks/talk-page-format.ts';
 import type { Detector, FindingCategory, Severity } from '@core/checks/types.ts';
 import { runDetectors } from './commands/check/run-detectors.js';
 import { checkBundleFreshness } from './bundle-freshness.js';
+import pkg from '../package.json';
 
 function shellEscape(s: string): string { return `'${s.replace(/'/g, "'\\''")}'`; }
 
-const VERSION = '2.0.0-pre.0';
+// Sourced from package.json (inlined into the bundle at build time) so
+// `wai --version` can't drift from the released package version.
+const VERSION = pkg.version;
 
 const HELP = `wai — whoami.wiki cli (markdown migration)
 
