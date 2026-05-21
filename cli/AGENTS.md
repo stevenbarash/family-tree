@@ -10,23 +10,36 @@ can drive it without specific bindings.
 
 ## Commands
 
-| Command          | Purpose                                                                  |
-| ---------------- | ------------------------------------------------------------------------ |
-| `read`           | Read a page; body to stdout, `--json` for the full record.               |
-| `write`          | Overwrite a page (idempotent); body from `--file`, `--stdin`, or positional. Requires `--summary`. |
-| `create`         | Create a new page (refuses if exists).                                  |
-| `edit`           | Open a page in `$EDITOR`.                                                |
-| `delete`         | Soft-delete (moves to `_archived/`).                                     |
-| `search`         | Search title/body/aliases/categories + GEDCOM-derived fields. `--include-living` opts back into restricted records (default-hidden by the privacy gate). |
-| `export`         | Emit a copy of `genealogy/derived/` under `--out <dir>`. With `--redact-living`, restricted records are reduced to initials + birth year. Standalone — does not call the API. |
-| `sync-gedcom`    | Re-derive `genealogy/derived/*.yml` from a `.ged` file.                  |
-| `rebuild-search` | Rebuild the search index from disk (use after editing pages outside the API). `--check` exits non-zero if stale. |
-| `recite`         | Report or advance stale snapshot pointers in pages.                      |
-| `healthz`        | Ping the API.                                                            |
-| `config server`  | Set the server URL in `~/.whoami/config.json`.                           |
-| `check`          | Run drift detectors against the data repo at `$WHOAMI_ROOT`. `--fix` applies safe normalizations. Standalone — does not call the API. |
-| `init`           | Install pre-commit hook + CI workflow into `$WHOAMI_ROOT`. Standalone — does not call the API. |
-| `doctor`         | Diagnose dev-env health: server reachability + port discovery, workspace presence, version skew. `--fix` auto-corrects the configured server URL when an alternative wai server is reachable. Standalone for the workspace checks; talks to the API for reachability. |
+| Command               | Purpose                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `read`                | Read a page; body to stdout, `--json` for the full record.           |
+| `write`               | Overwrite a page (idempotent); body from `--file`, `--stdin`, or positional. Requires `--summary`. |
+| `create`              | Create a new page (refuses if exists).                               |
+| `edit`                | Open a page in `$EDITOR`.                                            |
+| `note`                | Append a dated research note to `<slug>.talk`; also `--edit`, `--delete`, `--restore`, `--list`. `--kind` tags human/agent/interview/research/transcript. |
+| `delete`              | Soft-delete a page (moves to `_archived/`).                          |
+| `search`              | Search title/body/aliases/categories + GEDCOM-derived fields. `--include-living` opts back into restricted records (default-hidden by the privacy gate). |
+| `redlinks`            | List unwritten pages other pages link to, ranked by inbound link count. |
+| `export`              | Emit a copy of `genealogy/derived/` under `--out <dir>`. With `--redact-living`, restricted records are reduced to initials + birth year. Standalone — does not call the API. |
+| `author`              | Run the 7-phase authoring pipeline for a slug (gather → research → outline → draft → verify → log). `--cohort missing\|file:F` batches it; `--no-web`, `--skip-episodes`, `--resume`, `--dry-run`. |
+| `revert`              | Undo a pipeline run for a slug — the whole run, a specific `--run`, a single `--phase`, or `--last`. |
+| `history`             | Show pipeline-relevant commits for a page; `--recent N` lists across all slugs. |
+| `sync-gedcom`         | Re-derive `genealogy/derived/*.yml` from a `.ged` file.              |
+| `recite`              | Report or advance stale snapshot pointers in pages.                  |
+| `migrate`             | Apply pending page-schema migrations (after a `CURRENT_SCHEMA_VERSION` bump). `--dry-run`, `--page`. |
+| `rebuild-search`      | Rebuild the search index from disk (use after editing pages outside the API). `--check` exits non-zero if stale. |
+| `check`               | Run drift detectors against the data repo at `$WHOAMI_ROOT`. `--fix` applies safe normalizations. Standalone — does not call the API. |
+| `audit dates`         | List ambiguous slash dates (m/d/y vs d/m/y) across the GEDCOM, derived records, and prose. Exits 1 on any finding. Standalone. |
+| `grep-claims`         | Find a phrase across pages, talk pages, and source transcripts — the first step of a factual correction. Standalone. |
+| `promote-corrections` | Promote a frontmatter correction into the GEDCOM. Standalone.        |
+| `i18n`                | `status` lists per-(slug × locale) translation state; `sync <slug> <locale>` translates a page into a locale. |
+| `narrative`           | Edit or create a page's `.narrative.md` sidecar.                     |
+| `transcribe`          | Transcribe audio via OpenAI Whisper, appended as a research note on `<slug>.talk`. |
+| `interview`           | Generate Q&A questions via the harness; captures answers as `kind=interview` notes. |
+| `init`                | Install pre-commit hook + CI workflow into `$WHOAMI_ROOT`. Standalone — does not call the API. |
+| `healthz`             | Ping the API.                                                        |
+| `config server`       | Set the server URL in `~/.whoami/config.json`.                       |
+| `doctor`              | Diagnose dev-env health: server reachability + port discovery, workspace presence, version skew. `--fix` auto-corrects the configured server URL when an alternative wai server is reachable. Standalone for the workspace checks; talks to the API for reachability. |
 
 The CLI is an HTTP client — it talks to the frontend's API routes (or
 any other host that implements the same surface). The host runs locally;
@@ -54,6 +67,16 @@ HTTP clients. They need the frontend server up:
 ```bash
 cd ~/dev/whoami/frontend && npm run dev      # serves on :3001
 ```
+
+**Mutating commands also need auth *off*.** `wai`'s `ApiClient` is a
+plain HTTP client with no login step — it never sends a Descope session.
+With the frontend running `WHOAMI_AUTH=on`, every mutating route
+(`write`, `note`, `author`, `sync-gedcom`, `migrate`, …) returns `HTTP
+401: unauthorized` while reads keep working, so the failure looks
+puzzling — and `wai author` hits it mid-run, right after the research
+phase. For local CLI work, leave `WHOAMI_AUTH` unset in
+`frontend/.env.local` (its default); `=on` is for the Render replica,
+where edits arrive through the browser login.
 
 The CLI's default server URL is `http://localhost:3001` — same port the
 frontend script pins. If they ever drift, run `wai doctor` (or `wai
