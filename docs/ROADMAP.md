@@ -5,9 +5,10 @@
 > the work shipped since, and the contribution-track design conversation
 > of 2026-05-19.
 
-**Last updated:** 2026-05-20 (reading-track cleanup closed out — P2.11 and P2.10
-shipped, P2.7 + the audit's header/composition fixes verified already-shipped,
-status snapshot de-drifted)
+**Last updated:** 2026-05-21 (roadmap checkin after P2.20 shipped — Render
+deployment + Descope auth are live; the stale "re-add app-layer auth"
+parking-lot row was removed and the reading-track audience widened to the
+Render replica)
 **Cadence:** revisit at the end of each completed track milestone, or when
 a new review document lands. Status lines are the source of truth — keep
 them honest.
@@ -26,8 +27,9 @@ session, rather than forcing one linear sequence.
 
 ## The three tracks
 
-**Reading track** — the wiki as a thing to browse. Audience: Steven and
-read-only Tailscale guests. Goal: make the accreted reading surface
+**Reading track** — the wiki as a thing to browse. Audience: Steven,
+read-only Tailscale guests, and invited family members on the Render
+replica. Goal: make the accreted reading surface
 (home dashboard, article page, family tree, search) coherent and dense
 without crossing into Apple-style sparseness.
 
@@ -169,7 +171,6 @@ the item moves to its track, not before.
 | **P3.8** Federation / encrypted off-site backup | User wants to share read access outside Tailscale | [Review §P3.8](./reviews/2026-05-07-platform-review.md#p38--federation--remote-vault) — *backup itself is already de-facto via `~/whoami` GitHub remote at `stevenbarash/family-tree-data.git`; the remaining concern is E2E encryption / federation, not loss prevention* |
 | Narrative ↔ GEDCOM round-trip (paste-to-vault) | User wants to paste raw research text and have it weave into the wiki | [`narrative-to-gedcom`](./superpowers/plans/2026-05-03-narrative-to-gedcom.md) |
 | Typed CLI/server contract module (Zod) | First contract-drift bug that costs > 30 min of debugging | [`cli-server-contract`](./superpowers/plans/2026-05-03-cli-server-contract.md) |
-| Re-add real app-layer auth (passwords / sessions / anti-impersonation) | Decision to share *write* access outside the single-user-device model | *(no plan file yet)* — note that lightweight identity (self-asserted picker) became in-scope 2026-05-19 and is **not** auth |
 | Wikitext → Markdown converter polish (Plan B) | Old MediaWiki content needs migrating again | [`wikitext-to-md-converter`](./superpowers/plans/2026-05-01-wikitext-to-md-converter.md) |
 
 ---

@@ -18,7 +18,10 @@
 
 **Constraints carried through every feature:**
 
-- **No real auth.** Tailscale ACLs are still the access layer. The identity surface is a self-asserted picker; anyone on the device can pick any identity. See [`docs/SCOPE.md`](../../SCOPE.md) "Authentication" anti-goal and the 2026-05-19 lightweight-identity allowance.
+- **Identity model is environment-split.** Real auth shipped 2026-05-20 (Descope, P2.20) *after* this roadmap was written.
+  - **Local (Mac Studio, `WHOAMI_AUTH` unset):** no login wall — Tailscale ACLs are the boundary. `viewer` is a self-asserted picker; anyone on the device can pick any identity.
+  - **Render replica (`WHOAMI_AUTH=on`):** every visitor is already authenticated via the invite-only Descope gate. The Descope session *is* the `viewer` — no picker, no name-match heuristic. A `contributorXref` claim is verified against the session, not trusted from the client.
+  `subject` is a session-scoped pick in *both* environments — auth resolves who operates the device, never who is interviewed. See [`docs/SCOPE.md`](../../SCOPE.md) and the [Descope auth plan](./2026-05-20-descope-auth.md).
 - **Browser writes are append-attribute-and-thread-state, not free edit of prior content.** A contributor can append new notes and edit/redact their *own* prior notes (matched by the note's `contributor:` field), but not edit anyone else's. Frontmatter and structured GEDCOM data stay CLI/external-only.
 - **Multilingual completeness** — every contribution surface must work in en / ru / uk / he. Hebrew renders RTL. Question prompts, form labels, audio player chrome, error messages, and TTS read-aloud (where applicable) all participate.
 - **Information density preferred** in non-contributor surfaces (article, tree, search). Contributor surface is the one exception — large fonts, generous touch targets, minimal English in fallbacks. The "non-English grandma operates it" bar is the floor, not the ceiling.
@@ -33,9 +36,11 @@
 
 **Why first.** Foundation. Without `viewer:` + `subject:` in session state, every later item either picks the wrong attribution or shows the wrong filtered content. The picker is also the first thing a contributor touches; it sets the tone for the rest of the UX.
 
-**What ships.** `~/whoami/data/people.yml` opt-in registry (one entry per living person who's consented to be a contributor, linked to their GEDCOM xref, with preferred locale). `wai people add|list|edit` CLI for Steven to curate. Frontend session model: cookie-persisted `viewer` (your device remembers you), session-only `subject` (prompted each visit if interview mode is engaged). Identity picker UI in the layout chrome. Name-match heuristic against the device OS user, offered as default, skippable.
+**What ships.** `~/whoami/data/people.yml` opt-in registry (one entry per living person who's consented to be a contributor, linked to their GEDCOM xref, with preferred locale, plus an optional Descope-account link — `email` or `descope_user_id`). `wai people add|list|edit` CLI for Steven to curate. Frontend session model: a `viewer` resolved per-environment — the Descope session when `WHOAMI_AUTH=on` (looked up in `people.yml` by email to recover the GEDCOM xref + locale), or a cookie-persisted self-asserted pick when auth is off — and a session-only `subject` (prompted each visit if interview mode is engaged). Identity picker UI in the layout chrome for the auth-off `viewer` pick and for `subject` selection in both environments. Name-match heuristic against the device OS user applies only to the auth-off picker.
 
-**Defaults.** When no identity is set, the session falls back to anonymous read-only (today's behavior). Contributions require an identity.
+**Defaults.** Auth-off: when no identity is set, the session falls back to anonymous read-only (today's behavior); contributions require a picked identity. Auth-on: there is no anonymous tier — the Descope gate is the floor; a Descope account with no `people.yml` mapping is authenticated-but-unmapped (can read; must confirm a `contributorXref` before contributing).
+
+**Open for the plan.** (1) *Scribe trust* — interview mode means `viewer ≠ contributor`; the endpoint must allow that mismatch and record both the operating session and the claimed contributor. Decide the rule for who may scribe for whom. (2) *`people.yml` vs `data/users.json`* — `AGENTS.md` lists a `users.json` in `~/whoami/data/`; the plan must verify what it currently is (Rule 16) and decide whether the contributor registry merges with it or cross-references it.
 
 **Plan:** TBD when picked up.
 
@@ -43,7 +48,7 @@
 
 **Why second.** Extends the existing `/api/notes` route to accept multi-modal contribution payloads. Every later contribution path goes through this endpoint. Reusing `/api/notes` instead of creating a parallel route keeps the write surface to one audited boundary.
 
-**What ships.** `POST /api/notes` accepts `{ text? | audioRef? | qaPair?, contributorXref, subjectXref?, locale }`. Writes attribute both `viewer:` and `subject:` content fields on the resulting note. Schema-validated at the boundary (Zod). Living-person check on `contributorXref` against the people.yml opt-in. No auth on the endpoint itself — Tailscale is the boundary.
+**What ships.** `POST /api/notes` accepts `{ text? | audioRef? | qaPair?, contributorXref, subjectXref?, locale }`. Writes attribute both `viewer:` and `subject:` content fields on the resulting note. Schema-validated at the boundary (Zod). Living-person check on `contributorXref` against the people.yml opt-in. The endpoint is already session-gated when `WHOAMI_AUTH=on` — P2.20 made every `/api/notes/*` handler call `requireSession()` and return 401 to unauthenticated clients. When auth is on, `viewer` comes from the verified Descope session and a client-supplied `contributorXref` is checked against it; when auth is off, Tailscale is the boundary and the picker's self-asserted identity is trusted. (Same pattern the auth work already applied to the spoofable `by` field.)
 
 **Plan:** TBD when picked up.
 

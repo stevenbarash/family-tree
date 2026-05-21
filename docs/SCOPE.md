@@ -71,9 +71,11 @@ Constraints that follow:
   agent log, structured research notes with edit/soft-delete)
 - **Browser-side contribution to research notes and talk pages**
   (text, audio file refs, structured Q&A) via the `/api/notes` route
-  family. Attribution is stored as a content field (`contributor:`,
-  `recorded_by:`), not as a logged-in user identity — the Tailscale +
-  single-user-device model holds. Decision: 2026-05-19. The contribution
+  family. Attribution is environment-split: locally (auth off) it is a
+  content field (`contributor:`, `recorded_by:`) under the Tailscale
+  boundary; on the Render replica (`WHOAMI_AUTH=on`) the write is
+  additionally attributed to the signed-in Descope identity (P2.20).
+  Decision: 2026-05-19; auth reconciliation 2026-05-20. The contribution
   surface exists to let family informants (grandparents, parents) add
   context during in-person sessions without dropping to the CLI.
 - Search across articles and GEDCOM-derived metadata
