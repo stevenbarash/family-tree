@@ -7,7 +7,41 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  # Typecheck + test every package. Before this, CI only built the CLI —
+  # core's 600+ tests, the drift tests, and every frontend/evals test
+  # never ran on a PR, so a regression could merge to main green.
+  verify:
+    name: verify (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [core, cli, frontend, evals]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: ${{ matrix.package }}
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: ${{ matrix.package }}
+
+      - name: Test
+        run: npm test
+        working-directory: ${{ matrix.package }}
+
+  # The CLI ships as a single bundled binary; verify the bundle builds
+  # and runs. esbuild bundling can break even when tsc and tests pass.
+  cli-build:
+    name: cli build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,17 +49,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
 
       - name: Install
-        run: pnpm install
+        run: npm ci
         working-directory: cli
 
       - name: Build
-        run: pnpm build
+        run: npm run build
         working-directory: cli
 
       - name: Verify build
