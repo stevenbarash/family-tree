@@ -31,6 +31,11 @@ function PopoverContent({
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
+        // z-index must sit on the Positioner — the positioned element.
+        // The Popup inside it is `position: static`, so a z-index there is
+        // inert and the popup loses to z-indexed page chrome (e.g. the
+        // sticky `z-20` family-tree header).
+        className="z-50"
         sideOffset={sideOffset}
         side={side}
         align={align}
@@ -38,7 +43,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            "z-50 w-[240px] rounded-md border bg-popover p-3 text-popover-foreground shadow-lg outline-none",
+            "w-[240px] rounded-md border bg-popover p-3 text-popover-foreground shadow-lg outline-none",
             "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
             className
           )}
