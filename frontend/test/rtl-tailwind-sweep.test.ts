@@ -22,6 +22,8 @@ const FORBIDDEN = [
   String.raw`\bborder-(l|r)(\b|-[0-9])`,
   // rounded-l-* / rounded-r-*
   String.raw`\brounded-(l|r)-`,
+  // float-left/right and clear-left/right — use float-start/end, clear-start/end
+  String.raw`\b(float|clear)-(left|right)\b`,
 ];
 
 // Files where matches are INTENTIONAL.
