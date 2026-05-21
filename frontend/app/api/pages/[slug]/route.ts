@@ -8,6 +8,7 @@ import type { AuthorIdentity, Page } from '@core/pages/index.ts';
 import { PageNotFoundError } from '@core/pages/store.ts';
 import { buildSearchDoc } from '@core/search/module.ts';
 import { loadDerivedRecord } from '@/lib/derived';
+import { extractEmbeddedFrontmatter } from '@/lib/embedded-frontmatter';
 import { errorResponse, routeError } from '@/lib/api-errors';
 import { withLock } from '@core/pages/locks.ts';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
@@ -53,14 +54,31 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   if (!parsed.success) return errorResponse('bad-request', 400);
 
   const pages = getPageStore();
+  // The `wai author` draft pipeline sends a body that begins with its own
+  // frontmatter block (the draft-person template instructs it to). Lift
+  // that out so it becomes the page's real meta instead of being stacked
+  // beneath a synthesized default. A body with no frontmatter is verbatim.
+  let embedded: Pick<Page, 'meta' | 'body'> | null;
+  try {
+    embedded = extractEmbeddedFrontmatter(slug, parsed.data.body);
+  } catch {
+    // Embedded frontmatter present but schema-invalid — reject loudly
+    // rather than landing the draft as a `type: meta` page.
+    return errorResponse('bad-request', 400);
+  }
+
   // PUT is upsert: read existing meta if available, otherwise synthesize defaults.
   let page: Page;
   try {
     const existing = await pages.read(slug);
-    page = { ...existing, body: parsed.data.body };
+    page = embedded
+      ? { ...existing, meta: embedded.meta, body: embedded.body }
+      : { ...existing, body: parsed.data.body };
   } catch (err) {
     if (!(err instanceof PageNotFoundError)) throw err;
-    page = { slug, meta: defaultPageMeta({ title: titleCaseFromSlug(slug) }), body: parsed.data.body };
+    page = embedded
+      ? { slug, meta: embedded.meta, body: embedded.body }
+      : { slug, meta: defaultPageMeta({ title: titleCaseFromSlug(slug) }), body: parsed.data.body };
   }
 
   try {
