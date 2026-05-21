@@ -59,6 +59,38 @@ test('appendResearchNote: agent kind round-trips into the trailer', () => {
   assert.match(out, /<!-- note id=n_test0001 by=editor-bot kind=agent at=/);
 });
 
+test('appendResearchNote: multi-word author name round-trips through parse', () => {
+  // The project's LLM-attribution convention writes the real model name
+  // ('Claude Opus 4.7') into `by`. The trailer is space-delimited, so an
+  // unencoded multi-word author is split on read and silently truncated
+  // to its first word — losing the very attribution the convention exists
+  // to record. The author fields must be encoded so the name survives.
+  const out = appendResearchNote('', fixed({ by: 'Claude Opus 4.7' }), { date: '2026-05-05' });
+  const [n] = parseResearchNotes(out);
+  assert.equal(n!.by, 'Claude Opus 4.7');
+});
+
+test('softDeleteResearchNote: multi-word deleter name round-trips through parse', () => {
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=steven kind=human at=2026-05-06T14:00:00Z -->\n';
+  const out = softDeleteResearchNote(body, 'n_a', 'Claude Opus 4.7', '2026-05-06T17:00:00Z');
+  const [n] = parseResearchNotes(out);
+  assert.equal(n!.deletedBy, 'Claude Opus 4.7');
+});
+
+test('parseResearchNotes: percent-encoded author value is decoded on read', () => {
+  // Pins the on-disk wire format: author fields are stored percent-encoded
+  // so they remain single whitespace-free tokens, and decoded on read.
+  const body =
+    '## Research notes\n\n### 2026-05-06\n' +
+    '- a\n' +
+    '  <!-- note id=n_a by=Claude%20Opus%204.7 kind=agent at=2026-05-06T14:00:00Z -->\n';
+  const [n] = parseResearchNotes(body);
+  assert.equal(n!.by, 'Claude Opus 4.7');
+});
+
 test('parseResearchNotes: preserves interview/research/transcript kinds on read', () => {
   // Before the fix, the parser narrowed any kind other than 'agent' back to
   // 'human'. The downstream effect was severe: notes written via `wai

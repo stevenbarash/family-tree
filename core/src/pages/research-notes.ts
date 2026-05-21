@@ -180,12 +180,37 @@ export function parseResearchNotes(body: string): Note[] {
   return notes;
 }
 
+// Trailer attrs are a space-delimited `key=value` string, so any value
+// that can contain whitespace would be split into garbage tokens on read
+// (and silently truncated to its first word). Author fields are the only
+// ones that take free text — the LLM-attribution convention writes real
+// model names like "Claude Opus 4.7" — so they are percent-encoded on
+// write and decoded on read. id/kind/timestamps are whitespace-free by
+// construction and stored verbatim.
+const AUTHOR_KEYS = new Set(['by', 'editedBy', 'deletedBy', 'restoredBy']);
+
+function encodeAuthor(v: string): string {
+  return encodeURIComponent(v);
+}
+
+function decodeAuthor(v: string): string {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    // Malformed percent-escape (e.g. a legacy value with a bare `%`):
+    // fall back to the raw token rather than throwing.
+    return v;
+  }
+}
+
 function parseTrailerAttrs(s: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const tok of s.split(/\s+/)) {
     const eq = tok.indexOf('=');
     if (eq === -1) continue;
-    out[tok.slice(0, eq)] = tok.slice(eq + 1);
+    const key = tok.slice(0, eq);
+    const raw = tok.slice(eq + 1);
+    out[key] = AUTHOR_KEYS.has(key) ? decodeAuthor(raw) : raw;
   }
   return out;
 }
@@ -259,7 +284,7 @@ function formatBulletBlock(input: NewNoteInput): string {
 }
 
 function formatTrailer(input: NewNoteInput): string {
-  return `<!-- note id=${input.id} by=${input.by} kind=${input.kind} at=${input.createdAt} -->`;
+  return `<!-- note id=${input.id} by=${encodeAuthor(input.by)} kind=${input.kind} at=${input.createdAt} -->`;
 }
 
 /**
@@ -430,16 +455,16 @@ function spliceBulletBlock(
 function serializeTrailer(attrs: TrailerAttrs): string {
   const parts = [
     `id=${attrs.id}`,
-    `by=${attrs.by}`,
+    `by=${encodeAuthor(attrs.by)}`,
     `kind=${attrs.kind}`,
     `at=${attrs.at}`,
   ];
   if (attrs.editedAt) parts.push(`editedAt=${attrs.editedAt}`);
-  if (attrs.editedBy) parts.push(`editedBy=${attrs.editedBy}`);
+  if (attrs.editedBy) parts.push(`editedBy=${encodeAuthor(attrs.editedBy)}`);
   if (attrs.deletedAt) parts.push(`deletedAt=${attrs.deletedAt}`);
-  if (attrs.deletedBy) parts.push(`deletedBy=${attrs.deletedBy}`);
+  if (attrs.deletedBy) parts.push(`deletedBy=${encodeAuthor(attrs.deletedBy)}`);
   if (attrs.restoredAt) parts.push(`restoredAt=${attrs.restoredAt}`);
-  if (attrs.restoredBy) parts.push(`restoredBy=${attrs.restoredBy}`);
+  if (attrs.restoredBy) parts.push(`restoredBy=${encodeAuthor(attrs.restoredBy)}`);
   return `<!-- note ${parts.join(' ')} -->`;
 }
 
