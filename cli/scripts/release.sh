@@ -49,15 +49,17 @@ echo ""
 
 # ── Bump version ───────────────────────────────────────────────────────
 
-# package.json
-sed -i '' "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-
-# src/index.ts
-sed -i '' "s/const VERSION = '.*'/const VERSION = '${VERSION}'/" src/index.ts
+# `npm version` rewrites the root version field in BOTH package.json and
+# package-lock.json (without touching dependency versions), so the two
+# can't drift. `wai --version` sources the number from package.json at
+# build time, so there is no source-file constant left to bump.
+npm version "${VERSION}" --no-git-tag-version --allow-same-version >/dev/null
 
 # ── Commit & tag ───────────────────────────────────────────────────────
 
-git add package.json src/index.ts RELEASE_NOTES.md
+# The CHANGELOG move (unreleased entries → the new version heading) is
+# part of the release commit; CHANGELOG.md lives at the repo root.
+git add package.json package-lock.json RELEASE_NOTES.md ../CHANGELOG.md
 git commit -m "release: ${TAG}"
 git tag "$TAG"
 git push
