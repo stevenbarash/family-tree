@@ -21,7 +21,9 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
-_Nothing yet — the next change adds the first entry here._
+### Fixed
+
+- **Cold-authored pages no longer get stacked frontmatter (`frontend`)** — the `draft-person` prompt template instructs the draft agent to emit a page body that *begins with* its own `type: person` frontmatter block, but `PUT /api/pages/[slug]` treated the request body as body-only and synthesised a `defaultPageMeta` (`type: meta`) for any page that did not exist yet. `serializePage` then rendered the synthesised block followed immediately by the agent's block — two stacked frontmatter blocks on the file, with the server reading the page as `type: meta` and stranding the real metadata in the body. Every cold-authored page was affected; the corpus only looked clean because of periodic "collapse dual-frontmatter" cleanup passes. A new `extractEmbeddedFrontmatter()` helper detects an embedded frontmatter block, parses and schema-validates it via `parsePage`, and the route now promotes it to the page meta instead of burying it. Bodies with no frontmatter are written verbatim, as before.
 
 ---
 
