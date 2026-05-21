@@ -11,22 +11,26 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 25
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
+      # The CLI bundle inlines core's TypeScript source, so core's
+      # dependencies must be installed for esbuild to resolve them.
+      - name: Install core deps
+        run: npm install --no-audit --no-fund
+        working-directory: core
 
       - name: Install
-        run: pnpm install
+        run: npm install --no-audit --no-fund
         working-directory: cli
 
       - name: Build
-        run: pnpm build
+        run: npm run build
         working-directory: cli
 
       - name: Verify build
