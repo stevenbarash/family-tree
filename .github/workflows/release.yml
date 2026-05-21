@@ -15,18 +15,25 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 25
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: '**/package-lock.json'
+          cache-dependency-path: |
+            core/package-lock.json
+            cli/package-lock.json
 
       # The CLI bundle inlines core's TypeScript source, so core's
       # dependencies must be installed for esbuild to resolve them.
+      #
+      # `npm ci` (not `npm install`, which ci.yml uses): a release
+      # builds the published binary and must install exact locked
+      # versions. A drifted lockfile failing `npm ci` correctly blocks
+      # the release until it's reconciled.
       - name: Install core deps
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
         working-directory: core
 
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
         working-directory: cli
 
       - name: Build

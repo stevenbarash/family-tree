@@ -29,9 +29,11 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 25
+          node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: '**/package-lock.json'
+          cache-dependency-path: |
+            core/package-lock.json
+            ${{ matrix.package }}/package-lock.json
 
       # cli/frontend typecheck (and the bundled build) resolve `@core/*`
       # to core's TypeScript source, so core's own dependencies must be
@@ -53,32 +55,17 @@ jobs:
         run: npm test
         working-directory: ${{ matrix.package }}
 
-  # The CLI ships as a single bundled binary; verify the bundle builds
-  # and runs. esbuild bundling can break even when tsc and tests pass.
-  cli-build:
-    name: cli build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 25
-          cache: npm
-          cache-dependency-path: '**/package-lock.json'
-
-      - name: Install core deps
-        run: npm install --no-audit --no-fund
-        working-directory: core
-
-      - name: Install
-        run: npm install --no-audit --no-fund
-        working-directory: cli
-
+      # The CLI ships as a single bundled binary; verify the bundle
+      # builds and runs — esbuild bundling can break even when tsc and
+      # tests pass. Runs only on the cli leg, folded into verify so it
+      # reuses the leg's already-installed core + cli deps instead of a
+      # separate job that reinstalls both.
       - name: Build
+        if: matrix.package == 'cli'
         run: npm run build
         working-directory: cli
 
       - name: Verify build
+        if: matrix.package == 'cli'
         run: node dist/wai.cjs --version
         working-directory: cli
