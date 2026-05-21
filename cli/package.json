@@ -1,6 +1,6 @@
 {
   "name": "wai",
-  "version": "2.0.0-pre.1",
+  "version": "2.0.0",
   "description": "whoami.wiki cli — http client for the family wiki API",
   "type": "module",
   "bin": {

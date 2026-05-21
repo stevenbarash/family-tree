@@ -1,21 +1,29 @@
-Package-bump release. No CLI source change; the `wai` binary behaves
-identically to `cli-v2.0.0-pre.0`.
+First stable `cli-v2.0.0` — the v2 `wai` CLI leaves pre-release.
 
-The release captures an end-to-end dependency refresh:
+`wai` is the HTTP-client CLI agents (and humans) use to read, write, and
+search the family wiki, plus the standalone drift detectors and the
+article-pipeline commands. `cli-v2.0.0-pre.0` / `-pre.1` were the
+markdown-era pre-release builds; this is the first stable v2 tag. The
+`cli-v1.x` tags predate the v2 architecture and reference removed
+commands.
 
-- TypeScript 5.9 → 6.0.3 across all six packages in the monorepo.
-- @types/node 24 → 25, tsx 4.21 → 4.22.3.
-- Frontend: next 16.2.6, react 19.2.6, @base-ui/react 1.5.0,
-  tailwindcss 4.3.0, lucide-react 1.16, zod 4.4.3.
-- tools/wiki-preview: express 4 → 5, remark-directive 3 → 4.
-- tools/wikitext-to-md: better-sqlite3 11 → 12.
-- ESLint 9 → 10 held back upstream (eslint-config-next bundles an
-  older eslint-plugin-react that calls the removed `context.getFilename()`).
+Fixes since `cli-v2.0.0-pre.1`:
 
-Headline benefit: TS 7 readiness. Codebase had zero hits on any TS 6
-deprecation, so the eventual `^6.0.0 → ^7.0.0` bump (when TS 7 ships
-its ~10× faster native Go compiler) is one-line per package.json.
+- **`wai --version` no longer drifts.** The version was a hand-edited
+  `const` that went stale the moment `package.json` was bumped — and
+  `wai doctor`'s server/CLI skew check read the wrong number with it.
+  It is now sourced from `package.json` at build time.
+- **Slug and numeric-flag inputs hardened at the command boundary.**
+  `narrative`, `transcribe`, `interview`, `author`, `revert`, and
+  `i18n sync` route a positional slug through `toSlug()`, so a
+  `../`-bearing value can't escape `$WHOAMI_ROOT` — and
+  `wai author "Some Person"` now resolves the same as
+  `wai author some-person`. `i18n sync` / `i18n status` build their
+  `git log` calls with `execFileSync` (no shell). `--limit`,
+  `--recent`, `--questions`, and `--parallel` reject negative and
+  non-numeric values instead of passing them through.
 
-See [CHANGELOG.md](../CHANGELOG.md#cli-v200-pre1--2026-05-19-package-bump-release)
-for the full per-package breakdown, the "Why this matters" rationale,
-and the verification results.
+The bundled binary is otherwise identical to `cli-v2.0.0-pre.1`.
+
+See [CHANGELOG.md](../CHANGELOG.md#cli-v200--2026-05-21) for the
+project-wide entry list captured under this release.

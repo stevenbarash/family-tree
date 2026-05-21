@@ -21,6 +21,19 @@ last tagged production release was [`cli-v1.2.1`](https://github.com/stevenbaras
 
 ## [Unreleased] — v2 development
 
+_Nothing yet — the next change adds the first entry here._
+
+---
+
+## [cli-v2.0.0] — 2026-05-21
+
+First stable v2 CLI tag. `cli-v2.0.0-pre.0` / `-pre.1` were the
+markdown-era pre-release builds; this section captures the project-wide
+work that accumulated alongside the stabilising CLI. CLI-specific
+changes since `cli-v2.0.0-pre.1` are the two `(cli)`-tagged entries
+under **Fixed** below (`wai --version` sourcing and command-boundary
+input hardening).
+
 ### Added
 
 - **Public deployment on Render, with two-way git sync (closes P2.20)** — the wiki now runs as a read-write replica on Render alongside the canonical Mac Studio copy. A Next.js `instrumentation.ts` startup hook clones the data repo onto Render's persistent disk on first boot and starts an in-process sync scheduler that `pullRebase`s upstream changes every ~10 minutes and pushes local commits; the page-write API pushes after each write, and a shared `REPO_LOCK` serialises writes against the scheduler so a rebase never races a commit. The replica is gated by the `WHOAMI_AUTH`-on Descope login (invite-only, trusted family) and browser edits are attributed to the signed-in member. The Mac Studio stays canonical and the local-first model is preserved — local dev still has no login wall and no auto-sync. This reverses the former "no public hosting" / "no app-layer auth" `SCOPE.md` anti-goals (see the render deployment spec).
