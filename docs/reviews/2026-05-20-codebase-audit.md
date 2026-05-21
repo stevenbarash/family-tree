@@ -212,18 +212,42 @@ the other packages use `package-lock.json` only. No package declares
 
 ## Disposition
 
-This audit drove a remediation pass on 2026-05-20. The CHANGELOG
-records what shipped. Items deliberately left open:
+This audit drove a remediation pass on 2026-05-20/21. The CHANGELOG
+records the user-facing fixes. Shipped:
+
+- **Both Critical findings closed.** `requireSession()` now gates the
+  six unprotected mutating API routes (and the `include_living` search
+  bypass); CI runs typecheck + tests for `core`/`cli`/`frontend`/`evals`
+  plus the cli bundle build.
+- **High findings closed** — the cli trust-boundary cluster (slug
+  sanitization, `execFileSync`, numeric-flag clamping), the `core`
+  author-name truncation, the two `evals` grader/harness bugs, the
+  `git`-hook gaps (`data-repo-guard` wired up, `changelog-nudge` path
+  fixed), and the doc-drift items. Mixed package managers resolved —
+  npm is the single manager now (pnpm lockfiles removed); workflows
+  migrated to Node 25.
+
+Left open:
 
 - **Medium/Low correctness edge-cases** in `core` (impossible dates,
-  pre-1500 years) — tracked, not yet fixed.
+  pre-1500 citation years) — tracked, not yet fixed.
 - **`postcss` advisory** (repo) — awaiting an upstream `next` patch;
   `audit fix --force` would downgrade `next` and is not an option.
 - **`tools/` migration-helper retirement** — a ROADMAP decision, out of
   scope for a code-health pass.
 - **`noUncheckedIndexedAccess` uniformity** — deferred; expect it to
   surface real fixes in `cli`/`frontend`/`evals`.
+- **Plugin docs' stale `pages/` paths** — `editor.md` / plugin
+  `CLAUDE.md` describe a flat layout; correcting them needs the v2
+  source-page access model pinned down first. A dedicated plan will
+  cover it.
+- **CI does not trigger on push** — surfaced during the CI work: no
+  `push`/`pull_request` event has ever started a workflow run here (the
+  workflow registration sat frozen at its 2026-05-04 creation date
+  through 70+ pushes). `workflow_dispatch` works; the CI and Release
+  workflows were re-registered via a disable/enable cycle. A GitHub
+  repo-settings issue, not a workflow-file bug.
 
 Overall health: **good.** The architecture is sound and test coverage
-is broad. The findings cluster into two fixable themes rather than
+is broad. The findings clustered into two fixable themes rather than
 indicating structural decay.
