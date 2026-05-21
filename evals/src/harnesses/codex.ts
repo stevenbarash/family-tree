@@ -38,7 +38,7 @@ export function createCodexHarness(model?: string): Harness {
   return {
     name: 'codex',
     async run(task: TestCase, env: Record<string, string | undefined>, options?: HarnessRunOptions): Promise<HarnessResult> {
-      const wikiUrl = env['WIKI_SERVER'] ?? 'http://localhost:8081';
+      const wikiUrl = env['WHOAMI_SERVER'] ?? 'http://localhost:8081';
 
       let prompt: string;
       if (options?.checkpoint) {

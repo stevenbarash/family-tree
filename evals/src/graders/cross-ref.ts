@@ -8,14 +8,18 @@ export async function gradeCrossRef(
   const sourceTypes = [...new Set(testCase.sources.map((s) => s.type))];
 
   if (sourceTypes.length < 2) {
+    // Nothing to cross-reference — not a failure the agent can fix.
+    // Mark skipped so computeComposite excludes it rather than letting a
+    // hard 0 drag down the mechanics tier.
     return {
       grader: 'cross-ref',
       score: 0,
+      skipped: true,
       details: [
         {
           check: 'Fewer than 2 source types available',
           passed: false,
-          penalty: 1,
+          penalty: 0,
           note: `Only ${sourceTypes.length} source type(s) found`,
         },
       ],
