@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
+import type { AuthorIdentity } from '@core/pages/index.ts';
 import { withLock } from '@core/pages/locks.ts';
 import { editNoteOnDisk, softDeleteNoteOnDisk } from '@/lib/server-services';
 import { errorResponse, routeError, NOTE_ID_RE, ByField } from '@/lib/api-errors';
-import { DEFAULT_AUTHOR } from '@/lib/env';
+import { AUTH_ENABLED } from '@/lib/env';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
+import { noteAuthorName } from '@/lib/note-author';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
 
 const PatchBody = z.object({
@@ -26,6 +29,14 @@ export async function PATCH(
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
   if (!NOTE_ID_RE.test(id)) return errorResponse('bad-note-id', 400);
 
+  let author: AuthorIdentity;
+  try {
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = PatchBody.safeParse(json);
   if (!parsed.success) return errorResponse('bad-request', 400);
@@ -36,7 +47,7 @@ export async function PATCH(
         slug,
         id,
         parsed.data.note,
-        parsed.data.by ?? DEFAULT_AUTHOR.name,
+        noteAuthorName(AUTH_ENABLED, author, parsed.data.by),
       );
       await pushAfterWrite();
       return r;
@@ -60,6 +71,14 @@ export async function DELETE(
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
   if (!NOTE_ID_RE.test(id)) return errorResponse('bad-note-id', 400);
 
+  let author: AuthorIdentity;
+  try {
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = DeleteBody.safeParse(json);
   if (!parsed.success) return errorResponse('bad-request', 400);
@@ -69,7 +88,7 @@ export async function DELETE(
       const r = await softDeleteNoteOnDisk(
         slug,
         id,
-        parsed.data?.by ?? DEFAULT_AUTHOR.name,
+        noteAuthorName(AUTH_ENABLED, author, parsed.data?.by),
       );
       await pushAfterWrite();
       return r;

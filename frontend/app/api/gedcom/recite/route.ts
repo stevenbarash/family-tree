@@ -5,6 +5,7 @@ import { reciteDrift, applyRecite } from '@core/gedcom/index.ts';
 import { invalidateListCache } from '@/lib/server-services';
 import { WHOAMI_ROOT, PAGES_DIR, DEFAULT_AUTHOR } from '@/lib/env';
 import { errorResponse } from '@/lib/api-errors';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
 
 export async function GET() {
   const drift = await reciteDrift({
@@ -18,6 +19,13 @@ export async function GET() {
 const ApplyBody = z.object({ apply: z.literal(true) });
 
 export async function POST(req: NextRequest) {
+  try {
+    await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = ApplyBody.safeParse(body);
   if (!parsed.success) return errorResponse('bad-request', 400);

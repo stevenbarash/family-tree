@@ -3,6 +3,7 @@ import { runMigrateOnDisk } from '@/lib/server-services';
 import { DirtyRepoError } from '@core/pages/migrate-runner.ts';
 import { FutureSchemaVersionError } from '@core/pages/migrations/index.ts';
 import { errorResponse } from '@/lib/api-errors';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
 
 interface MigrateRequest {
   page?: string;
@@ -19,6 +20,13 @@ interface MigrateRequest {
  * this build.
  */
 export async function POST(req: NextRequest): Promise<Response> {
+  try {
+    await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   let body: MigrateRequest = {};
   try {
     body = (await req.json()) as MigrateRequest;

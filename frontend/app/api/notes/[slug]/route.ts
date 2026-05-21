@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
+import type { AuthorIdentity } from '@core/pages/index.ts';
 import { withLock } from '@core/pages/locks.ts';
 import { appendNoteOnDisk } from '@/lib/server-services';
 import { errorResponse, routeError } from '@/lib/api-errors';
-import { DEFAULT_AUTHOR } from '@/lib/env';
+import { AUTH_ENABLED } from '@/lib/env';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
+import { noteAuthorName } from '@/lib/note-author';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
 
 const NoteBody = z.object({
@@ -22,7 +25,8 @@ const NoteBody = z.object({
  * `<slug>.talk.md`. The slug is the article slug; `.talk` form is also
  * accepted. Body fields:
  *   - note (required): bullet prose
- *   - by (optional): author handle. Falls back to DEFAULT_AUTHOR.name.
+ *   - by (optional): author handle. Honoured only when auth is off (the
+ *       trusted local CLI); with auth on the signed-in identity is used.
  *   - kind (optional): "human" (default) or "agent"
  * Returns the resolved talk slug, the date filed under, and the new
  * note's stable id.
@@ -30,6 +34,14 @@ const NoteBody = z.object({
 export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
+
+  let author: AuthorIdentity;
+  try {
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
 
   const json = await req.json().catch(() => null);
   const parsed = NoteBody.safeParse(json);
@@ -39,7 +51,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
     const { date, id } = await withLock(REPO_LOCK, async () => {
       const result = await appendNoteOnDisk(slug, {
         text: parsed.data.note,
-        by: parsed.data.by ?? DEFAULT_AUTHOR.name,
+        by: noteAuthorName(AUTH_ENABLED, author, parsed.data.by),
         kind: parsed.data.kind ?? 'human',
       });
       await pushAfterWrite();

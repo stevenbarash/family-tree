@@ -6,6 +6,7 @@ import { syncGedcom } from '@core/gedcom/index.ts';
 import { invalidateListCache, rebuildSearchIndexFromDisk } from '@/lib/server-services';
 import { WHOAMI_ROOT, DEFAULT_AUTHOR } from '@/lib/env';
 import { errorResponse } from '@/lib/api-errors';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
 
 const Body = z.object({
   gedFile: z.string().regex(/^[a-z0-9._-]+\.ged$/i),
@@ -14,6 +15,13 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  try {
+    await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = Body.safeParse(json);
   if (!parsed.success) return errorResponse('bad-request', 400);

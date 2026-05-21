@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
+import type { AuthorIdentity } from '@core/pages/index.ts';
 import { withLock } from '@core/pages/locks.ts';
 import { restoreNoteOnDisk } from '@/lib/server-services';
 import { errorResponse, routeError, NOTE_ID_RE, ByField } from '@/lib/api-errors';
-import { DEFAULT_AUTHOR } from '@/lib/env';
+import { AUTH_ENABLED } from '@/lib/env';
+import { requireSession, UnauthenticatedError } from '@/lib/descope';
+import { noteAuthorName } from '@/lib/note-author';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
 
 const RestoreBody = z.object({ by: ByField.optional() }).optional();
@@ -21,6 +24,14 @@ export async function POST(
   if (!isValidSlug(slug)) return errorResponse('bad-slug', 400);
   if (!NOTE_ID_RE.test(id)) return errorResponse('bad-note-id', 400);
 
+  let author: AuthorIdentity;
+  try {
+    author = await requireSession();
+  } catch (err) {
+    if (err instanceof UnauthenticatedError) return errorResponse('unauthorized', 401);
+    throw err;
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = RestoreBody.safeParse(json);
   if (!parsed.success) return errorResponse('bad-request', 400);
@@ -30,7 +41,7 @@ export async function POST(
       const r = await restoreNoteOnDisk(
         slug,
         id,
-        parsed.data?.by ?? DEFAULT_AUTHOR.name,
+        noteAuthorName(AUTH_ENABLED, author, parsed.data?.by),
       );
       await pushAfterWrite();
       return r;
