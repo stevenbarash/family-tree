@@ -11,6 +11,12 @@ jobs:
   # Typecheck + test every package. Before this, CI only built the CLI —
   # core's 600+ tests, the drift tests, and every frontend/evals test
   # never ran on a PR, so a regression could merge to main green.
+  #
+  # `npm install` (not `npm ci`): the per-package lockfiles drift under
+  # Dependabot churn, and `npm ci`'s strict lock check turns that drift
+  # into a hard CI failure unrelated to the change under test. The job's
+  # purpose is to catch typecheck/test regressions, which `npm install`
+  # serves; lockfile hygiene is tracked separately.
   verify:
     name: verify (${{ matrix.package }})
     runs-on: ubuntu-latest
@@ -25,10 +31,18 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ${{ matrix.package }}/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
+
+      # cli/frontend typecheck (and the bundled build) resolve `@core/*`
+      # to core's TypeScript source, so core's own dependencies must be
+      # installed even when core is not the package under test.
+      - name: Install core deps
+        if: matrix.package != 'core'
+        run: npm install --no-audit --no-fund
+        working-directory: core
 
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
         working-directory: ${{ matrix.package }}
 
       - name: Typecheck
@@ -51,10 +65,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: cli/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install core deps
+        run: npm install --no-audit --no-fund
+        working-directory: core
 
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
         working-directory: cli
 
       - name: Build
