@@ -34,7 +34,7 @@ staged=$(git diff --cached --name-only 2>/dev/null) || exit 0
 [ -z "$staged" ] && exit 0
 
 # "Code-ish" paths whose changes typically warrant a CHANGELOG entry.
-code_staged=$(echo "$staged" | grep -E '^(cli/src/|core/src/|frontend/(app|components|lib|next\.config)|plugins/whoami/src/)' || true)
+code_staged=$(echo "$staged" | grep -E '^(cli/src/|core/src/|frontend/(app|components|lib|next\.config)|plugins/whoami/(agents|skills)/)' || true)
 [ -z "$code_staged" ] && exit 0
 
 # CHANGELOG.md already staged? All good.

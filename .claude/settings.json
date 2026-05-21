@@ -10,6 +10,11 @@
             "command": ".claude/hooks/changelog-nudge.sh",
             "if": "Bash(git commit*)",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/data-repo-guard.sh",
+            "timeout": 5
           }
         ]
       }
