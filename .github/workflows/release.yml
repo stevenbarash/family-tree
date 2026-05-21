@@ -59,4 +59,7 @@ jobs:
             wai-v*.tar.gz
             wai-v*.tar.gz.sha256
           body_path: cli/RELEASE_NOTES.md
-          make_latest: "false"
+          # The v2 CLI is stable as of cli-v2.0.0, so the newest tag
+          # wears GitHub's "Latest" badge. Revisit if a -pre tag is
+          # ever cut again — that would need a conditional here.
+          make_latest: "true"
