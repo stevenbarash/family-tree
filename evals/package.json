@@ -1,6 +1,6 @@
 {
   "name": "@whoami-wiki/evals",
-  "version": "0.1.0",
+  "version": "2.0.0-pre.0",
   "description": "Eval suite for whoami.wiki agent harnesses",
   "type": "module",
   "scripts": {

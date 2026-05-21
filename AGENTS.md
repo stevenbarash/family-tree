@@ -229,10 +229,11 @@ no longer supports.
 3. Commit with `release: cli-vX.Y.Z` (no body).
 4. Tag: `git tag cli-vX.Y.Z && git push --tags`.
 
-**The CLI is currently un-released against v2** — the last published
-tag (`cli-v1.2.1`, 2026-03-26) predates the v2 architecture. The
-next CLI tag should be `cli-v2.0.0` and should be cut after the
-working tree closes (see `docs/ROADMAP.md`).
+**The CLI's first v2 tag is `cli-v2.0.0-pre.1`** — a pre-release;
+`cli/package.json` is at `2.0.0-pre.1`. The pre-v2 tags (`cli-v1.0.x`
+through `cli-v1.2.1`, last published 2026-03-26) predate the v2
+architecture. The next *stable* CLI tag should be `cli-v2.0.0`, cut
+after the working tree closes (see `docs/ROADMAP.md`).
 
 For everything else: `/CHANGELOG.md` is the unreleased-work surface.
 Every PR adds an entry under `## [Unreleased]`; that's what stands in
