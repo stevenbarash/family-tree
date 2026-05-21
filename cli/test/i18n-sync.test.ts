@@ -226,6 +226,27 @@ test('wai i18n sync: errors on unknown locale', async () => {
   await rm(root, { recursive: true });
 });
 
+test('wai i18n sync: refuses an invalid / path-traversal slug', async () => {
+  // runI18nSync interpolates the slug into a filesystem path and a git
+  // command. A slug with a slash, `..`, or shell metacharacters must be
+  // rejected at the function boundary — it is the documented agent
+  // contract and an exported library function with no other guard.
+  const root = join(tmpdir(), `whoami-i18n-badslug-${Date.now()}`);
+  await mkdir(root, { recursive: true });
+
+  let stdout = '';
+  await runI18nSync({
+    rootDir: root,
+    slug: '../../etc/passwd',
+    locale: 'ru',
+    translator: stubTranslator,
+    write: (s) => { stdout += s; },
+  });
+  assert.match(stdout, /invalid slug/);
+
+  await rm(root, { recursive: true });
+});
+
 test('wai i18n sync: passes related-translation context to translator', async () => {
   const root = join(tmpdir(), `whoami-i18n-related-${Date.now()}`);
   await mkdir(join(root, 'pages', 'en'), { recursive: true });

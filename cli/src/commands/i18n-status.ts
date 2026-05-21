@@ -19,7 +19,7 @@
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   parseTranslationTalk,
   computeTranslationStatus,
@@ -83,8 +83,11 @@ export async function runI18nStatus(opts: RunI18nStatusOpts): Promise<void> {
 
 function getCanonicalSha(rootDir: string, slug: string): string {
   try {
-    return execSync(
-      `git -C "${rootDir}" log -1 --format=%H -- pages/en/${slug}.md`,
+    // execFileSync (no shell): rootDir and slug are passed as argv
+    // entries, so a filename with shell metacharacters can't inject.
+    return execFileSync(
+      'git',
+      ['-C', rootDir, 'log', '-1', '--format=%H', '--', `pages/en/${slug}.md`],
       { encoding: 'utf8' },
     ).trim();
   } catch {

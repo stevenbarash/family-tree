@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 import { ApiClient } from './api-client.js';
 import { getServer, setServer } from './config.js';
 import { toSlug } from './slug.js';
+import { parsePositiveInt } from './flags.js';
 import { readFromFile, readFromStdin, editInEditor } from './body-input.js';
 import { runRead } from './commands/read.js';
 import { runWrite } from './commands/write.js';
@@ -418,7 +419,7 @@ async function main(): Promise<number> {
       }
       case 'search': {
         const query = args.positional[0] ?? '';
-        const limit = parseInt(String(args.flags.limit ?? '25'), 10) || 25;
+        const limit = parsePositiveInt(args.flags.limit, 25);
         const includeLiving = !!args.flags['include-living'];
         await runSearch({ query, limit, json: !!args.flags.json, includeLiving, client, write });
         break;
@@ -500,7 +501,7 @@ async function main(): Promise<number> {
           return 0;
         }
         if (sub === 'sync') {
-          const slug = args.positional[1];
+          const slug = toSlug(args.positional[1] ?? '');
           const locale = args.positional[2];
           if (!slug || !locale) {
             process.stderr.write('Usage: wai i18n sync <slug> <locale> [--stub] [--no-talk] [--talk-only]\n');
@@ -606,7 +607,7 @@ async function main(): Promise<number> {
         return code;
       }
       case 'narrative': {
-        const slug = args.positional[0];
+        const slug = toSlug(args.positional[0] ?? '');
         if (!slug) {
           process.stderr.write('narrative: slug required\n');
           return 2;
@@ -641,7 +642,7 @@ async function main(): Promise<number> {
         return code;
       }
       case 'transcribe': {
-        const slug = args.positional[0];
+        const slug = toSlug(args.positional[0] ?? '');
         if (!slug) {
           process.stderr.write('transcribe: usage — wai transcribe <slug> <audio> | wai transcribe <slug> --dir <path>\n');
           return 2;
@@ -717,14 +718,12 @@ async function main(): Promise<number> {
         return code;
       }
       case 'interview': {
-        const slug = args.positional[0];
+        const slug = toSlug(args.positional[0] ?? '');
         if (!slug) {
           process.stderr.write('interview: slug required\n');
           return 2;
         }
-        const maxQuestions = typeof args.flags.questions === 'string'
-          ? parseInt(args.flags.questions, 10) || 8
-          : 8;
+        const maxQuestions = parsePositiveInt(args.flags.questions, 8);
         let harness;
         try {
           harness = selectHarness(process.env.WHOAMI_HARNESS as 'claude-code' | 'codex' | 'opencode' | undefined);
@@ -914,7 +913,7 @@ async function main(): Promise<number> {
             process.exit(2);
           }
 
-          const parallel = typeof args.flags.parallel === 'string' ? parseInt(args.flags.parallel, 10) : 1;
+          const parallel = parsePositiveInt(args.flags.parallel, 1);
           const orderArg = typeof args.flags.order === 'string' ? args.flags.order : 'chronological';
           const order = (orderArg === 'alphabetical' || orderArg === 'file' || orderArg === 'chronological') ? orderArg : 'chronological';
           const resumeRunId = typeof args.flags['resume-run'] === 'string' ? args.flags['resume-run'] : undefined;
@@ -941,7 +940,7 @@ async function main(): Promise<number> {
         }
 
         // Single-slug path (unchanged).
-        const slug = args.positional[0];
+        const slug = toSlug(args.positional[0] ?? '');
         if (!slug) {
           process.stderr.write('author: slug required\n');
           return 2;
@@ -973,7 +972,7 @@ async function main(): Promise<number> {
         if (lastFlag) {
           revertMode = { kind: 'last' };
         } else {
-          const revertSlug = args.positional[0];
+          const revertSlug = toSlug(args.positional[0] ?? '');
           if (!revertSlug) {
             process.stderr.write('revert: slug required (or use --last)\n');
             return 2;
@@ -1015,7 +1014,7 @@ async function main(): Promise<number> {
         const format = args.flags.json === true ? 'json' : 'table';
         const filter = args.flags['no-pipeline'] === true ? 'no-pipeline' : 'pipeline-only';
         const recentLimit = recent
-          ? (typeof args.flags.recent === 'string' ? parseInt(args.flags.recent, 10) : 50)
+          ? parsePositiveInt(args.flags.recent, 50)
           : undefined;
 
         const historyCode = await runHistory({
@@ -1046,7 +1045,7 @@ async function main(): Promise<number> {
         break;
       }
       case 'redlinks': {
-        const limit = parseInt(String(args.flags.limit ?? '50'), 10) || 50;
+        const limit = parsePositiveInt(args.flags.limit, 50);
         await runRedlinks({ limit, json: !!args.flags.json, client, write });
         break;
       }

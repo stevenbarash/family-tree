@@ -23,9 +23,9 @@
 import { mkdir, writeFile, readFile, rename, unlink } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { parsePage } from '@core/pages/frontmatter.ts';
-import { toSlug } from '@core/pages/slug.ts';
+import { toSlug, isValidSlug } from '@core/pages/slug.ts';
 import { isLocale, TARGET_LOCALES, type Locale } from '@core/i18n/index.ts';
 import { parseTalkThreads } from '@core/pages/talk-threads.ts';
 
@@ -148,6 +148,13 @@ export interface RunI18nSyncOpts {
 }
 
 export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
+  // The slug is interpolated into filesystem paths and a git argument.
+  // Reject anything that isn't a clean slug at the boundary — this is an
+  // exported function with no other guard on its input.
+  if (!isValidSlug(opts.slug)) {
+    opts.write(`invalid slug: ${opts.slug}\n`);
+    return;
+  }
   if (!isLocale(opts.locale)) {
     opts.write(`unknown locale: ${opts.locale}. Valid: ${TARGET_LOCALES.join(', ')}\n`);
     return;
@@ -173,10 +180,7 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
 
   const canonicalRaw = await readFile(canonicalPath, 'utf8');
   const canonicalPage = parsePage(opts.slug, canonicalRaw);
-  const canonicalSha = execSync(
-    `git -C "${opts.rootDir}" log -1 --format=%H -- pages/en/${opts.slug}.md`,
-    { encoding: 'utf8' },
-  ).trim();
+  const canonicalSha = gitHeadSha(opts.rootDir, `pages/en/${opts.slug}.md`);
 
   // Look up sex from the linked GEDCOM-derived record, when this article
   // represents a person. Non-person articles (family/event/meta) won't have
@@ -277,10 +281,7 @@ translated_at: '${today}'
     // schema, so don't run them through parsePage. The format is stable
     // (`---\n<yaml>\n---\n<body>`) — split by hand.
     const enTalkBody = stripFrontmatter(enTalkRaw);
-    const enTalkSha = execSync(
-      `git -C "${opts.rootDir}" log -1 --format=%H -- pages/en/${opts.slug}.talk.md`,
-      { encoding: 'utf8' },
-    ).trim();
+    const enTalkSha = gitHeadSha(opts.rootDir, `pages/en/${opts.slug}.talk.md`);
     const existingTalkTranslation = existsSync(localizedTalkPath)
       ? await readFile(localizedTalkPath, 'utf8')
       : undefined;
@@ -395,6 +396,20 @@ async function atomicWrite(path: string, content: string): Promise<void> {
 }
 
 /**
+ * Resolve the HEAD commit SHA that last touched `relPath`. Uses
+ * `execFileSync` (no shell) so the rootDir and the interpolated slug in
+ * `relPath` can never reach a shell parser. Returns an empty string for
+ * an untracked path (`git log` exits 0 with no output).
+ */
+function gitHeadSha(rootDir: string, relPath: string): string {
+  return execFileSync(
+    'git',
+    ['-C', rootDir, 'log', '-1', '--format=%H', '--', relPath],
+    { encoding: 'utf8' },
+  ).trim();
+}
+
+/**
  * Talk-only sync path. Reuses the existing article translation for
  * anchor context (title + body) and runs only the talk translator.
  * Used by the P2.16 bulk-backfill where the 181 existing article
@@ -431,10 +446,7 @@ async function runTalkOnly(opts: RunI18nSyncOpts, canonicalPath: string): Promis
   // Read EN talk + (optionally) existing localized talk for incremental re-sync.
   const enTalkRaw = await readFile(enTalkPath, 'utf8');
   const enTalkBody = stripFrontmatter(enTalkRaw);
-  const enTalkSha = execSync(
-    `git -C "${opts.rootDir}" log -1 --format=%H -- pages/en/${opts.slug}.talk.md`,
-    { encoding: 'utf8' },
-  ).trim();
+  const enTalkSha = gitHeadSha(opts.rootDir, `pages/en/${opts.slug}.talk.md`);
   const localizedTalkPath = join(opts.rootDir, 'pages', opts.locale, `${opts.slug}.talk.md`);
   const existingTalkTranslation = existsSync(localizedTalkPath)
     ? await readFile(localizedTalkPath, 'utf8')
