@@ -81,6 +81,8 @@ const staticComponents: Record<string, DirectiveWrapper> = (() => {
 
 interface RenderContext {
   derived?: DerivedRecord | null;
+  /** Page `portrait:` frontmatter — forwarded to the infobox directive. */
+  portrait?: string;
   hoverDataBySlug?: ReadonlyMap<string, HoverCardData>;
   /** Slug of the page being rendered — links pointing at it skip the hover-card. */
   currentSlug?: string;
@@ -88,10 +90,11 @@ interface RenderContext {
 
 /**
  * Render markdown into a React tree, mapping `:::name{…}` directives to the
- * components in `components/directives/`. The `context.derived` value, when
- * provided, is forwarded to directives flagged `needsDerived` (today only
- * `infobox-person`) so they can render structured fields from
- * `genealogy/derived/<record>.yml` in addition to the YAML body.
+ * components in `components/directives/`. The `context.derived` and
+ * `context.portrait` values, when provided, are forwarded to directives
+ * flagged `needsDerived` (today only `infobox-person`) so they can render
+ * structured fields from `genealogy/derived/<record>.yml` and the page's
+ * portrait alongside the YAML body.
  */
 export async function renderMarkdown(
   md: string,
@@ -105,7 +108,7 @@ export async function renderMarkdown(
     if (!dir.needsDerived) continue;
     const Render = dir.render;
     components[`directive-${name}`] = (p) => (
-      <Render attrs={readAttrs(dir, p)} derived={context.derived}>
+      <Render attrs={readAttrs(dir, p)} derived={context.derived} portrait={context.portrait}>
         {p.children as ReactNode}
       </Render>
     );

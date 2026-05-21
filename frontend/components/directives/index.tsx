@@ -25,6 +25,8 @@ export interface DirectiveProps {
   children?: ReactNode;
   attrs?: Record<string, string | undefined>;
   derived?: DerivedRecord | null;
+  /** Page `portrait:` frontmatter — injected per-render like `derived`. */
+  portrait?: string;
 }
 
 function attr(props: DirectiveProps, key: string): string | undefined {
@@ -60,7 +62,11 @@ export const directives: Record<string, Directive> = {
   'infobox-person': {
     attrs: [],
     needsDerived: true,
-    render: (p) => <InfoboxPerson derived={p.derived}>{p.children}</InfoboxPerson>,
+    render: (p) => (
+      <InfoboxPerson derived={p.derived} portrait={p.portrait}>
+        {p.children}
+      </InfoboxPerson>
+    ),
   },
 };
 

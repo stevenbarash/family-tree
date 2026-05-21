@@ -122,7 +122,12 @@ export default async function PageRoute({ params }: { params: Promise<{ locale: 
   const [tree, notes, talkThreads] = isRestricted
     ? [null, [], { open: [], resolved: [], superseded: [] }]
     : await Promise.all([
-        renderMarkdown(page.body, index, { derived, hoverDataBySlug, currentSlug: slug }),
+        renderMarkdown(page.body, index, {
+          derived,
+          portrait: page.meta.portrait,
+          hoverDataBySlug,
+          currentSlug: slug,
+        }),
         buildNotesView(talkBody, index),
         buildTalkThreadsView(talkBody, index),
       ]);

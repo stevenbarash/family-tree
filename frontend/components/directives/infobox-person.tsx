@@ -19,10 +19,12 @@ import {
 
 interface Props {
   derived?: DerivedRecord | null;
+  /** Page `portrait:` frontmatter — an `/assets/portraits/…` URL when set. */
+  portrait?: string;
   children?: ReactNode;
 }
 
-export function InfoboxPerson({ derived, children }: Props) {
+export function InfoboxPerson({ derived, portrait, children }: Props) {
   const t = useTranslations('Directives.infoboxPerson');
   const fields = derived ? null : extractFieldsFromChildren(children);
   const name = derived?.name ?? fields?.name ?? 'Person';
@@ -35,11 +37,26 @@ export function InfoboxPerson({ derived, children }: Props) {
         title={name}
         description={lifespan}
         avatar={
-          <Avatar size="lg" className="ring-2 ring-infobox-border/60">
-            <AvatarFallback className="bg-infobox-border/30 font-heading text-sm text-infobox-foreground">
-              {initials(name)}
-            </AvatarFallback>
-          </Avatar>
+          // A plain <img> rather than <AvatarImage>: base-ui's avatar image
+          // is client-load-state driven and renders nothing during SSR. The
+          // page's own working portrait path (AvatarMonogram on the tree)
+          // uses a plain <img> for the same reason.
+          portrait ? (
+            <img
+              src={portrait}
+              alt=""
+              aria-hidden
+              width={40}
+              height={40}
+              className="size-10 shrink-0 rounded-full object-cover ring-2 ring-infobox-border/60"
+            />
+          ) : (
+            <Avatar size="lg" className="ring-2 ring-infobox-border/60">
+              <AvatarFallback className="bg-infobox-border/30 font-heading text-sm text-infobox-foreground">
+                {initials(name)}
+              </AvatarFallback>
+            </Avatar>
+          )
         }
       />
       <InfoboxBody>
