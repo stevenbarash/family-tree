@@ -5,10 +5,11 @@
 > the work shipped since, and the contribution-track design conversation
 > of 2026-05-19.
 
-**Last updated:** 2026-05-21 (roadmap checkin after P2.20 shipped — Render
-deployment + Descope auth are live; the stale "re-add app-layer auth"
-parking-lot row was removed and the reading-track audience widened to the
-Render replica)
+**Last updated:** 2026-05-21 (cut `cli-v2.0.0`, the first stable v2 CLI
+tag; the ~1,030-line CHANGELOG `[Unreleased]` backlog moved into the
+release section. Same-day P2.20 reconciliation — Render deployment +
+Descope auth are live; the stale "re-add app-layer auth" parking-lot row
+was removed and the reading-track audience widened to the Render replica)
 **Cadence:** revisit at the end of each completed track milestone, or when
 a new review document lands. Status lines are the source of truth — keep
 them honest.
@@ -49,7 +50,7 @@ to a single track (privacy gate, CLI release, test strengthening).
 
 ---
 
-## Status snapshot — 2026-05-20
+## Status snapshot — 2026-05-21
 
 Working tree is clean. The naturally-next actionable item in each
 track:
@@ -59,7 +60,7 @@ track:
 | **Contribution** | **E.0** — Identity & session state | M |
 | **Reading** | **P2.3** — merge overlapping residence/occupation intervals in derive | S |
 | **Authoring** | Cost telemetry on `wai author` | S |
-| **Infrastructure** | `cli-v2.0.0` release | S |
+| **Infrastructure** | **P2.13** — strengthen messages-parity test | S |
 
 Three of those four are S/XS — the contribution-track E.0 is the only
 M item near the top. A reasonable sequencing for the next ~2 weeks:
@@ -148,9 +149,9 @@ frontier.
 | Status | Item | Lift | Notes |
 |---|---|---|---|
 | ✅ shipped | **P2.20** Render deployment + Descope auth + two-way git sync | L | Shipped 2026-05-20. The wiki now runs as a read-write replica on Render (`family-tree`, `srv-d807l4faqgkc739sqak0`) alongside the canonical Mac Studio. A Next.js `instrumentation.ts` startup hook bootstraps the data repo onto the persistent disk and starts an in-process pull/push sync scheduler (`frontend/lib/sync.ts`); a shared `REPO_LOCK` serialises browser writes against the scheduler's `pullRebase`. The replica is gated by `WHOAMI_AUTH`-on invite-only Descope auth. Shipped as plans 1–3 of the render deployment ([git-sync-core](./superpowers/plans/2026-05-20-git-sync-core.md), [descope-auth](./superpowers/plans/2026-05-20-descope-auth.md), [render-deploy-and-sync](./superpowers/plans/2026-05-20-render-deploy-and-sync.md)); [spec](./superpowers/specs/2026-05-20-render-deployment-design.md). Reverses the `SCOPE.md` "no public hosting" / "no app-layer auth" anti-goals. |
-| ⏳ ready | **`cli-v2.0.0` release** | S | Last tag (`cli-v1.2.1`, 2026-03-26) predates v2 entirely. Hygiene; do when working tree is opportunely clean. See AGENTS.md §Versioning for the steps |
+| ✅ shipped | **`cli-v2.0.0` release** | S | Shipped 2026-05-21. First stable v2 CLI tag — `cli-v2.0.0-pre.0`/`-pre.1` were the markdown-era pre-releases and the `cli-v1.x` tags predate v2. Cut via `cli/scripts/release.sh`, fixed first (it left `package-lock.json` un-bumped, re-creating the drift `e59eaae` fixed, and still sed'd the `const VERSION` that `af36ded` removed). The release commit also moved the ~1,030-line `[Unreleased]` CHANGELOG backlog into a `[cli-v2.0.0]` section; `release.yml` now marks the newest tag as GitHub's "Latest". |
 | ⏳ ready | **P2.13** Strengthen `frontend/test/messages-parity.test.ts` to catch leftover English in non-English locale strings | S | docs/superpowers/specs/2026-05-18-home-research-dashboard-design.md |
-| ⏳ ready | **CHANGELOG hygiene** | S | Process improvement, not a track item. Trim entry headers to one line + collapsible details; the file is 1,198 lines of unreleased. Couple cleanly with the `cli-v2.0.0` release |
+| 🔧 partial | **CHANGELOG hygiene** | S | Process improvement, not a track item. The unreleased-backlog half is done — the `cli-v2.0.0` release (2026-05-21) moved ~1,030 lines of `[Unreleased]` into a version section, so `[Unreleased]` is empty again. Remaining: trim the verbose multi-paragraph entries to one-line headers + `<details>` collapsibles — a large editorial pass, deferred |
 
 ---
 
