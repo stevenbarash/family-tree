@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useDescope, useSession, useUser, getJwtRoles } from "@descope/nextjs-sdk/client";
 import { useLocale, useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
@@ -26,6 +27,11 @@ export function AuthAccountMenu() {
   const sdk = useDescope();
   const { user, isUserLoading } = useUser();
   const { isAuthenticated, isSessionLoading, sessionToken, claims } = useSession();
+  // Captured once at mount so the "signed in <relative>" display is stable
+  // across re-renders (react-hooks/purity forbids `Date.now()` in render).
+  // Acceptable freeze: the popover is opened briefly; if held open for a
+  // long time the relative display goes mildly stale rather than churning.
+  const [now] = useState(() => Date.now());
 
   // Peripheral header widget — aria-hidden so screen readers aren't told
   // "loading" on every navigation. The trigger below carries the real label.
@@ -83,7 +89,7 @@ export function AuthAccountMenu() {
             ))}
             {iat !== null && (
               <span className="text-foreground/60">
-                {t("signedIn", { time: relativeSignIn(iat, Date.now(), locale) })}
+                {t("signedIn", { time: relativeSignIn(iat, now, locale) })}
               </span>
             )}
           </div>

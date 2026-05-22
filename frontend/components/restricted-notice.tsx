@@ -3,6 +3,9 @@ import type { DerivedRecord } from '@core/gedcom/types.ts';
 import { redactRecord } from '@core/export/redact.ts';
 
 interface Props {
+  // `page` is accepted by the caller but not read here — the parent
+  // article header already renders the page title; the notice only
+  // needs the derived record to show the redacted minimum.
   page: Page;
   derived: DerivedRecord;
 }
@@ -16,7 +19,7 @@ interface Props {
  * The page title still renders — it's part of the URL slug, so hiding
  * it would only confuse readers without adding privacy.
  */
-export function RestrictedNotice({ page, derived }: Props) {
+export function RestrictedNotice({ derived }: Props) {
   const reduced = redactRecord(derived);
   const reasonLabel =
     derived.privacy.reason === 'living-heuristic'

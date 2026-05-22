@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -11,26 +11,54 @@ interface Props {
   children: ReactNode;
 }
 
-export function MobileDisclosure({ storageKey, showLabel, hideLabel, children }: Props) {
-  const [open, setOpen] = useState(false);
+const SAME_TAB_EVENT = 'whoami:disclosure-change';
 
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(`whoami:disclosure:${storageKey}`) === '1') {
-        setOpen(true);
+function keyFor(storageKey: string): string {
+  return `whoami:disclosure:${storageKey}`;
+}
+
+/**
+ * Subscribe to changes for any disclosure key. Cross-tab updates arrive
+ * via the native `storage` event; same-tab `toggle` calls dispatch our
+ * custom event below (the `storage` event does not fire in the tab that
+ * wrote the value). One subscriber per disclosure instance is fine —
+ * the cost is negligible and the event channels are app-global.
+ */
+function subscribe(callback: () => void): () => void {
+  window.addEventListener('storage', callback);
+  window.addEventListener(SAME_TAB_EVENT, callback);
+  return () => {
+    window.removeEventListener('storage', callback);
+    window.removeEventListener(SAME_TAB_EVENT, callback);
+  };
+}
+
+export function MobileDisclosure({ storageKey, showLabel, hideLabel, children }: Props) {
+  // External state lives in localStorage. Reading via useSyncExternalStore
+  // is the React-blessed alternative to a useEffect that calls setState —
+  // hydration is correct (server snapshot is `false`, replaced post-mount
+  // with the persisted value) without a setState-in-effect.
+  const open = useSyncExternalStore(
+    subscribe,
+    () => {
+      try {
+        return localStorage.getItem(keyFor(storageKey)) === '1';
+      } catch {
+        return false;
       }
-    } catch {}
-  }, [storageKey]);
+    },
+    () => false,
+  );
 
   const toggle = () => {
-    setOpen(prev => {
-      const next = !prev;
-      try {
-        if (next) localStorage.setItem(`whoami:disclosure:${storageKey}`, '1');
-        else localStorage.removeItem(`whoami:disclosure:${storageKey}`);
-      } catch {}
-      return next;
-    });
+    const next = !open;
+    try {
+      if (next) localStorage.setItem(keyFor(storageKey), '1');
+      else localStorage.removeItem(keyFor(storageKey));
+      // Same-tab change: native `storage` only fires cross-tab, so kick
+      // our own event for any disclosure subscribers in this tab.
+      window.dispatchEvent(new Event(SAME_TAB_EVENT));
+    } catch {}
   };
 
   return (

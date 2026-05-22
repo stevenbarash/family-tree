@@ -84,9 +84,6 @@ export async function PedigreeSection({ view }: Props) {
       const person = byRecord.get(n.record);
       const name = person?.name ?? n.record;
       const years = person ? formatYears(person) : null;
-      const generationLabel = n.generation === 0
-        ? t('selfLabel')
-        : t('generationLabel', { n: String(n.generation) });
       return {
         id: n.record,
         type: 'pedigree' as const,

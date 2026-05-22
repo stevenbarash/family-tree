@@ -264,11 +264,6 @@ async function buildPageJoin(): Promise<(record: string, name: string) => PageJo
   return (record, name) => byRecord.get(record) ?? byName.get(slugifyName(name)) ?? {};
 }
 
-async function buildSlugJoin(): Promise<(record: string, name: string) => string | undefined> {
-  const join = await buildPageJoin();
-  return (record, name) => join(record, name).slug;
-}
-
 async function computeFamilyTree(
   rootRecord: string = SELF_RECORD,
   perspectiveRecord?: string | null,
@@ -281,7 +276,6 @@ async function computeFamilyTree(
   if (!core) return null;
 
   const findPage = await buildPageJoin();
-  const findSlug = (record: string, name: string) => findPage(record, name).slug;
   const enrich = (person: BrowserPerson): BrowserPersonView => {
     const page = findPage(person.record, person.name);
     return { ...person, slug: page.slug, portrait: page.portrait };

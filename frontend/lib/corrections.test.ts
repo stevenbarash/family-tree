@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { correctRecords, type CorrectionsMap, loadPageCorrections } from './corrections.ts';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
-import type { Correction } from '@core/pages/types.ts';
 
 function rec(id: string, overrides: Partial<DerivedRecord> = {}): DerivedRecord {
   return {

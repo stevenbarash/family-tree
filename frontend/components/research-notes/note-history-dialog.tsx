@@ -34,16 +34,53 @@ type Fetched =
 
 export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
   const t = useTranslations('Page.Article.ResearchNotes.History');
-  const tErr = useTranslations('Errors');
-  const locale = useLocale();
-  const [fetched, setFetched] = useState<Fetched>({ state: 'loading' });
-  // Bumped by Retry to force a refetch without conflating with `fetched`.
+  // Bumped by Retry to force a refetch. Used as part of HistoryBody's
+  // `key` so a retry remounts the body — that's how state resets to
+  // `loading` again without a setState-in-effect call.
   const [nonce, setNonce] = useState(0);
 
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('title')}</DialogTitle>
+        </DialogHeader>
+        {open ? (
+          <HistoryBody
+            key={`${slug}|${noteId}|${nonce}`}
+            slug={slug}
+            noteId={noteId}
+            onRetry={() => setNonce((n) => n + 1)}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface HistoryBodyProps {
+  slug: string;
+  noteId: string;
+  onRetry: () => void;
+}
+
+/**
+ * The body is split out so a change in `(slug, noteId, nonce)` remounts
+ * the component via the parent's `key` prop. That makes "reset to
+ * loading on dependency change" a side effect of React's reconciliation
+ * rather than a setState-in-effect call — eliminating the anti-pattern
+ * the per-task fetch effect would otherwise need.
+ */
+function HistoryBody({ slug, noteId, onRetry }: HistoryBodyProps) {
+  const t = useTranslations('Page.Article.ResearchNotes.History');
+  const tErr = useTranslations('Errors');
+  const locale = useLocale();
+  // Initial state is 'loading' on every mount. No reset needed because
+  // dependency changes remount via the parent's `key`.
+  const [fetched, setFetched] = useState<Fetched>({ state: 'loading' });
+
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
-    setFetched({ state: 'loading' });
     fetch(`/api/notes/${encodeURIComponent(slug)}/${noteId}/history`)
       .then(async (res) => {
         if (cancelled) return;
@@ -63,18 +100,9 @@ export function NoteHistoryDialog({ slug, noteId, open, onOpenChange }: Props) {
         setFetched({ state: 'error', message: err?.message ?? tErr('requestFailed') });
       });
     return () => { cancelled = true; };
-  }, [open, slug, noteId, nonce]);
+  }, [slug, noteId, tErr]);
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{t('title')}</DialogTitle>
-        </DialogHeader>
-        {renderBody(fetched, () => setNonce((n) => n + 1), t, locale)}
-      </DialogContent>
-    </Dialog>
-  );
+  return renderBody(fetched, onRetry, t, locale);
 }
 
 function eventLabel(
