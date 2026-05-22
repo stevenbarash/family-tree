@@ -363,6 +363,58 @@ test('claude-code adapter: unmatched quote in preamble does not swallow the real
   if (res.ok) assert.equal(res.result.answer, 42);
 });
 
+test('claude-code adapter: skips a markdown footnote bracket before the JSON object', async () => {
+  // Regression (i18n sync): a model translating a wiki article emits text
+  // full of balanced `[ ... ]` spans that are markdown, not JSON — footnote
+  // markers like `[^yv-shendel-1928]`. The extractor used to return the
+  // FIRST balanced span unconditionally, so a footnote marker ahead of the
+  // JSON object was grabbed and JSON.parse choked on the `^`. A balanced
+  // span that does not itself parse as JSON must be skipped.
+  const spawn = fakeSpawn(JSON.stringify({
+    result: 'Translation done; footnote marker [^yv-shendel-1928] preserved.\n{"questions":["q1"]}',
+  }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke<unknown, { questions: string[] }>({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object', required: ['questions'] },
+  });
+  assert.equal(res.ok, true);
+  if (res.ok) assert.deepEqual(res.result.questions, ['q1']);
+});
+
+test('claude-code adapter: skips a [[wiki-link]] bracket before the JSON object', async () => {
+  // Same root cause as the footnote case: `[[Page]]` wiki-links are balanced
+  // `[ ... ]` spans but not JSON, and translated articles are dense with
+  // them. They must not be mistaken for the payload.
+  const spawn = fakeSpawn(JSON.stringify({
+    result: 'Kept the link [[Zalman Ayzman]] intact.\n{"questions":["q1"]}',
+  }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke<unknown, { questions: string[] }>({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object', required: ['questions'] },
+  });
+  assert.equal(res.ok, true);
+  if (res.ok) assert.deepEqual(res.result.questions, ['q1']);
+});
+
+test('claude-code adapter: result with only markdown brackets and no JSON still errors clearly', async () => {
+  // If the model returns markdown with balanced `[ ... ]` spans but no JSON
+  // payload at all, every span fails to parse; the extractor falls back to
+  // the stripped text so JSON.parse surfaces a real error rather than
+  // silently succeeding on a footnote token.
+  const spawn = fakeSpawn(JSON.stringify({
+    result: 'See [[Some Page]] and the note [^ref-1]. No JSON here.',
+  }));
+  const a = claudeCodeAdapter({ spawn, skillsDir: '/skills', readSkillFile: makeFakeReader() });
+  const res = await a.invoke({
+    skill: 'writing-articles', template: 'interview', context: {},
+    outputSchema: { type: 'object' },
+  });
+  assert.equal(res.ok, false);
+  if (!res.ok) assert.match(res.error, /harness inner result is not JSON/);
+});
+
 test('claude-code adapter: WHOAMI_MODEL appends --model flag', async () => {
   const prev = process.env.WHOAMI_MODEL;
   process.env.WHOAMI_MODEL = 'claude-sonnet-4-6';
