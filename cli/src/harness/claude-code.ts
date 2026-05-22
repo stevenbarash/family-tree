@@ -195,32 +195,40 @@ function stripMarkdownFences(text: string): string {
 /**
  * Extract a JSON payload from a model response, tolerating preamble text
  * and markdown code fences. Models sometimes emit a sentence like
- * "Here is the JSON:" or "Draft writing follows:" before the actual JSON
- * object — this locates the first balanced object/array and returns it.
- * String-aware: braces inside JSON string literals don't confuse the
- * counter.
+ * "Here is the JSON:" before the actual JSON — and a model translating a
+ * markdown article emits balanced `[ ... ]` spans that are NOT JSON:
+ * footnote markers `[^id]`, wiki-links `[[Page]]`, links `[text](url)`.
+ * This scans every balanced object/array span in order and returns the
+ * first that actually parses as JSON, so a markdown bracket ahead of the
+ * real payload is skipped rather than mistaken for it.
  *
- * If neither a fenced block nor a balanced object/array is found, the
- * fence-stripped text is returned unchanged so the downstream JSON.parse
- * error preserves the original context (refusal text, error message, etc.).
+ * If no balanced span parses as JSON, the fence-stripped text is returned
+ * unchanged so the downstream JSON.parse error preserves the original
+ * context (refusal text, error message, etc.).
  */
 function extractJsonPayload(text: string): string {
   const stripped = stripMarkdownFences(text);
-  // Always run the extractor — it handles leading preamble, trailing text
-  // after JSON, and both at once. When the input is pure JSON (the happy
-  // case from a well-behaved template), the extractor returns the same
-  // string the early-return would have produced.
-  const extracted = extractFirstBalancedJson(stripped);
-  return extracted ?? stripped;
+  for (const span of balancedSpans(stripped)) {
+    try {
+      JSON.parse(span);
+      return span;
+    } catch {
+      // Balanced but not JSON — a markdown `[^footnote]`, `[[wiki-link]]`,
+      // or `[text](url)`. Keep scanning; a real JSON payload may follow.
+    }
+  }
+  return stripped;
 }
 
 /**
- * Scan `text` for the first balanced { ... } or [ ... ] sequence and return
- * it. Brace counting is string-aware (JSON " ... " strings, with backslash
- * escapes, do not advance the depth counter). Returns null if no such
- * sequence exists.
+ * Scan `text` and return every top-level balanced { ... } or [ ... ] span,
+ * in document order. Brace counting is string-aware: braces and brackets
+ * inside JSON " ... " string literals (with backslash escapes) do not
+ * advance the depth counter. Nested structures are reported only at the
+ * top level — the inner array of `{"a":[1]}` is part of that one span.
  */
-function extractFirstBalancedJson(text: string): string | null {
+function balancedSpans(text: string): string[] {
+  const spans: string[] = [];
   let depth = 0;
   let start = -1;
   let inString = false;
@@ -261,13 +269,14 @@ function extractFirstBalancedJson(text: string): string | null {
       if (depth > 0) {
         depth--;
         if (depth === 0 && start >= 0) {
-          return text.slice(start, i + 1);
+          spans.push(text.slice(start, i + 1));
+          start = -1;
         }
       }
     }
   }
 
-  return null;
+  return spans;
 }
 
 /**
