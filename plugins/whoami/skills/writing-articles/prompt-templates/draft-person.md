@@ -90,6 +90,33 @@ finding that blocks verify. Just copy each one. Bibliography is the
 high-visibility source listing; References ties them to specific
 sentences.
 
+## Naming source conflicts
+
+When two sources in the evidence drawer or research notes disagree —
+a 1930 census says born 1895, an SSDI death index gives 1893; a
+gravestone date conflicts with a death certificate; one ship manifest
+records "Borys" arriving in 1908, another "Boris" in 1910 — **do not
+pick silently and do not average**. Name the conflict in prose and
+cite both sources:
+
+```markdown
+The 1930 US Census records Boris's birth year as 1895;[^census-1930]
+the SSDI death index gives 1893.[^ssdi] The earlier year is the
+better-supported value, since the SSDI is based on the original
+Social Security application Boris himself filed in 1956.[^ssdi]
+```
+
+If a tier or recency rule lets you prefer one source (primary over
+secondary; contemporaneous over retrospective; the subject's own
+filing over a third party's report), state the reason briefly and
+proceed with the preferred value. If you have no basis to prefer one,
+present both without resolving; a reviewer will adjudicate or commission
+further research.
+
+Silently picking — writing "born 1893" with only the SSDI footnote and
+no mention of the conflicting census — is the failure mode this
+section guards against. It turns a disagreement into an apparent fact.
+
 ## Page structure
 
 Produce the full markdown body for the person page, including
@@ -124,6 +151,16 @@ Scan your draft. For every paragraph and list item: does it contain
 a date, year, place, or `[[wikilink]]`? If yes, does the line end
 in `[^id]` or contain `[?]`? If neither, add `[?]` rather than
 shipping a bare claim.
+
+Then scan the evidence drawer and research notes one more time:
+
+- **Are there sources that disagree on a date, place, or relationship?**
+  If yes, is the disagreement named in the prose (see *Naming source
+  conflicts*)? Silently picking one is a failure mode the self-check
+  must catch.
+- **Are there chronology gaps the outline flagged as silences?** If
+  yes, did you avoid filling them with plausible-sounding prose? A
+  silence properly named is better than a sentence quietly invented.
 
 ## Output format
 
