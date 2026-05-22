@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { renderMarkdown } from './render';
@@ -30,15 +29,12 @@ const messages = {
 
 async function renderArticle(body: string, portrait?: string): Promise<string> {
   const tree = await renderMarkdown(body, buildSlugIndex([]), { portrait });
+  // `timeZone` is set so next-intl doesn't emit an ENVIRONMENT_FALLBACK
+  // warning about markup mismatch risk in the no-window test runtime.
   return renderToStaticMarkup(
-    // `timeZone` set so next-intl doesn't emit an ENVIRONMENT_FALLBACK
-    // warning about markup mismatch risk in the no-window test runtime.
-    createElement(NextIntlClientProvider, {
-      locale: 'en',
-      timeZone: 'UTC',
-      messages,
-      children: tree,
-    }),
+    <NextIntlClientProvider locale="en" timeZone="UTC" messages={messages}>
+      {tree}
+    </NextIntlClientProvider>,
   );
 }
 
