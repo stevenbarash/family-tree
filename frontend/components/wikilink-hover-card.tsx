@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/hover-card';
 import { initials } from '@/lib/initials';
 import type { HoverCardData } from '@/lib/page-card-data';
+import Image from 'next/image';
 
 interface Props {
   slug: string;
@@ -47,8 +48,7 @@ export function WikilinkHoverCard({ slug, data, children, className }: Props) {
         <div className="flex gap-3">
           <div className="shrink-0">
             {data.portrait ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={data.portrait}
                 alt=""
                 aria-hidden

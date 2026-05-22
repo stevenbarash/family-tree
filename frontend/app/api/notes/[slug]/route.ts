@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 import { isValidSlug, toTalkSlug } from '@core/pages/index.ts';
 import type { AuthorIdentity } from '@core/pages/index.ts';
 import { withLock } from '@core/pages/locks.ts';
@@ -9,6 +10,8 @@ import { AUTH_ENABLED } from '@/lib/env';
 import { requireSession, UnauthenticatedError } from '@/lib/descope';
 import { noteAuthorName } from '@/lib/note-author';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
+import { routing } from '@/i18n/routing';
+import { localePathsForSlug } from '@/lib/revalidation-paths';
 
 const NoteBody = z.object({
   note: z.string().min(1).max(5000),
@@ -57,6 +60,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ slug: stri
       await pushAfterWrite();
       return result;
     });
+    // A note renders both inline on the article page and on the talk
+    // page — revalidate both, every locale.
+    for (const path of localePathsForSlug(slug, routing.locales)) revalidatePath(path);
+    for (const path of localePathsForSlug(toTalkSlug(slug), routing.locales)) revalidatePath(path);
     return NextResponse.json({ slug: toTalkSlug(slug), date, id });
   } catch (err) {
     return routeError(err, slug, 'note-failed');

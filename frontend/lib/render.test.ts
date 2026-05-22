@@ -46,11 +46,14 @@ test('renderMarkdown: infobox-person renders the page portrait as an image', asy
   // The article subject's infobox must surface the page's `portrait:`
   // frontmatter. Without it the reader gets only monogram initials —
   // the bug this wiring fixes (portrait reaches the tree, not the article).
+  // Match the file in any `<img>` attribute: `next/image` URL-encodes the
+  // path into `srcSet`/`src` as `%2Fassets%2Fportraits%2F…jpg`, and a
+  // future contingency fallback would put it back in a plain `src="…"`.
   const html = await renderArticle(
     ':::infobox-person\n:::',
     '/assets/portraits/boris-ayzman.jpg',
   );
-  assert.match(html, /<img[^>]+src="\/assets\/portraits\/boris-ayzman\.jpg"/);
+  assert.match(html, /<img[^>]+boris-ayzman\.jpg/);
 });
 
 test('renderMarkdown: infobox-person omits the portrait image when the page has none', async () => {

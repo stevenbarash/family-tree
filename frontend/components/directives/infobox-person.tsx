@@ -1,5 +1,6 @@
 import { Link } from '@/i18n/navigation';
 import type { ReactNode } from 'react';
+import Image from 'next/image';
 import { Calendar, Users, Heart, Baby, Home, Briefcase } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { DerivedRecord } from '@core/gedcom/types.ts';
@@ -37,15 +38,16 @@ export function InfoboxPerson({ derived, portrait, children }: Props) {
         title={name}
         description={lifespan}
         avatar={
-          // A plain <img> rather than <AvatarImage>: base-ui's avatar image
-          // is client-load-state driven and renders nothing during SSR. The
-          // page's own working portrait path (AvatarMonogram on the tree)
-          // uses a plain <img> for the same reason.
+          // next/image (not base-ui's <AvatarImage>): base-ui's avatar
+          // image is client-load-state driven and renders nothing during
+          // SSR; next/image emits a real <img> in the SSR HTML and adds
+          // size/format optimization on top.
           portrait ? (
-            <img
+            <Image
               src={portrait}
               alt=""
               aria-hidden
+              priority
               width={40}
               height={40}
               className="size-10 shrink-0 rounded-full object-cover ring-2 ring-infobox-border/60"
