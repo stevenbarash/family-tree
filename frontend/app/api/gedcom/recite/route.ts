@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { reciteDrift, applyRecite } from '@core/gedcom/index.ts';
 import { invalidateListCache } from '@/lib/server-services';
 import { WHOAMI_ROOT, PAGES_DIR, DEFAULT_AUTHOR } from '@/lib/env';
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
     author: DEFAULT_AUTHOR,
   });
   invalidateListCache();
+  // GEDCOM-derived data changed: drop the family-tree cache and let every
+  // ISR-cached article page (infoboxes read derived records) regenerate.
+  revalidateTag('gedcom', 'max');
+  revalidatePath('/[locale]/[slug]', 'page');
   // No search rebuild — recite only changes gedcom.snapshot in frontmatter,
   // which isn't an indexed field; the existing index stays correct.
   return NextResponse.json({ updated });

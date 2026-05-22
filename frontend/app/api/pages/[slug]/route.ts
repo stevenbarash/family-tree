@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 import { getPageStore, invalidateListCache, getSearchIndex, persistSearchIndex, defaultPageMeta } from '@/lib/server-services';
 import { WHOAMI_ROOT } from '@/lib/env';
 import { requireSession, UnauthenticatedError } from '@/lib/descope';
@@ -12,6 +13,8 @@ import { extractEmbeddedFrontmatter } from '@/lib/embedded-frontmatter';
 import { errorResponse, routeError } from '@/lib/api-errors';
 import { withLock } from '@core/pages/locks.ts';
 import { REPO_LOCK, pushAfterWrite } from '@/lib/sync';
+import { routing } from '@/i18n/routing';
+import { localePathsForSlug } from '@/lib/revalidation-paths';
 
 const PutBody = z.object({
   body: z.string(),
@@ -96,6 +99,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ slug: strin
   idx.upsert(buildSearchDoc(page, derived), { restricted: derived?.privacy?.restricted === true });
   await persistSearchIndex();
   invalidateListCache();
+  for (const path of localePathsForSlug(slug, routing.locales)) revalidatePath(path);
   return NextResponse.json({ ok: true });
 }
 
@@ -123,5 +127,6 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ slug: s
   idx.remove(slug);
   await persistSearchIndex();
   invalidateListCache();
+  for (const path of localePathsForSlug(slug, routing.locales)) revalidatePath(path);
   return NextResponse.json({ ok: true });
 }
