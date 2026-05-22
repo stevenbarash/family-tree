@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { initials } from '@/lib/initials';
 
 interface Props {
@@ -15,7 +16,7 @@ export function AvatarMonogram({ name, side, portrait, size = 'sm' }: Props) {
   const px = size === 'md' ? 28 : 22;
   if (portrait) {
     return (
-      <img
+      <Image
         src={portrait}
         alt=""
         aria-hidden
