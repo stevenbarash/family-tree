@@ -271,7 +271,7 @@ In `POST`, immediately after `invalidateListCache();` (and before the `return Ne
 ```ts
   // GEDCOM-derived data changed: drop the family-tree cache and let every
   // ISR-cached article page (infoboxes read derived records) regenerate.
-  revalidateTag('gedcom');
+  revalidateTag('gedcom', 'max');
   revalidatePath('/[locale]/[slug]', 'page');
 ```
 
@@ -286,7 +286,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 In `POST`, immediately after `await rebuildSearchIndexFromDisk();` (and before `return NextResponse.json(result);`), add:
 
 ```ts
-    revalidateTag('gedcom');
+    revalidateTag('gedcom', 'max');
     revalidatePath('/[locale]/[slug]', 'page');
 ```
 

@@ -446,7 +446,7 @@ async function computeFamilyTree(
  * GEDCOM file joins are expensive and identical for every reader of a
  * given (rootRecord, perspective) pair, so the result is memoised across
  * requests. Invalidated by the `gedcom` tag — GEDCOM-mutating API routes
- * call `revalidateTag('gedcom')` — and, as a backstop for background
+ * call `revalidateTag('gedcom', 'max')` — and, as a backstop for background
  * git-sync pulls, after `revalidate` seconds. 60s ≈ the sync cadence.
  */
 export const getFamilyTree = unstable_cache(
