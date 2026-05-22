@@ -16,6 +16,7 @@ import {
 import { loadConflicts, type ConflictEntry } from '@core/family/conflicts.ts';
 import type { DerivedRecord, MediaRef } from '@core/gedcom/types.ts';
 import { normalizeDerivedRecord } from '@core/gedcom/normalize.ts';
+import { unstable_cache } from 'next/cache';
 import { DERIVED_DIR, GENEALOGY_DIR, PLACES_COORDS_FILE, SELF_RECORD } from './env';
 import { getCachedList } from './server-services';
 import { correctRecords, getCachedPageCorrections } from './corrections.ts';
@@ -268,7 +269,7 @@ async function buildSlugJoin(): Promise<(record: string, name: string) => string
   return (record, name) => join(record, name).slug;
 }
 
-export async function getFamilyTree(
+async function computeFamilyTree(
   rootRecord: string = SELF_RECORD,
   perspectiveRecord?: string | null,
 ): Promise<FamilyTreeView | null> {
@@ -439,6 +440,20 @@ export async function getFamilyTree(
     relationship,
   };
 }
+
+/**
+ * Cached wrapper around `computeFamilyTree`. The family-graph traversal +
+ * GEDCOM file joins are expensive and identical for every reader of a
+ * given (rootRecord, perspective) pair, so the result is memoised across
+ * requests. Invalidated by the `gedcom` tag — GEDCOM-mutating API routes
+ * call `revalidateTag('gedcom')` — and, as a backstop for background
+ * git-sync pulls, after `revalidate` seconds. 60s ≈ the sync cadence.
+ */
+export const getFamilyTree = unstable_cache(
+  computeFamilyTree,
+  ['family-tree'],
+  { tags: ['gedcom'], revalidate: 60 },
+);
 
 type RelationEnricher = (
   r: { record: string; name: string; born?: string | null },
