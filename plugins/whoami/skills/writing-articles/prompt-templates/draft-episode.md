@@ -45,6 +45,36 @@ carries `[?]` because the model is asserting Aidele's presence in
 Kyiv from family context but cannot source the specific
 circumstances.
 
+## Naming source conflicts
+
+When sources in the evidence drawer or research notes disagree — two
+histories give different dates for the same wartime event; a
+voice-note recollection differs from a contemporaneous newspaper
+item; one survivor testimony names a different perpetrator unit than
+another; two ship manifests record different arrival dates for the
+same family — **do not pick silently and do not average**. Name the
+disagreement in prose and cite both sources:
+
+```markdown
+The standard historiography of Babi Yar attributes the 29 September
+1941 shootings to Sonderkommando 4a.[^historical-record] A 2019
+family interview with Aidele's surviving niece identified the
+perpetrators as Einsatzgruppe C more broadly,[^vn-12] which is the
+parent formation; both attributions refer to the same chain of
+command.
+```
+
+If a tier or recency rule lets you prefer one (primary over
+secondary; the event's contemporaneous historiography over a
+decades-later family recollection; the subject's own filing over a
+third party's), state the reason briefly. If you have no basis to
+prefer one, present both without resolving.
+
+Episode pages have more narrative latitude than person pages, but
+that latitude is for *sequencing* and *detail selection*, not for
+suppressing conflicting evidence. Silently picking turns a
+disagreement into an apparent fact.
+
 ## Page conventions
 
 Produce the full markdown body for an episode page about the scope
@@ -83,6 +113,18 @@ Scan your draft. For every paragraph and list item: does it contain
 a date, year, place, or `[[wikilink]]`? If yes, does the line end
 in `[^id]` or contain `[?]`? If neither, add `[?]` rather than
 shipping a bare claim.
+
+Then scan the evidence drawer and research notes one more time:
+
+- **Are there sources that disagree on a date, place, attribution, or
+  sequence?** If yes, is the disagreement named in the prose (see
+  *Naming source conflicts*)? Silently picking one is a failure mode
+  the self-check must catch.
+- **Are there silences in the episode's timeline** — moments in the
+  story the records don't cover? Did you avoid filling them with
+  plausible-sounding prose? Episode pages allow more narrative
+  latitude than person pages, but that latitude does not include
+  inventing what the records don't show.
 
 ## Output format
 
