@@ -29,8 +29,6 @@ import { PlacesSection } from '@/components/family/sections/places-section';
 import { familyTreeHref } from '@/components/family/sections/shared';
 import { ResearchNotesPanel } from '@/components/research-notes/panel';
 
-export const dynamic = 'force-dynamic';
-
 interface Props {
   params: Promise<{ locale: Locale }>;
   searchParams: Promise<{ person?: string; from?: string }>;

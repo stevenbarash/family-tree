@@ -113,10 +113,11 @@ add per-locale reads.
   blog posts say `middleware.ts`; they are wrong for this codebase.
 - **`setRequestLocale(locale)` in every page and layout under
   `app/[locale]/`** — before any other next-intl call. Forgetting
-  it silently degrades to dynamic rendering. The
-  `frontend/test/static-rendering.test.ts` test is the canary
-  (currently skipped — see Plan 1 follow-up about removing
-  `force-dynamic`).
+  it silently degrades to dynamic rendering. (The
+  `frontend/test/static-rendering.test.ts` file was originally
+  scaffolded as a canary here, but was rewritten 2026-05-22 to
+  guard against `force-dynamic` being re-introduced on `[slug]`
+  instead.)
 - **`Link` from `@/i18n/navigation`, NOT from `next/link`.** The
   i18n wrapper preserves the active locale.
 - **`useTranslations('Namespace')`** uses the lowest-common-

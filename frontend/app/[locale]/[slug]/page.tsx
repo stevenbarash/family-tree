@@ -11,7 +11,6 @@ import {
   getTranslationInfo,
 } from '@/lib/server-services';
 import { TranslationBanner } from '@/components/translation-banner';
-import { routing } from '@/i18n/routing';
 import type { Locale } from '@/i18n/routing';
 import { renderMarkdown } from '@/lib/render';
 import { loadDerivedRecord } from '@/lib/derived';
@@ -30,7 +29,12 @@ import { RelationshipStrip } from '@/components/relationship-strip';
 import { buildHoverDataBySlug } from '@/lib/page-card-data';
 import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
-export const dynamic = 'force-dynamic';
+// On-demand ISR: render each (locale, slug) once, cache it, regenerate on
+// demand. Page and note writes call `revalidatePath` for immediate
+// freshness; this 60s window is the backstop for background git-sync
+// pulls (≈ the sync cadence). `next dev` ignores ISR and always renders
+// fresh. Replaces the former `force-dynamic`.
+export const revalidate = 60;
 
 export default async function PageRoute({ params }: { params: Promise<{ locale: Locale; slug: string }> }) {
   const { locale, slug } = await params;
@@ -259,20 +263,13 @@ async function readBodiesForSlugs(
   return new Map(entries.filter((e): e is [string, string] => e !== null));
 }
 
-export async function generateStaticParams() {
-  const store = getPageStore();
-  let list: PageMetaSummary[];
-  try {
-    list = await store.list();
-  } catch {
-    // On a fresh Render deploy the data repo is not yet on disk during
-    // the build — instrumentation.ts clones it at server startup, which
-    // runs after the build. Build with zero static params; the route is
-    // `force-dynamic`, so every slug renders on demand once data lands.
-    return [];
-  }
-  const slugs = list.filter(p => !p.isTalk && !p.isArchived).map(p => p.slug);
-  return routing.locales.flatMap(locale =>
-    slugs.map(slug => ({ locale, slug })),
-  );
+/**
+ * No build-time prerender. On a Render build the data repo is not yet on
+ * disk (instrumentation.ts clones it at server startup), and the
+ * 2026-05-22 performance design chose pure on-demand ISR — every
+ * (locale, slug) renders on first request and is then cached. Returning
+ * an empty list keeps local and Render builds identical.
+ */
+export function generateStaticParams() {
+  return [];
 }

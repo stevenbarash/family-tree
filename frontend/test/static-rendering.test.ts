@@ -1,59 +1,43 @@
-// Static-rendering verification tests for [locale]/* routes.
+// Rendering-strategy verification for the two hot [locale]/* routes.
 //
-// SKIPPED: every [locale]/* page currently has `export const dynamic = 'force-dynamic'`
-// (pre-existing pattern from before the multilingual branch — search git blame for context).
-// This forces dynamic rendering regardless of next-intl wiring, so the prerender manifest
-// only contains a handful of framework routes (favicon, _global-error, _not-found).
+// The 2026-05-22 frontend-performance work moved article pages off
+// `force-dynamic` onto on-demand ISR (`export const revalidate`), and
+// dropped the now-redundant `force-dynamic` from `family/tree` (it is
+// dynamic regardless — it reads searchParams). These source-level
+// assertions are the canary: they fail loudly if `force-dynamic` is
+// reintroduced on `[slug]`, which would silently un-cache every article.
 //
-// Unskip these tests when the [locale]/* pages are refactored to use generateStaticParams
-// + build-time data reads instead of request-time $WHOAMI_ROOT reads. Until then, the
-// tests are aspirational scaffolding.
+// Source inspection (not prerender-manifest inspection) is deliberate:
+// it runs in `npm test` with no build step and pins the exact intent.
 
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { join } from "node:path";
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const appDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'app', '[locale]');
+const read = (rel: string): string => readFileSync(join(appDir, rel), 'utf8');
 
-test.skip("build: produces static HTML for each locale's top-level route", () => {
-  const buildDir = join(__dirname, "..", ".next");
-  const manifestPath = join(buildDir, "prerender-manifest.json");
-
-  if (!existsSync(manifestPath)) {
-    // Skip if build hasn't been run. The test runs after a build in CI; locally
-    // run `npm run build` first.
-    return;
-  }
-
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const routes = Object.keys(manifest.routes ?? {});
-  const expected = ["/en", "/ru", "/uk", "/he"];
-
-  for (const locale of expected) {
-    assert.ok(
-      routes.some(r => r === locale || r === `${locale}/`),
-      `expected ${locale} to be prerendered; found ${routes.length} total routes; first 5: ${routes.slice(0, 5).join(", ")}`
-    );
-  }
+test('[slug] article route is ISR, not force-dynamic', () => {
+  const src = read(join('[slug]', 'page.tsx'));
+  assert.doesNotMatch(
+    src,
+    /dynamic\s*=\s*['"]force-dynamic['"]/,
+    '[slug]/page.tsx must not be force-dynamic — it should serve from the ISR cache',
+  );
+  assert.match(
+    src,
+    /export const revalidate\s*=\s*\d+/,
+    '[slug]/page.tsx must export a numeric `revalidate` (the ISR window)',
+  );
 });
 
-test.skip("build: at least one article prerendered per locale", () => {
-  const buildDir = join(__dirname, "..", ".next");
-  const manifestPath = join(buildDir, "prerender-manifest.json");
-
-  if (!existsSync(manifestPath)) return;
-
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const routes = Object.keys(manifest.routes ?? {});
-
-  for (const locale of ["en", "ru", "uk", "he"]) {
-    const articleRoutes = routes.filter(r => r.startsWith(`/${locale}/`) && r.split("/").length === 3);
-    assert.ok(
-      articleRoutes.length > 100,
-      `expected >100 article routes under /${locale}/; got ${articleRoutes.length}`
-    );
-  }
+test('family/tree carries no redundant force-dynamic', () => {
+  const src = read(join('family', 'tree', 'page.tsx'));
+  assert.doesNotMatch(
+    src,
+    /dynamic\s*=\s*['"]force-dynamic['"]/,
+    'family/tree is dynamic via searchParams; the explicit force-dynamic was removed',
+  );
 });
