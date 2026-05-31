@@ -29,12 +29,18 @@ import { RelationshipStrip } from '@/components/relationship-strip';
 import { buildHoverDataBySlug } from '@/lib/page-card-data';
 import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
-// On-demand ISR: render each (locale, slug) once, cache it, regenerate on
-// demand. Page and note writes call `revalidatePath` for immediate
-// freshness; this 60s window is the backstop for background git-sync
-// pulls (≈ the sync cadence). `next dev` ignores ISR and always renders
-// fresh. Replaces the former `force-dynamic`.
-export const revalidate = 60;
+// Force dynamic. The on-demand ISR attempt (#17, `export const revalidate`)
+// is incompatible with this route: the shared `[locale]` layout hydrates
+// next-intl's client provider, which calls `headers()`, so the route can
+// never be rendered statically. Tagging it ISR made Next try to populate a
+// route cache and throw `DYNAMIC_SERVER_USAGE` at request time on the
+// auth-on Render deploy — a 500 on every article page. `next dev` ignores
+// ISR and the build silently downgrades to dynamic, so neither dev nor the
+// source-only static-rendering test caught it. Verified with
+// `dynamic = 'error'`: "couldn't be rendered statically because it used
+// `headers()`". Don't reintroduce `revalidate` here without a
+// cacheComponents migration (the 2026-05-22 design explicitly skipped it).
+export const dynamic = 'force-dynamic';
 
 export default async function PageRoute({ params }: { params: Promise<{ locale: Locale; slug: string }> }) {
   const { locale, slug } = await params;
