@@ -112,12 +112,32 @@ add per-locale reads.
 - **`proxy.ts`, not `middleware.ts`.** Next 16 renamed it. Older
   blog posts say `middleware.ts`; they are wrong for this codebase.
 - **`setRequestLocale(locale)` in every page and layout under
-  `app/[locale]/`** — before any other next-intl call. Forgetting
-  it silently degrades to dynamic rendering. (The
-  `frontend/test/static-rendering.test.ts` file was originally
-  scaffolded as a canary here, but was rewritten 2026-05-22 to
-  guard against `force-dynamic` being re-introduced on `[slug]`
-  instead.)
+  `app/[locale]/`** — before any other next-intl call. Forgetting it
+  makes that call read `headers()`, opting the route into dynamic
+  rendering.
+- **`loading.tsx` / `error.tsx` / `not-found.tsx` that touch next-intl
+  must be `"use client"`.** These Suspense/error fallbacks render with
+  no `params`, so they *cannot* call `setRequestLocale`; a server
+  `useTranslations`/`getTranslations` there falls back to `headers()`
+  and silently forces every route the fallback covers into dynamic
+  rendering. As a client component the hook reads the layout's
+  `NextIntlClientProvider` instead, touching no `headers()`. (A server
+  `useTranslations` in `[slug]/loading.tsx` is exactly what turned
+  #17's `revalidate` into a production 500.)
+- **`app/[locale]/` page routes stay `force-dynamic` — do NOT add
+  `export const revalidate` or `dynamic = 'force-static'`.** They render
+  translated UI whose fallbacks read `headers()`, so a "cacheable"
+  declaration throws `DYNAMIC_SERVER_USAGE` at request time — and does
+  so *invisibly*: `next dev` ignores ISR and a prod build silently
+  downgrades the route rather than erroring (only `dynamic = 'error'`
+  surfaces it, naming `headers()`). The pages *can* be prerendered now
+  that the fallbacks are client components, but we keep them dynamic on
+  purpose: warm renders are ~10ms with the derived-record and page-list
+  caches already in place, and `force-dynamic` cannot throw
+  `DYNAMIC_SERVER_USAGE` whereas ISR re-arms the trap. Both rules are
+  enforced by `frontend/test/render-strategy.test.ts`; to make a
+  `[locale]` route cacheable, first prove it static-safe with a
+  `dynamic = 'error'` production build, then allowlist it there.
 - **`Link` from `@/i18n/navigation`, NOT from `next/link`.** The
   i18n wrapper preserves the active locale.
 - **`useTranslations('Namespace')`** uses the lowest-common-
