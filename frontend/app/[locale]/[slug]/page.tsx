@@ -268,14 +268,3 @@ async function readBodiesForSlugs(
   );
   return new Map(entries.filter((e): e is [string, string] => e !== null));
 }
-
-/**
- * No build-time prerender. On a Render build the data repo is not yet on
- * disk (instrumentation.ts clones it at server startup), and the
- * 2026-05-22 performance design chose pure on-demand ISR — every
- * (locale, slug) renders on first request and is then cached. Returning
- * an empty list keeps local and Render builds identical.
- */
-export function generateStaticParams() {
-  return [];
-}

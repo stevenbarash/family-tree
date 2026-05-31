@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
 import { z } from 'zod';
-import { revalidatePath, revalidateTag } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { syncGedcom } from '@core/gedcom/index.ts';
 import { invalidateListCache, rebuildSearchIndexFromDisk } from '@/lib/server-services';
 import { WHOAMI_ROOT, DEFAULT_AUTHOR } from '@/lib/env';
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     invalidateListCache();
     await rebuildSearchIndexFromDisk();
     revalidateTag('gedcom', 'max');
-    revalidatePath('/[locale]/[slug]', 'page');
     return NextResponse.json(result);
   } catch (err) {
     return errorResponse('sync-failed', 500, { detail: (err as Error).message });
