@@ -1,3 +1,8 @@
+"use client";
+// Client component: a `loading.tsx` Suspense fallback can't call
+// `setRequestLocale`, so a *server* `useTranslations` here would resolve the
+// locale via `headers()` and silently force the route dynamic. See
+// `[slug]/loading.tsx` and `test/render-strategy.test.ts` for the full story.
 import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';

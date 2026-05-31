@@ -1,3 +1,8 @@
+"use client";
+// Client component: `not-found.tsx` renders without `params` and can't call
+// `setRequestLocale`, so a *server* `useTranslations` here resolves the locale
+// via `headers()` and silently forces any route that 404s into dynamic
+// rendering. See `[slug]/loading.tsx` and `test/render-strategy.test.ts`.
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 

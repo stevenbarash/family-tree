@@ -29,17 +29,26 @@ import { RelationshipStrip } from '@/components/relationship-strip';
 import { buildHoverDataBySlug } from '@/lib/page-card-data';
 import type { PageMetaSummary, PageStore } from '@core/pages/index.ts';
 
-// Force dynamic. The on-demand ISR attempt (#17, `export const revalidate`)
-// is incompatible with this route: the shared `[locale]` layout hydrates
-// next-intl's client provider, which calls `headers()`, so the route can
-// never be rendered statically. Tagging it ISR made Next try to populate a
-// route cache and throw `DYNAMIC_SERVER_USAGE` at request time on the
-// auth-on Render deploy — a 500 on every article page. `next dev` ignores
-// ISR and the build silently downgrades to dynamic, so neither dev nor the
-// source-only static-rendering test caught it. Verified with
-// `dynamic = 'error'`: "couldn't be rendered statically because it used
-// `headers()`". Don't reintroduce `revalidate` here without a
-// cacheComponents migration (the 2026-05-22 design explicitly skipped it).
+// Force dynamic — by choice, not necessity. This route *can* be rendered
+// statically (verified: with `loading.tsx` as a client component, a
+// `dynamic = 'error'` build prerenders the full page clean as `●`). We keep
+// it dynamic because a warm render is ~10ms and the heavy inputs (derived
+// records, page list) are already cached, so ISR's payoff is marginal while
+// its fragility is not: `force-dynamic` *cannot* throw `DYNAMIC_SERVER_USAGE`,
+// whereas any `revalidate`/static tag re-arms the trap below.
+//
+// History: #17 tagged this route `export const revalidate = 60`. It 500'd
+// every article page on the auth-on Render deploy because the route read
+// `headers()` during the ISR cache-fill render. The source was NOT this page
+// or the shared layout (sign-in shares the layout and is static) — it was
+// `loading.tsx`, whose *server* `useTranslations` resolved the locale via
+// `headers()` (a Suspense fallback can't call `setRequestLocale`). That file
+// is now a client component, so the footgun is gone; the render-strategy
+// test (test/render-strategy.test.ts) guards against both reintroducing
+// `revalidate` here and adding a
+// server-side next-intl call to a fallback. It shipped invisibly because
+// `next dev` ignores ISR and a prod build silently downgrades to dynamic;
+// only a `dynamic = 'error'` build surfaces it.
 export const dynamic = 'force-dynamic';
 
 export default async function PageRoute({ params }: { params: Promise<{ locale: Locale; slug: string }> }) {

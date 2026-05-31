@@ -1,3 +1,11 @@
+"use client";
+// Client component on purpose. A `loading.tsx` Suspense fallback renders
+// with no `params`, so it cannot call `setRequestLocale` — and a *server*
+// `useTranslations` here resolves the locale via `headers()`, which silently
+// forces the whole route into dynamic rendering. (That is exactly what made
+// `[slug]` un-cacheable and turned #17's `revalidate` into a production 500.)
+// As a client component, `useTranslations` reads from the layout's
+// `NextIntlClientProvider` instead, so the fallback never touches `headers()`.
 import { useTranslations } from 'next-intl';
 import { Skeleton } from '@/components/ui/skeleton';
 
