@@ -8,6 +8,7 @@ export interface ReadOptions {
 }
 
 export async function runRead(opts: ReadOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   const page = await opts.client.read(opts.slug);
   if (opts.json) {
     opts.write(JSON.stringify(page, null, 2));

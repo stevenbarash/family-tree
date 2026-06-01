@@ -10,6 +10,7 @@ export interface EditOptions {
 }
 
 export async function runEdit(opts: EditOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   if (!opts.summary) throw new Error('--summary is required');
   const page = await opts.client.read(opts.slug);
   const editor = opts.openEditor ?? editInEditor;

@@ -39,3 +39,12 @@ test('write: errors when summary missing', async () => {
     /summary/i,
   );
 });
+
+test('write: rejects empty slug without calling the API', async () => {
+  const captured: { slug?: string } = {};
+  await assert.rejects(
+    () => runWrite({ slug: '', body: 'x', summary: 'init', client: fakeClient(captured), write: () => {} }),
+    /slug/i,
+  );
+  assert.equal(captured.slug, undefined);
+});

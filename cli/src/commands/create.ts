@@ -10,6 +10,7 @@ export interface CreateOptions {
 }
 
 export async function runCreate(opts: CreateOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   if (!opts.summary) throw new Error('--summary is required');
   let exists = true;
   try { await opts.client.read(opts.slug); } catch (err) {

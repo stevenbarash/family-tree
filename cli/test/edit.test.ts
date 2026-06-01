@@ -23,3 +23,13 @@ test('edit: changed → write', async () => {
   await runEdit({ slug: 'foo', summary: 's', client, write: () => {}, openEditor: () => 'new' });
   assert.equal(wrote, true);
 });
+
+test('edit: rejects empty slug without calling the API', async () => {
+  let touched = false;
+  const client: any = {
+    read: async () => { touched = true; return { slug: '', meta: {}, body: '' }; },
+    write: async () => { touched = true; return { ok: true }; },
+  };
+  await assert.rejects(() => runEdit({ slug: '', summary: 's', client, write: () => {}, openEditor: (i) => i }), /slug/i);
+  assert.equal(touched, false);
+});

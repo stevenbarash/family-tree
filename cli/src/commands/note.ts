@@ -18,6 +18,7 @@ export interface NoteOptions {
 }
 
 export async function runNote(opts: NoteOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   const slug = toBaseSlug(opts.slug);
   switch (opts.mode) {
     case 'append': {

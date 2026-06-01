@@ -3,10 +3,12 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
 import { reciteDrift, applyRecite } from '@core/gedcom/index.ts';
+import { withLock } from '@core/pages/locks.ts';
 import { invalidateListCache } from '@/lib/server-services';
 import { WHOAMI_ROOT, PAGES_DIR, DEFAULT_AUTHOR } from '@/lib/env';
 import { errorResponse } from '@/lib/api-errors';
 import { requireSession, UnauthenticatedError } from '@/lib/descope';
+import { REPO_LOCK } from '@/lib/sync';
 
 export async function GET() {
   const drift = await reciteDrift({
@@ -31,13 +33,19 @@ export async function POST(req: NextRequest) {
   const parsed = ApplyBody.safeParse(body);
   if (!parsed.success) return errorResponse('bad-request', 400);
 
-  const updated = await applyRecite({
-    repoRoot: WHOAMI_ROOT,
-    genealogyDir: join(WHOAMI_ROOT, 'genealogy'),
-    pagesDir: PAGES_DIR,
-    author: DEFAULT_AUTHOR,
+  // Hold REPO_LOCK across the git-mutating recite so it can't interleave
+  // with the sync scheduler's pullRebase (or a concurrent page-write
+  // commit) on the Render replica.
+  const updated = await withLock(REPO_LOCK, async () => {
+    const u = await applyRecite({
+      repoRoot: WHOAMI_ROOT,
+      genealogyDir: join(WHOAMI_ROOT, 'genealogy'),
+      pagesDir: PAGES_DIR,
+      author: DEFAULT_AUTHOR,
+    });
+    invalidateListCache();
+    return u;
   });
-  invalidateListCache();
   // GEDCOM-derived data changed: drop the family-tree cache. Article pages
   // are force-dynamic (they read derived records per request), so no page
   // revalidation is needed.

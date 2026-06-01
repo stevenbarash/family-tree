@@ -9,6 +9,7 @@ export interface WriteOptions {
 }
 
 export async function runWrite(opts: WriteOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   if (!opts.summary) throw new Error('--summary is required');
   await opts.client.write(opts.slug, opts.body, opts.summary);
   opts.write(`wrote ${opts.slug}\n`);

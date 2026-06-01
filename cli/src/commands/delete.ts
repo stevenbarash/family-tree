@@ -8,6 +8,7 @@ export interface DeleteOptions {
 }
 
 export async function runDelete(opts: DeleteOptions): Promise<void> {
+  if (!opts.slug) throw new Error('slug is required');
   if (!opts.yes) throw new Error(`refusing to delete without --yes (would soft-delete ${opts.slug})`);
   await opts.client.delete(opts.slug);
   opts.write(`deleted ${opts.slug}\n`);

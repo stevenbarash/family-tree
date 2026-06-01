@@ -20,3 +20,13 @@ test('create: writes when page missing', async () => {
   await runCreate({ slug: 'foo', body: 'x', summary: 's', client, write: () => {} });
   assert.equal(wrote, true);
 });
+
+test('create: rejects empty slug without calling the API', async () => {
+  let touched = false;
+  const client: any = {
+    read: async () => { touched = true; throw new NotFound(404); },
+    write: async () => { touched = true; return { ok: true }; },
+  };
+  await assert.rejects(() => runCreate({ slug: '', body: 'x', summary: 's', client, write: () => {} }), /slug/i);
+  assert.equal(touched, false);
+});

@@ -19,3 +19,12 @@ test('delete: calls API with --yes', async () => {
   });
   assert.equal(called, true);
 });
+
+test('delete: rejects empty slug without calling the API', async () => {
+  let called = false;
+  await assert.rejects(
+    () => runDelete({ slug: '', yes: true, client: { delete: async () => { called = true; return { ok: true } as const; } } as any, write: () => {} }),
+    /slug/i,
+  );
+  assert.equal(called, false);
+});

@@ -147,3 +147,12 @@ test('note: append accepts kind=transcript', async () => {
   await runNote({ slug: 'aidele', mode: 'append', note: 't', kind: 'transcript', client: c, write: (s) => { out += s; } });
   assert.equal(c.calls.note[0]!.kind, 'transcript');
 });
+
+test('note: rejects empty slug without calling the API', async () => {
+  const client = fakeClient();
+  await assert.rejects(
+    () => runNote({ slug: '', mode: 'append', note: 'hello', client: client as any, write: () => {} }),
+    /slug/i,
+  );
+  assert.equal(client.calls.note.length, 0);
+});

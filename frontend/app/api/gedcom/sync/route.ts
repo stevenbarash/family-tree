@@ -4,10 +4,12 @@ import { existsSync } from 'node:fs';
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
 import { syncGedcom } from '@core/gedcom/index.ts';
+import { withLock } from '@core/pages/locks.ts';
 import { invalidateListCache, rebuildSearchIndexFromDisk } from '@/lib/server-services';
 import { WHOAMI_ROOT, DEFAULT_AUTHOR } from '@/lib/env';
 import { errorResponse } from '@/lib/api-errors';
 import { requireSession, UnauthenticatedError } from '@/lib/descope';
+import { REPO_LOCK } from '@/lib/sync';
 
 const Body = z.object({
   gedFile: z.string().regex(/^[a-z0-9._-]+\.ged$/i),
@@ -32,16 +34,22 @@ export async function POST(req: NextRequest) {
   if (!existsSync(gedPath)) return errorResponse('ged-not-found', 404);
 
   try {
-    const result = await syncGedcom({
-      repoRoot: WHOAMI_ROOT,
-      genealogyDir,
-      gedFile: parsed.data.gedFile,
-      author: DEFAULT_AUTHOR,
-      notes: parsed.data.notes,
-      force: parsed.data.force,
+    // Hold REPO_LOCK across the git-mutating sync + disk-reading search
+    // rebuild so it can't interleave with the sync scheduler's pullRebase
+    // (or a concurrent page-write commit) on the Render replica.
+    const result = await withLock(REPO_LOCK, async () => {
+      const r = await syncGedcom({
+        repoRoot: WHOAMI_ROOT,
+        genealogyDir,
+        gedFile: parsed.data.gedFile,
+        author: DEFAULT_AUTHOR,
+        notes: parsed.data.notes,
+        force: parsed.data.force,
+      });
+      invalidateListCache();
+      await rebuildSearchIndexFromDisk();
+      return r;
     });
-    invalidateListCache();
-    await rebuildSearchIndexFromDisk();
     revalidateTag('gedcom', 'max');
     return NextResponse.json(result);
   } catch (err) {

@@ -25,3 +25,12 @@ test('read: --json emits full page', async () => {
   assert.equal(parsed.slug, 'foo');
   assert.equal(parsed.body, 'hello');
 });
+
+test('read: rejects empty slug without calling the API', async () => {
+  let called = false;
+  await assert.rejects(
+    () => runRead({ slug: '', json: false, write: () => {}, client: { read: async () => { called = true; return {} as any; } } as any }),
+    /slug/i,
+  );
+  assert.equal(called, false);
+});
