@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { runI18nSync, type Translator, type TalkTranslator } from '../src/commands/i18n-sync.js';
+import { yamlScalar } from '@core/pages/frontmatter.ts';
 
 const stubTranslator: Translator = async (req) => ({
   body: req.canonicalBody,
@@ -638,6 +639,49 @@ test('wai i18n sync: folds talk-page audit entries inside ## Unresolved (before 
   const talkSecIdx = auditContent.indexOf('### Talk-page translation');
   assert.ok(unresolvedIdx >= 0 && resolvedIdx > unresolvedIdx && talkSecIdx > unresolvedIdx);
   assert.ok(talkSecIdx < resolvedIdx, '### Talk-page translation must appear before ## Resolved (inside Unresolved)');
+
+  await rm(root, { recursive: true });
+});
+
+test('wai i18n sync: a YAML-hostile translated title writes parseable frontmatter', async () => {
+  const root = join(tmpdir(), `whoami-i18n-title-${Date.now()}`);
+  await mkdir(join(root, 'pages', 'en'), { recursive: true });
+  await writeFile(
+    join(root, 'pages', 'en', 'abby.md'),
+    "---\nschemaVersion: 1\ntitle: Abby\nowner: x\neditors: []\ntype: person\naliases: []\ncategories: []\ncreated: '2026-05-01'\ncorrections: []\n---\nEnglish body",
+  );
+  execSync(
+    `git -C "${root}" init -q && git -C "${root}" add . && git -C "${root}" -c user.email=a@b -c user.name=a commit -q -m init`,
+  );
+
+  // A model-produced title carrying a colon-space (YAML mapping ambiguity),
+  // guillemets, and a backslash — all of which break unquoted frontmatter.
+  const hostileTitle = 'Иван: судьба «в кавычках» C:\\путь';
+  const hostileTranslator: Translator = async () => ({
+    body: 'тело',
+    talk: '## Unresolved\n\n## Resolved\n',
+    titleTranslation: hostileTitle,
+  });
+
+  await runI18nSync({
+    rootDir: root,
+    slug: 'abby',
+    locale: 'ru',
+    translator: hostileTranslator,
+    write: () => {},
+  });
+
+  const content = await readFile(join(root, 'pages', 'ru', 'abby.md'), 'utf8');
+  // The title must be routed through the one core YAML escaper, which
+  // core/test/pages/frontmatter.test.ts proves produces re-parseable YAML
+  // for exactly these characters. Previously it was interpolated raw and
+  // the colon-space corrupted the frontmatter.
+  assert.ok(
+    content.includes(`title: ${yamlScalar(hostileTitle)}`),
+    `expected escaped title line "title: ${yamlScalar(hostileTitle)}", got:\n${content.split('\n').slice(0, 4).join('\n')}`,
+  );
+  // And the raw, unescaped line must NOT appear.
+  assert.ok(!content.includes(`title: ${hostileTitle}`), 'raw unescaped title leaked into frontmatter');
 
   await rm(root, { recursive: true });
 });

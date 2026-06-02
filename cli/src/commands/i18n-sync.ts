@@ -24,7 +24,7 @@ import { mkdir, writeFile, readFile, rename, unlink } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { parsePage } from '@core/pages/frontmatter.ts';
+import { parsePage, yamlScalar } from '@core/pages/frontmatter.ts';
 import { toSlug, isValidSlug } from '@core/pages/slug.ts';
 import { isLocale, TARGET_LOCALES, type Locale } from '@core/i18n/index.ts';
 import { parseTalkThreads } from '@core/pages/talk-threads.ts';
@@ -253,7 +253,7 @@ export async function runI18nSync(opts: RunI18nSyncOpts): Promise<void> {
   const authorModel = process.env.WAI_AUTHOR_MODEL ?? 'Claude Opus 4.7';
   const frontmatter = `---
 schemaVersion: ${canonicalPage.meta.schemaVersion}
-title: ${response.titleTranslation}
+title: ${yamlScalar(stripTitleQuotes(response.titleTranslation))}
 author: ${authorModel}
 lang: ${opts.locale}
 translation_of: ${opts.slug}
@@ -304,7 +304,7 @@ translated_at: '${today}'
       .filter(t => t.marker === 'open').length;
     const categories = openCount > 0 ? '[Open editorial questions]' : '[]';
     const subjectTitle = stripTitleQuotes(response.titleTranslation);
-    const localizedTalkTitle = `"${talkResponse.titlePrefix}: ${subjectTitle}"`;
+    const localizedTalkTitle = yamlScalar(`${talkResponse.titlePrefix}: ${subjectTitle}`);
 
     // Frontmatter shape: 7 baseline fields (per the editorial-guide
     // format spec) PLUS the translation stamps (lang, translation_of,
@@ -467,7 +467,7 @@ async function runTalkOnly(opts: RunI18nSyncOpts, canonicalPath: string): Promis
   const authorModel = process.env.WAI_AUTHOR_MODEL ?? 'Claude Opus 4.7';
   const openCount = parseTalkThreads(talkResponse.body).filter(t => t.marker === 'open').length;
   const categories = openCount > 0 ? '[Open editorial questions]' : '[]';
-  const localizedTalkTitle = `"${talkResponse.titlePrefix}: ${articleTitle}"`;
+  const localizedTalkTitle = yamlScalar(`${talkResponse.titlePrefix}: ${articleTitle}`);
 
   const talkPageFrontmatter = `---
 schemaVersion: 1

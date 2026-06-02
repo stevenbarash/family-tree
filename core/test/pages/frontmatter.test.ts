@@ -227,3 +227,25 @@ created: 2026-05-01
 body`;
   assert.throws(() => parsePage('sample', raw), FutureSchemaVersionError);
 });
+
+test('serializePage: round-trips titles with YAML-special characters', () => {
+  // The model-produced translated titles that previously corrupted the
+  // frontmatter on write: colons, quotes, backslashes (the escape
+  // introducer in double-quoted YAML), newlines, and tabs.
+  const adversarial = [
+    'Ivan: a life',
+    'C:\\Users\\ivan',          // colon triggers quoting; backslash must be escaped
+    'a\\b',                      // bare backslash
+    'pearls "of wisdom"',
+    'line one\nline two',       // embedded newline
+    'tab\there',                // embedded tab
+    '#1 in his field',          // leading hash
+    'Зус: Краснов',             // Cyrillic + colon
+  ];
+  for (const title of adversarial) {
+    const page = parsePage('x', SAMPLE);
+    page.meta.title = title;
+    const re = parsePage('x', serializePage(page));
+    assert.equal(re.meta.title, title, `title did not round-trip: ${JSON.stringify(title)}`);
+  }
+});

@@ -101,9 +101,27 @@ function renderFrontmatter(meta: PageMeta): string {
   return lines.join('\n') + '\n';
 }
 
-function yamlScalar(s: string): string {
-  if (/[:#\[\]{}'"|>&!*%@`,\n]/.test(s) || /^\s|\s$/.test(s)) {
-    return `"${s.replace(/"/g, '\\"')}"`;
+/**
+ * Quote a string as a YAML scalar when it carries characters that would
+ * otherwise break a plain scalar, escaping it safely for a double-quoted
+ * context. Exported so callers that hand-build frontmatter (e.g. the CLI's
+ * i18n-sync title field) reuse the one correct escaper instead of
+ * re-implementing it.
+ */
+export function yamlScalar(s: string): string {
+  if (/[:#\[\]{}'"|>&!*%@`,\n\t\r\\]/.test(s) || /^\s|\s$/.test(s)) {
+    // Double-quoted YAML scalar. Backslash is the escape introducer, so it
+    // must be escaped first (before quotes), and control characters must
+    // become escape sequences rather than ride in literally — otherwise a
+    // value like `C:\Users` or one carrying a newline produces frontmatter
+    // that fails to re-parse.
+    const escaped = s
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\t/g, '\\t')
+      .replace(/\r/g, '\\r');
+    return `"${escaped}"`;
   }
   return s;
 }
