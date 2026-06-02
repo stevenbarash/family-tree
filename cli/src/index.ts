@@ -34,7 +34,8 @@ import { runDoctor } from './commands/doctor.js';
 import { runNarrative } from './commands/narrative.js';
 import type { NarrativeMode } from './commands/narrative.js';
 import { runTranscribe, runTranscribeDir } from './commands/transcribe.js';
-import { runInterview } from './commands/interview.js';
+import { runInterview, interviewEvidencePaths } from './commands/interview.js';
+import { findingsForRunSlug, atOrAboveSeverity } from './commands/author/run-findings.js';
 import { runAuthor, runAuthorCohort } from './commands/author.js';
 import { runRevert, type RevertMode } from './commands/revert.js';
 import { runHistory } from './commands/history.js';
@@ -749,11 +750,10 @@ async function main(): Promise<number> {
             const talkPage = await interviewClient.read(`${s}.talk`).catch(() => null);
             const talk = (talkPage as { body?: string } | null)?.body ?? '';
 
-            const narrPath = join(rootDir, 'pages', `${s}.narrative.md`);
+            const { page: pagePath, narrative: narrPath } = interviewEvidencePaths(rootDir, s);
             const narrative = existsSync(narrPath) ? readFileSync(narrPath, 'utf8') : null;
 
             let derived: string | null = null;
-            const pagePath = join(rootDir, 'pages', `${s}.md`);
             if (existsSync(pagePath)) {
               const pageText = readFileSync(pagePath, 'utf8');
               const m = pageText.match(/gedcom:\s*\n[\s\S]*?record:\s*(\S+)/);
@@ -854,12 +854,18 @@ async function main(): Promise<number> {
             // Filter to findings about this run's slug — pre-existing findings
             // on unrelated pages must not block authoring of a new page. The
             // page-level wai check is the place to surface repo-wide drift;
-            // verify here is a guardrail for *this run's* output.
+            // verify here is a guardrail for *this run's* output. The gate
+            // blocks on warn+: info-severity findings (citation "add a
+            // footnote" nudges, which hit ~half the corpus) are advisory and
+            // surface via standalone `wai check`, not here.
             let findings = result.findings;
             if (checkArgs.slugFilter) {
-              const pageFile = join(authorRootDir, 'pages', `${checkArgs.slugFilter}.md`);
-              const talkFile = join(authorRootDir, 'pages', `${checkArgs.slugFilter}.talk.md`);
-              findings = findings.filter(f => f.location?.file === pageFile || f.location?.file === talkFile);
+              const forSlug = findingsForRunSlug(result.findings, authorRootDir, checkArgs.slugFilter);
+              findings = atOrAboveSeverity(forSlug, 'warn');
+              const advisory = forSlug.length - findings.length;
+              if (advisory > 0) {
+                process.stderr.write(`  (${advisory} info-level finding(s) on this page — advisory, run \`wai check\` to see them)\n`);
+              }
             }
             return {
               exitCode: findings.length > 0 && !checkArgs.fix ? 1 : 0,

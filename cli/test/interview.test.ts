@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runInterview } from '../src/commands/interview.js';
+import { join } from 'node:path';
+import { runInterview, interviewEvidencePaths } from '../src/commands/interview.js';
 import type { HarnessAdapter } from '../src/harness/types.js';
 
 interface Calls {
@@ -93,4 +94,10 @@ test('interview: parses answers with CRLF line endings', async () => {
   assert.equal(code, 0);
   assert.equal(calls.notes.length, 1);
   assert.match(calls.notes[0]!.text, /an answer with crlf/);
+});
+
+test('interviewEvidencePaths: canonical page under pages/en, narrative is a flat sidecar', () => {
+  const p = interviewEvidencePaths('/data', 'foo');
+  assert.equal(p.page, join('/data', 'pages', 'en', 'foo.md'));
+  assert.equal(p.narrative, join('/data', 'pages', 'foo.narrative.md'));
 });

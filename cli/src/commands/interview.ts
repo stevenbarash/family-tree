@@ -1,6 +1,20 @@
+import { join } from 'node:path';
 import type { HarnessAdapter } from '../harness/types.js';
 
 interface Question { text: string; rationale?: string }
+
+/**
+ * Evidence file paths for an interview run. The canonical article lives
+ * under `pages/en/` (v2 layout), while the `.narrative.md` sidecar is a
+ * locale-agnostic top-level file (see `narrative.ts`) — the two layouts
+ * are deliberate, not drift.
+ */
+export function interviewEvidencePaths(rootDir: string, slug: string): { page: string; narrative: string } {
+  return {
+    page: join(rootDir, 'pages', 'en', `${slug}.md`),
+    narrative: join(rootDir, 'pages', `${slug}.narrative.md`),
+  };
+}
 
 export interface InterviewOptions {
   slug: string;
