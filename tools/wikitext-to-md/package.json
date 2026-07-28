@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.3.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",
